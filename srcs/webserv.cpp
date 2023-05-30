@@ -49,5 +49,6 @@ int	main( int argc, char **argv )
 	{
 		std::cerr << e.what() << std::endl;
 	}
+	// logica
 	return (0);
 }

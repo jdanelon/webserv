@@ -45,7 +45,7 @@ class ParserHelper
 		std::vector<std::string>	_tokens;
 		std::set<std::string>		_list;
 
-		bool	_valid_ip( std::string const &ip );
+		bool	_valid_host( std::string const &ip );
 		bool	_valid_port( std::string const &port );
 		bool	_valid_server_name( std::string const &str );
 	

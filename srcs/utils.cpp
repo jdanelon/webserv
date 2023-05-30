@@ -47,3 +47,17 @@ char	ft_tolower( char c )
 		return (c - 'A' + 'a');
 	return (c);
 }
+
+bool	ft_empty( char const *str )
+{
+	int	len;
+	int	whitespace;
+
+	len = ft_strlen(str);
+	whitespace = 0;
+	while (ft_isspace(str[whitespace]))
+		whitespace++;
+	if (len == whitespace)
+		return (true);
+	return (false);
+}

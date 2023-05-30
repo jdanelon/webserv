@@ -91,7 +91,7 @@ Location	Parser::_parse_location( std::istringstream *istr )
 
 	while (std::getline(*istr, line))
 	{
-		if (line.length() == 0)
+		if (line.length() == 0 || ft_empty(line.c_str()))
 			continue ;
 		tokens = this->_get_split_lines(line);
 		if (tokens.empty())
@@ -133,7 +133,7 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 
 	while (std::getline(*istr, line))
 	{
-		if (line.length() == 0)
+		if (line.length() == 0 || ft_empty(line.c_str()))
 			continue ;
 		tokens = this->_get_split_lines(line);
 		if (tokens.empty())
@@ -143,7 +143,7 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			throw ParserHelper::DuplicatedDirectives(directive);
 		if (!directive.compare("listen"))
 		{
-			srv.ip = helper.get_listen().first;
+			srv.host = helper.get_listen().first;
 			srv.port = helper.get_listen().second;
 		}
 		else if (!directive.compare("server_name"))
@@ -189,7 +189,7 @@ void	Parser::_parse( std::istringstream *istr )
 
 	while (std::getline(*istr, line))
 	{
-		if (line.length() == 0)
+		if (line.length() == 0 || ft_empty(line.c_str()))
 			continue ;
 		tokens = this->_get_split_lines(line);
 		if (tokens.empty())

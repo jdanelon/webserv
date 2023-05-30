@@ -45,7 +45,7 @@ bool	ParserHelper::duplicated_directives( std::vector<std::string> const &tokens
 
 std::pair<in_addr_t, size_t>	ParserHelper::get_listen( void )
 {
-	in_addr_t	ip;
+	in_addr_t	host;
 	size_t		port;
 
 	if (this->_tokens.size() != 2)
@@ -53,27 +53,27 @@ std::pair<in_addr_t, size_t>	ParserHelper::get_listen( void )
 	size_t idx = this->_tokens[1].find(":");
 	if (idx != std::string::npos)
 	{
-		ip = inet_addr(this->_tokens[1].substr(0, idx).c_str());
-		port = htons(ft_atoi(this->_tokens[1].substr(idx, this->_tokens[1].length() - idx).c_str()));
-		if (!this->_valid_ip(this->_tokens[1].substr(0, idx).c_str()))
-			throw InvalidValues("ip", this->_tokens[1]);
-		if (!this->_valid_port(this->_tokens[1].substr(idx, this->_tokens[1].length() - idx).c_str()))
+		host = inet_addr(this->_tokens[1].substr(0, idx).c_str());
+		port = htons(ft_atoi(this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx).c_str()));
+		if (!this->_valid_host(this->_tokens[1].substr(0, idx).c_str()))
+			throw InvalidValues("host", this->_tokens[1]);
+		if (!this->_valid_port(this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx).c_str()))
 			throw InvalidValues("port", this->_tokens[1]);
-		return (std::make_pair(ip, port));
+		return (std::make_pair(host, port));
 	}
-	if (this->_valid_ip(this->_tokens[1]) && !this->_valid_port(this->_tokens[1]))
+	if (this->_valid_host(this->_tokens[1]) && !this->_valid_port(this->_tokens[1]))
 	{
-		ip = inet_addr(this->_tokens[1].c_str());
+		host = inet_addr(this->_tokens[1].c_str());
 		port = htons(80); //default
 	}
-	else if (!this->_valid_ip(this->_tokens[1]) && this->_valid_port(this->_tokens[1]))
+	else if (!this->_valid_host(this->_tokens[1]) && this->_valid_port(this->_tokens[1]))
 	{
-		ip = inet_addr("127.0.0.1"); //default
+		host = inet_addr("127.0.0.1"); //default
 		port = htons(ft_atoi(this->_tokens[1].c_str()));
 	}
 	else
-		throw InvalidValues("ip:port", this->_tokens[1]);
-	return (std::make_pair(ip, port));
+		throw InvalidValues("host:port", this->_tokens[1]);
+	return (std::make_pair(host, port));
 }
 
 std::vector<std::string>	ParserHelper::get_server_name( void )
@@ -123,20 +123,20 @@ std::string	ParserHelper::get_root( void )
 
 // std::vector<std::string>	ParserHelper::get_limit_except( void );
 
-bool	ParserHelper::_valid_ip( std::string const &ip )
+bool	ParserHelper::_valid_host( std::string const &host )
 {
 	size_t						begin;
 	size_t						end;
 	std::vector<std::string>	split;
 
 	begin = 0;
-	while (begin < ip.size())
+	while (begin < host.size())
 	{
-		end = ip.find(".", begin);
+		end = host.find(".", begin);
 		if (end == std::string::npos)
-			end = ip.size();
-		split.push_back(ip.substr(begin, end - begin));
-		begin = end;
+			end = host.size();
+		split.push_back(host.substr(begin, end - begin));
+		begin = end + 1;
 	}
 	if (split.size() != 4)
 		return (false);

@@ -15,7 +15,7 @@ Server &Server::operator = ( Server const &obj )
 {
 	if (this != &obj)
 	{
-		this->ip = obj.ip;
+		this->host = obj.host;
 		this->port = obj.port;
 		this->server_name = obj.server_name;
 		this->root = obj.root;

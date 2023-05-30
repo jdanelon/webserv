@@ -12,7 +12,7 @@ class Server
 
 	public:
 
-		in_addr_t						ip;
+		in_addr_t						host;
 		size_t							port;
 		std::vector<std::string>		server_name;
 		std::string						root;
