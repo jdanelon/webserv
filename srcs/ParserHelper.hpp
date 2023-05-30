@@ -49,6 +49,14 @@ class ParserHelper
 	
 	public:
 
+		class InvalidLine: public ParserException
+		{
+			public:
+
+				explicit InvalidLine( std::string const &str );
+				char const	*what( void ) const throw();
+		};
+
 		class DuplicatedDirectives: public ParserException
 		{
 			public:

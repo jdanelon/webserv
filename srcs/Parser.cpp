@@ -57,19 +57,28 @@ void	Parser::_readFile( char *file )
 
 std::vector<std::string>	Parser::_get_split_lines( std::string line )
 {
-	size_t						idx_end;
+	size_t						end_line, lim, end_field;
 	std::vector<std::string>	vecDir;
 
-	for (size_t i = 0; i < line.length(); i++)
+	end_line = line.find(';');
+	lim = end_line < line.length() ? end_line : line.length();
+	for (size_t i = 0; i < lim; i++)
 	{
 		while (ft_isspace(line[i]))
 			i++;
-		idx_end = line.find_first_of(" \f\n\r\t\v", i);
-		vecDir.push_back(line.substr(i, idx_end - i));
+		end_field = line.find_first_of(" \f\n\r\t\v", i);
+		if (end_line < end_field)
+			vecDir.push_back(line.substr(i, end_line - i));
+		else
+			vecDir.push_back(line.substr(i, end_field - i));
 		i += vecDir.back().length();
 		if (vecDir.back().length() == 0)
 			vecDir.pop_back();
 	}
+	if (end_line == std::string::npos && vecDir[0].compare("server") &&
+			vecDir[0].compare("location") && vecDir[0].compare("}") &&
+			vecDir[0].compare("http"))
+		vecDir.clear();
 	return (vecDir);
 }
 
@@ -85,6 +94,8 @@ Location	Parser::_parse_location( std::istringstream *istr )
 		if (line.length() == 0)
 			continue ;
 		tokens = this->_get_split_lines(line);
+		if (tokens.empty())
+			throw ParserHelper::InvalidLine(line);
 		directive = tokens[0];
 		if (helper.duplicated_directives(tokens))
 			throw ParserHelper::DuplicatedDirectives(directive);
@@ -125,6 +136,8 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 		if (line.length() == 0)
 			continue ;
 		tokens = this->_get_split_lines(line);
+		if (tokens.empty())
+			throw ParserHelper::InvalidLine(line);
 		directive = tokens[0];
 		if (helper.duplicated_directives(tokens))
 			throw ParserHelper::DuplicatedDirectives(directive);
@@ -179,6 +192,8 @@ void	Parser::_parse( std::istringstream *istr )
 		if (line.length() == 0)
 			continue ;
 		tokens = this->_get_split_lines(line);
+		if (tokens.empty())
+			throw ParserHelper::InvalidLine(line);
 		directive = tokens[0];
 		if (helper.duplicated_directives(tokens))
 			throw ParserHelper::DuplicatedDirectives(directive);

@@ -80,8 +80,8 @@ std::pair<in_addr_t, size_t>	ParserHelper::get_listen( void )
 
 std::string	ParserHelper::get_root( void )
 {
-	if (_tokens.size() != 2)
-		std::cout << "Error: Invalid number of arguments in 'root'" << std::endl;
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(_tokens[0]);
 	return (std::string(_tokens[1]));
 }
 
@@ -141,6 +141,16 @@ bool	ParserHelper::_valid_port( std::string const &port )
 	return (true);
 }
 
+ParserHelper::InvalidLine::InvalidLine( std::string const &str ) : ParserException(str)
+{
+	this->_msg = "Error: Invalid line in '" + str + "'!";
+}
+
+char const	*ParserHelper::InvalidLine::what( void ) const throw()
+{
+	return (this->_msg.c_str());
+}
+
 ParserHelper::DuplicatedDirectives::DuplicatedDirectives( std::string const &str ) : ParserException(str)
 {
 	this->_msg = "Error: Directive '" + str + "' is defined multiple times!";
@@ -161,10 +171,10 @@ char const	*ParserHelper::InvalidNumberArgs::what( void ) const throw()
 	return (this->_msg.c_str());
 }
 
-ParserHelper::InvalidValues::InvalidValues( std::string const &directive,
+ParserHelper::InvalidValues::InvalidValues( std::string const &field,
 											std::string const &value ) : ParserException("")
 {
-	this->_msg = "Error: Invalid value '" + value + "' for directive '" + directive + "'!";
+	this->_msg = "Error: Invalid value '" + value + "' for field '" + field + "'!";
 }
 
 char const	*ParserHelper::InvalidValues::what( void ) const throw()
