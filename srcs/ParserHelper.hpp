@@ -5,6 +5,7 @@
 # include <cstring>
 # include <vector>
 # include <set>
+# include <algorithm>
 
 # include <netinet/in.h>
 # include <arpa/inet.h>
@@ -46,6 +47,7 @@ class ParserHelper
 
 		bool	_valid_ip( std::string const &ip );
 		bool	_valid_port( std::string const &port );
+		bool	_valid_server_name( std::string const &str );
 	
 	public:
 

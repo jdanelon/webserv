@@ -146,8 +146,8 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			srv.ip = helper.get_listen().first;
 			srv.port = helper.get_listen().second;
 		}
-		// else if (!directive.compare("server_name"))
-		// 	srv.server_name = helper.get_server_name();
+		else if (!directive.compare("server_name"))
+			srv.server_name = helper.get_server_name();
 		else if (!directive.compare("root"))
 			srv.root = helper.get_root();
 		// else if (!directive.compare("index"))

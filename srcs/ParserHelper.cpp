@@ -76,13 +76,27 @@ std::pair<in_addr_t, size_t>	ParserHelper::get_listen( void )
 	return (std::make_pair(ip, port));
 }
 
-// std::vector<std::string>	ParserHelper::get_server_name( void );
+std::vector<std::string>	ParserHelper::get_server_name( void )
+{
+	if (this->_tokens.size() == 1)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	for (size_t i = 1; i < this->_tokens.size(); i++)
+	{
+		if (!this->_valid_server_name(this->_tokens[i]))
+			throw ParserHelper::InvalidValues("server_name", this->_tokens[i]);
+	}
+	std::vector<std::string> args(this->_tokens.begin() + 1, this->_tokens.end());
+	for (size_t i = 0; i < args.size(); i++)
+		std::transform(args[i].begin(), args[i].end(), args[i].begin(), ft_tolower);
+	return (args);
+}
 
 std::string	ParserHelper::get_root( void )
 {
 	if (this->_tokens.size() != 2)
-		throw ParserHelper::InvalidNumberArgs(_tokens[0]);
-	return (std::string(_tokens[1]));
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	//
+	return (std::string(this->_tokens[1]));
 }
 
 // std::vector<std::string>	ParserHelper::get_index( void );
@@ -138,6 +152,18 @@ bool	ParserHelper::_valid_port( std::string const &port )
 {
 	if (ft_atoi(port.c_str()) < 1 || ft_atoi(port.c_str()) > 65535)
 		return (false);
+	return (true);
+}
+
+bool	ParserHelper::_valid_server_name( std::string const &str )
+{
+	if (!ft_isalnum(str[0]) || !ft_isalnum(str[str.size() - 1]))
+		return (false);
+	for (size_t i = 1; i < str.size() - 1; i++)
+	{
+		if (!ft_isalnum(str[i]) && str[i] != '.' && str[i] != '-')
+			return (false);
+	}
 	return (true);
 }
 

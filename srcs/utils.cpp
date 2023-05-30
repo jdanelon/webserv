@@ -33,3 +33,17 @@ int	ft_atoi( char const *str )
 		return (-1);
 	return (num);
 }
+
+bool	ft_isalnum( char c )
+{
+	if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+		return (true);
+	return (false);
+}
+
+char	ft_tolower( char c )
+{
+	if (c >= 'A' && c <= 'Z')
+		return (c - 'A' + 'a');
+	return (c);
+}
