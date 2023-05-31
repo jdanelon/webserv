@@ -48,6 +48,13 @@ char	ft_tolower( char c )
 	return (c);
 }
 
+char	ft_toupper( char c )
+{
+	if (c >= 'a' && c <= 'z')
+		return (c - 'a' + 'A');
+	return (c);
+}
+
 bool	ft_empty( char const *str )
 {
 	int	len;

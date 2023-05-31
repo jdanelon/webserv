@@ -103,15 +103,16 @@ Location	Parser::_parse_location( std::istringstream *istr )
 			loc.root = helper.get_root();
 		// else if (!directive.compare("index"))
 		// 	loc.index = helper.get_index();
-		// else if (!directive.compare("limit_except"))
-		// 	loc.limit_except = helper.get_limit_except();
-		// else if (!directive.compare("client_max_body_size"))
-		// 	loc.client_max_body_size = helper.get_client_max_body_size();
-		// else if (!directive.compare("autoindex"))
-		// 	loc.autoindex = helper.get_autoindex();
+		else if (!directive.compare("limit_except"))
+			loc.limit_except = helper.get_limit_except();
+		else if (!directive.compare("client_max_body_size"))
+			loc.client_max_body_size = helper.get_client_max_body_size();
+		else if (!directive.compare("autoindex"))
+			loc.autoindex = helper.get_autoindex();
 		// else if (!directive.compare("cgi"))
-		// else if (!directive.compare("return"))
-		// 	loc.redirect = helper.get_redirect();
+		// {}
+		else if (!directive.compare("return"))
+			loc.redirect = helper.get_return();
 		// else if (!directive.compare("upload"))
 		// 	loc.upload = helper.get_upload();
 		// else if (!directive.compare("upload_store"))
@@ -156,23 +157,24 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 		// {}
 		// else if (!directive.compare("timeout"))
 		// 	srv.timeout = helper.get_timeout();
-		// else if (!directive.compare("client_max_body_size"))
-		// 	srv.client_max_body_size = helper.get_client_max_body_size();
-		// else if (!directive.compare("access_log"))
-		// 	srv.access_log = helper.get_access_log();
-		// else if (!directive.compare("error_log"))
-		// 	srv.error_log = helper.get_error_log();
-		// else if (!directive.compare("autoindex"))
-		// 	srv.autoindex = helper.get_autoindex();
+		else if (!directive.compare("client_max_body_size"))
+			srv.client_max_body_size = helper.get_client_max_body_size();
+		else if (!directive.compare("access_log"))
+			srv.access_log = helper.get_access_log();
+		else if (!directive.compare("error_log"))
+			srv.error_log = helper.get_error_log();
+		else if (!directive.compare("autoindex"))
+			srv.autoindex = helper.get_autoindex();
 		// else if (!directive.compare("cgi"))
-		// else if (!directive.compare("return"))
-		// 	srv.redirect = helper.get_redirect();
+		// {}
+		else if (!directive.compare("return"))
+			srv.redirect = helper.get_return();
 		// else if (!directive.compare("upload"))
 		// 	srv.upload = helper.get_upload();
 		// else if (!directive.compare("upload_store"))
 		// 	srv.upload_store = helper.get_upload_store();
-		// else if (!directive.compare("location"))
-		// 	this->_parse_location(istr);
+		else if (!directive.compare("location"))
+			this->_parse_location(istr);
 		else if (!directive.compare("}"))
 			break ;
 		else
@@ -199,5 +201,7 @@ void	Parser::_parse( std::istringstream *istr )
 			throw ParserHelper::DuplicatedDirectives(directive);
 		if (!directive.compare("server"))
 			this->_servers.push_back(this->_parse_servers(istr));
+		// else
+		// 	throw ParserHelper::UnknownDirective(directive);
 	}
 }

@@ -96,7 +96,7 @@ std::string	ParserHelper::get_root( void )
 	if (this->_tokens.size() != 2)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
 	//
-	return (std::string(this->_tokens[1]));
+	return (this->_tokens[1]);
 }
 
 // std::vector<std::string>	ParserHelper::get_index( void );
@@ -105,23 +105,101 @@ std::string	ParserHelper::get_root( void )
 
 // size_t	ParserHelper::get_timeout( void );
 
-// size_t	ParserHelper::get_client_max_body_size( void );
+size_t	ParserHelper::get_client_max_body_size( void )
+{
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	char last_char = this->_tokens[1][this->_tokens[1].size() - 1];
+	if (last_char == 'm' || last_char == 'M')
+	{
+		std::string substr = this->_tokens[1].substr(0, this->_tokens.size() - 1);
+		if (ft_atoi(substr.c_str()) <= 0 || ft_atoi(substr.c_str()) > 1024000)
+			throw ParserHelper::InvalidValues("client_max_body_size", this->_tokens[1]);
+		return (ft_atoi(substr.c_str()) * 1000000);
+	}
+	else if (last_char == 'k' || last_char == 'K')
+	{
+		std::string substr = this->_tokens[1].substr(0, this->_tokens.size() - 1);
+		if (ft_atoi(substr.c_str()) <= 0 || ft_atoi(substr.c_str()) > 1024000000)
+			throw ParserHelper::InvalidValues("client_max_body_size", this->_tokens[1]);
+		return (ft_atoi(substr.c_str()) * 1000);
+	}
+	else
+	{
+		if (ft_atoi(this->_tokens[1].c_str()) <= 0 || ft_atoi(this->_tokens[1].c_str()) > 1024000000000)
+			throw ParserHelper::InvalidValues("client_max_body_size", this->_tokens[1]);
+		return (ft_atoi(this->_tokens[1].c_str()));
+	}
+}
 
-// std::string	ParserHelper::get_access_log( void );
+std::string	ParserHelper::get_access_log( void )
+{
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	if (!this->_valid_log(this->_tokens[1]))
+		throw ParserHelper::InvalidValues("access_log", this->_tokens[1]);
+	return (this->_tokens[1]);
+}
 
-// std::string	ParserHelper::get_error_log( void );
+std::string	ParserHelper::get_error_log( void )
+{
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	if (!this->_valid_log(this->_tokens[1]))
+		throw ParserHelper::InvalidValues("error_log", this->_tokens[1]);
+	return (this->_tokens[1]);
+}
 
-// bool	ParserHelper::get_autoindex( void );
+bool	ParserHelper::get_autoindex( void )
+{
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	if (!this->_tokens[1].compare("on"))
+		return (true);
+	else if (!this->_tokens[1].compare("off"))
+		return (false);
+	else
+		throw ParserHelper::InvalidValues("autoindex", this->_tokens[1]);
+}
 
 // std::string	ParserHelper::get_cgi( void );
 
-// std::pair<size_t, std::string>	ParserHelper::get_return( void );
+std::pair<size_t, std::string>	ParserHelper::get_return( void )
+{
+	if (this->_tokens.size() != 3)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	if (ft_atoi(this->_tokens[1].c_str()) < 100 || ft_atoi(this->_tokens[1].c_str()) > 507)
+		throw ParserHelper::InvalidValues("return", this->_tokens[1]);
+	return (std::make_pair(ft_atoi(this->_tokens[1].c_str()), this->_tokens[2]));
+}
 
 // bool	ParserHelper::get_upload( void );
 
 // std::string	ParserHelper::get_upload_store( void );
 
-// std::vector<std::string>	ParserHelper::get_limit_except( void );
+std::vector<std::string>	ParserHelper::get_limit_except( void )
+{
+	if (this->_tokens.size() == 1)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	std::vector<std::string> args(this->_tokens.begin() + 1, this->_tokens.end());
+	for (size_t i = 0; i < args.size(); i++)
+		std::transform(args[i].begin(), args[i].end(), args[i].begin(), ft_toupper);
+	std::vector<std::string> cmp;
+	cmp.push_back("GET");
+	cmp.push_back("POST");
+	cmp.push_back("DELETE");
+	for (size_t i = 0; i < args.size(); i++)
+	{
+		for (size_t j = 0; j < cmp.size(); j++)
+		{
+			if (!args[i].compare(cmp[j]))
+				break ;
+			if (j == cmp.size())
+				throw ParserHelper::InvalidValues("get_limit_except", args[i]);
+		}
+	}
+	return (args);
+}
 
 bool	ParserHelper::_valid_host( std::string const &host )
 {
@@ -162,6 +240,18 @@ bool	ParserHelper::_valid_server_name( std::string const &str )
 	for (size_t i = 1; i < str.size() - 1; i++)
 	{
 		if (!ft_isalnum(str[i]) && str[i] != '.' && str[i] != '-')
+			return (false);
+	}
+	return (true);
+}
+
+bool	ParserHelper::_valid_log( std::string const &log )
+{
+	if ((!ft_isalnum(log[0]) && log[0] != '/') || !ft_isalnum(log[log.size() - 1]))
+		return (false);
+	for (size_t i = 1; i < log.size() - 1; i++)
+	{
+		if (!ft_isalnum(log[i]) && log[i] != '/' && log[i] != '.' && log[i] != '-' && log[i] != '_')
 			return (false);
 	}
 	return (true);

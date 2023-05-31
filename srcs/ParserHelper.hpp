@@ -48,6 +48,7 @@ class ParserHelper
 		bool	_valid_host( std::string const &ip );
 		bool	_valid_port( std::string const &port );
 		bool	_valid_server_name( std::string const &str );
+		bool	_valid_log( std::string const &log );
 	
 	public:
 
