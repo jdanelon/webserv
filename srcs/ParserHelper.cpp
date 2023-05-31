@@ -113,20 +113,20 @@ size_t	ParserHelper::get_client_max_body_size( void )
 	if (last_char == 'm' || last_char == 'M')
 	{
 		std::string substr = this->_tokens[1].substr(0, this->_tokens.size() - 1);
-		if (ft_atoi(substr.c_str()) <= 0 || ft_atoi(substr.c_str()) > 1024000)
+		if (ft_atoi(substr.c_str()) <= 0 || ft_atoi(substr.c_str()) > 1024)
 			throw ParserHelper::InvalidValues("client_max_body_size", this->_tokens[1]);
 		return (ft_atoi(substr.c_str()) * 1000000);
 	}
 	else if (last_char == 'k' || last_char == 'K')
 	{
 		std::string substr = this->_tokens[1].substr(0, this->_tokens.size() - 1);
-		if (ft_atoi(substr.c_str()) <= 0 || ft_atoi(substr.c_str()) > 1024000000)
+		if (ft_atoi(substr.c_str()) <= 0 || ft_atoi(substr.c_str()) > 1024000)
 			throw ParserHelper::InvalidValues("client_max_body_size", this->_tokens[1]);
 		return (ft_atoi(substr.c_str()) * 1000);
 	}
 	else
 	{
-		if (ft_atoi(this->_tokens[1].c_str()) <= 0 || ft_atoi(this->_tokens[1].c_str()) > 1024000000000)
+		if (ft_atoi(this->_tokens[1].c_str()) <= 0 || ft_atoi(this->_tokens[1].c_str()) > 1024000000)
 			throw ParserHelper::InvalidValues("client_max_body_size", this->_tokens[1]);
 		return (ft_atoi(this->_tokens[1].c_str()));
 	}
