@@ -101,8 +101,8 @@ Location	Parser::_parse_location( std::istringstream *istr )
 			throw ParserHelper::DuplicatedDirectives(directive);
 		if (!directive.compare("root"))
 			loc.root = helper.get_root();
-		// else if (!directive.compare("index"))
-		// 	loc.index = helper.get_index();
+		 else if (!directive.compare("index"))
+		 	loc.index = helper.get_index();
 		else if (!directive.compare("limit_except"))
 			loc.limit_except = helper.get_limit_except();
 		else if (!directive.compare("client_max_body_size"))
@@ -151,8 +151,8 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			srv.server_name = helper.get_server_name();
 		else if (!directive.compare("root"))
 			srv.root = helper.get_root();
-		// else if (!directive.compare("index"))
-		// 	srv.index = helper.get_index();
+		else if (!directive.compare("index"))
+			srv.index = helper.get_index();
 		// else if (!directive.compare("error_page"))
 		// {}
 		// else if (!directive.compare("timeout"))

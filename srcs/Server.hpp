@@ -16,7 +16,7 @@ class Server
 		size_t							port;
 		std::vector<std::string>		server_name;
 		std::string						root;
-		std::vector<std::string>		index;
+		std::vector<std::string>					index;
 		std::string						error_page;
 		size_t							timeout;
 		size_t							client_max_body_size;

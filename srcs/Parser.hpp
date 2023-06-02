@@ -6,6 +6,7 @@
 # include <fcntl.h>
 # include <fstream>
 # include <sstream>
+# include <cstdio>
 
 # include "Server.hpp"
 # include "Location.hpp"

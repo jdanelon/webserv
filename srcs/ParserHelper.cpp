@@ -99,7 +99,12 @@ std::string	ParserHelper::get_root( void )
 	return (this->_tokens[1]);
 }
 
-// std::vector<std::string>	ParserHelper::get_index( void );
+std::vector<std::string>	ParserHelper::get_index( void ){
+	if (this->_tokens.size() < 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	std::vector<std::string> args(this->_tokens.begin() + 1, this->_tokens.end());
+	return (args);
+}
 
 // std::string	ParserHelper::get_error_page( void );
 
@@ -134,10 +139,10 @@ size_t	ParserHelper::get_client_max_body_size( void )
 
 std::string	ParserHelper::get_access_log( void )
 {
-	if (this->_tokens.size() != 2)
-		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	if (!this->_valid_log(this->_tokens[1]))
-		throw ParserHelper::InvalidValues("access_log", this->_tokens[1]);
+	// if (this->_tokens.size() != 2)
+	// 	throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	// if (!this->_valid_log(this->_tokens[1]))
+	// 	throw ParserHelper::InvalidValues("access_log", this->_tokens[1]);
 	return (this->_tokens[1]);
 }
 
@@ -181,13 +186,18 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 {
 	if (this->_tokens.size() == 1)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+
 	std::vector<std::string> args(this->_tokens.begin() + 1, this->_tokens.end());
+
 	for (size_t i = 0; i < args.size(); i++)
 		std::transform(args[i].begin(), args[i].end(), args[i].begin(), ft_toupper);
+
 	std::vector<std::string> cmp;
+
 	cmp.push_back("GET");
 	cmp.push_back("POST");
 	cmp.push_back("DELETE");
+	
 	for (size_t i = 0; i < args.size(); i++)
 	{
 		for (size_t j = 0; j < cmp.size(); j++)

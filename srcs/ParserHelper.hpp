@@ -6,6 +6,7 @@
 # include <vector>
 # include <set>
 # include <algorithm>
+# include <cstdio>
 
 # include <netinet/in.h>
 # include <arpa/inet.h>
@@ -29,7 +30,6 @@ class ParserHelper
 		std::string						get_root( void );
 		std::vector<std::string>		get_index( void );
 		std::string						get_error_page( void );
-		size_t							get_timeout( void );
 		size_t							get_client_max_body_size( void );
 		std::string						get_access_log( void );
 		std::string						get_error_log( void );
