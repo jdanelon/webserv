@@ -43,10 +43,19 @@ bool	ParserHelper::duplicated_directives( std::vector<std::string> const &tokens
 	return (false);
 }
 
-std::pair<in_addr_t, size_t>	ParserHelper::get_listen( void )
+int	ParserHelper::get_backlog( void )
+{
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	if (ft_atoi(this->_tokens[1].c_str()) < 1 || ft_atoi(this->_tokens[1].c_str()) > 1024)
+		throw ParserHelper::InvalidValues("worker_connections", this->_tokens[1]);
+	return (ft_atoi(this->_tokens[1].c_str()));
+}
+
+std::pair<in_addr_t, int>	ParserHelper::get_listen( void )
 {
 	in_addr_t	host;
-	size_t		port;
+	int			port;
 
 	if (this->_tokens.size() != 2)
 		throw InvalidNumberArgs(this->_tokens[0]);
@@ -106,9 +115,28 @@ std::vector<std::string>	ParserHelper::get_index( void ){
 	return (args);
 }
 
-// std::string	ParserHelper::get_error_page( void );
+std::string	ParserHelper::get_error_page( void )
+{
+	if (this->_tokens.size() != 3)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	if (ft_atoi(this->_tokens[1].c_str()) < 400 || ft_atoi(this->_tokens[1].c_str()) > 499)
+		throw ParserHelper::InvalidValues("error_page", this->_tokens[1]);
+	if (!this->_valid_error_page(this->_tokens[2]))
+		throw ParserHelper::InvalidValues("error_page", this->_tokens[2]);
 
-// size_t	ParserHelper::get_timeout( void );
+	size_t idx = this->_tokens[2].find_last_of("/");
+	std::string cleaned = this->_tokens[2].substr(idx, this->_tokens[2].size() - idx);
+	return (cleaned);
+}
+
+size_t	ParserHelper::get_timeout( void )
+{
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	if (ft_atoi(this->_tokens[1].c_str()) < 1 || ft_atoi(this->_tokens[1].c_str()) > 3600)
+		throw ParserHelper::InvalidValues("timeout", this->_tokens[1]);
+	return (ft_atoi(this->_tokens[1].c_str()) * 1000);
+}
 
 size_t	ParserHelper::get_client_max_body_size( void )
 {
@@ -139,10 +167,10 @@ size_t	ParserHelper::get_client_max_body_size( void )
 
 std::string	ParserHelper::get_access_log( void )
 {
-	// if (this->_tokens.size() != 2)
-	// 	throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	// if (!this->_valid_log(this->_tokens[1]))
-	// 	throw ParserHelper::InvalidValues("access_log", this->_tokens[1]);
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	if (!this->_valid_log(this->_tokens[1]))
+		throw ParserHelper::InvalidValues("access_log", this->_tokens[1]);
 	return (this->_tokens[1]);
 }
 
@@ -167,7 +195,12 @@ bool	ParserHelper::get_autoindex( void )
 		throw ParserHelper::InvalidValues("autoindex", this->_tokens[1]);
 }
 
-// std::string	ParserHelper::get_cgi( void );
+std::string	ParserHelper::get_cgi( void )
+{
+	if (this->_tokens.size() < 3)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	return ("ok");
+}
 
 std::pair<size_t, std::string>	ParserHelper::get_return( void )
 {
@@ -252,6 +285,20 @@ bool	ParserHelper::_valid_server_name( std::string const &str )
 		if (!ft_isalnum(str[i]) && str[i] != '.' && str[i] != '-')
 			return (false);
 	}
+	return (true);
+}
+
+bool	ParserHelper::_valid_error_page( std::string const &str )
+{
+	if ((!ft_isalnum(str[0]) && str[0] != '/') || !ft_isalnum(str[str.size() - 1]))
+		return (false);
+	for (size_t i = 1; i < str.size() - 1; i++)
+	{
+		if (!ft_isalnum(str[i]) && str[i] != '/' && str[i] != '.' && str[i] != '-' && str[i] != '_')
+			return (false);
+	}
+	if (str.find("/") == std::string::npos || str.find(".") == std::string::npos)
+		return (false);
 	return (true);
 }
 

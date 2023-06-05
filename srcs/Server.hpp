@@ -6,6 +6,12 @@
 # include <arpa/inet.h>
 # include <cstring>
 # include <vector>
+# include <map>
+# include <climits>
+
+# include "Location.hpp"
+
+class Location;
 
 class Server
 {
@@ -13,11 +19,11 @@ class Server
 	public:
 
 		in_addr_t						host;
-		size_t							port;
+		int								port;
 		std::vector<std::string>		server_name;
 		std::string						root;
-		std::vector<std::string>					index;
-		std::string						error_page;
+		std::vector<std::string>		index;
+		std::map<int, std::string>		error_page;
 		size_t							timeout;
 		size_t							client_max_body_size;
 		std::string						access_log;
@@ -26,6 +32,7 @@ class Server
 		std::pair<size_t, std::string>	redirect;
 		int								upload;
 		std::string						upload_store;
+		std::map<std::string, Location>	location;
 
 		Server( void );
 		Server( Server const &obj );

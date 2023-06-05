@@ -2,6 +2,7 @@
 
 Parser::Parser( void )
 {
+	this->backlog = 512;
 	return ;
 }
 
@@ -15,6 +16,7 @@ Parser &Parser::operator = ( Parser const &obj )
 {
 	if (this != &obj)
 	{
+		this->backlog = obj.backlog;
 		this->_cleanFile = obj._cleanFile;
 		this->_servers = obj._servers;
 	}
@@ -144,8 +146,9 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			throw ParserHelper::DuplicatedDirectives(directive);
 		if (!directive.compare("listen"))
 		{
-			srv.host = helper.get_listen().first;
-			srv.port = helper.get_listen().second;
+			std::pair<in_addr_t, size_t> pair = helper.get_listen();
+			srv.host = pair.first;
+			srv.port = pair.second;
 		}
 		else if (!directive.compare("server_name"))
 			srv.server_name = helper.get_server_name();
@@ -153,10 +156,13 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			srv.root = helper.get_root();
 		else if (!directive.compare("index"))
 			srv.index = helper.get_index();
-		// else if (!directive.compare("error_page"))
-		// {}
-		// else if (!directive.compare("timeout"))
-		// 	srv.timeout = helper.get_timeout();
+		else if (!directive.compare("error_page"))
+		{
+			int code = ft_atoi(tokens[1].c_str());
+			srv.error_page[code] = helper.get_error_page();
+		}
+		else if (!directive.compare("timeout"))
+			srv.timeout = helper.get_timeout();
 		else if (!directive.compare("client_max_body_size"))
 			srv.client_max_body_size = helper.get_client_max_body_size();
 		else if (!directive.compare("access_log"))
@@ -174,12 +180,15 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 		// else if (!directive.compare("upload_store"))
 		// 	srv.upload_store = helper.get_upload_store();
 		else if (!directive.compare("location"))
-			this->_parse_location(istr);
+			srv.location[tokens[1]] = this->_parse_location(istr);
 		else if (!directive.compare("}"))
 			break ;
 		else
 			throw ParserHelper::UnknownDirective(directive);
 	}
+	srv.fill_with_defaults();
+	// if (srv.missing_directives())
+		// throw ParserHelper::MissingDirectives();
 	return (srv);
 }
 
@@ -199,9 +208,11 @@ void	Parser::_parse( std::istringstream *istr )
 		directive = tokens[0];
 		if (helper.duplicated_directives(tokens))
 			throw ParserHelper::DuplicatedDirectives(directive);
-		if (!directive.compare("server"))
+		if (!directive.compare("worker_connections"))
+			this->backlog = helper.get_backlog();
+		else if (!directive.compare("server"))
 			this->_servers.push_back(this->_parse_servers(istr));
-		// else
-		// 	throw ParserHelper::UnknownDirective(directive);
+		else
+			throw ParserHelper::UnknownDirective(directive);
 	}
 }

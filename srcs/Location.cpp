@@ -4,7 +4,6 @@ Location::Location( void )
 	this->root = "";
 	this->client_max_body_size = -1;
 	this->autoindex = -1;
-	this->upload = -1;
 	this->upload_store = "";
 	return ;
 }
@@ -40,7 +39,7 @@ void	Location::fill_with_defaults( Server const &srv )
 {
 	if (this->root.empty())
 		this->root = srv.root;
-	if (!this->index.size())
+	if (this->index.empty())
 		this->index = srv.index;
 	// if (!this->limit_except.size())
 	// 	this->limit_except = ;
@@ -52,7 +51,7 @@ void	Location::fill_with_defaults( Server const &srv )
 		this->redirect = srv.redirect;
 	// if (this->upload == -1)
 	// 	this->upload = ;
-	// if (this->upload_store.empty())
-	// 	this->upload_store = ;
+	if (this->upload_store.empty())
+		this->upload_store = "";
 	return ;
 }

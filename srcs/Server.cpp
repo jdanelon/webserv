@@ -2,6 +2,15 @@
 
 Server::Server( void )
 {
+	this->host = INT_MAX;
+	this->port = -1;
+	this->root = "";
+	this->timeout = 0;
+	this->client_max_body_size = -1;
+	this->access_log = "";
+	this->error_log = "";
+	this->autoindex = -1;
+	this->upload_store = "";
 	return ;
 }
 
@@ -40,5 +49,29 @@ Server::~Server( void )
 
 void	Server::fill_with_defaults( void )
 {
+	if (this->host == INT_MAX)
+		this->host = inet_addr("127.0.0.1");
+	if (this->port == -1)
+		this->port = htons(80);
+	if (this->root.empty())
+		this->root = "";
+	if (this->index.empty())
+	{
+		this->index.push_back("index.html");
+		this->index.push_back("index.php");
+	}
+	// error_page;
+	if (this->timeout == 0)
+		this->timeout = 30000;
+	if (this->client_max_body_size)
+		this->client_max_body_size = 1000000;
+	if (this->autoindex == -1)
+		this->autoindex = 0;
+	// redirect;
+	std::map<std::string, Location>::iterator it;
+	for (it = location.begin(); it != location.end(); it++)
+		it->second.fill_with_defaults(*this);
+	if (upload_store.empty())
+		this->upload_store = "";
 	return ;
 }

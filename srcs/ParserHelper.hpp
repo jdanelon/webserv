@@ -7,6 +7,8 @@
 # include <set>
 # include <algorithm>
 # include <cstdio>
+# include <cstdio>
+# include <cstdio>
 
 # include <netinet/in.h>
 # include <arpa/inet.h>
@@ -25,11 +27,13 @@ class ParserHelper
 		virtual ~ParserHelper( void );
 
 		bool							duplicated_directives( std::vector<std::string> const &tokens );
-		std::pair<in_addr_t, size_t>	get_listen( void );
+		int								get_backlog( void );
+		std::pair<in_addr_t, int>		get_listen( void );
 		std::vector<std::string>		get_server_name( void );
 		std::string						get_root( void );
 		std::vector<std::string>		get_index( void );
 		std::string						get_error_page( void );
+		size_t							get_timeout( void );
 		size_t							get_client_max_body_size( void );
 		std::string						get_access_log( void );
 		std::string						get_error_log( void );
@@ -48,6 +52,7 @@ class ParserHelper
 		bool	_valid_host( std::string const &ip );
 		bool	_valid_port( std::string const &port );
 		bool	_valid_server_name( std::string const &str );
+		bool	_valid_error_page( std::string const &str );
 		bool	_valid_log( std::string const &log );
 	
 	public:
