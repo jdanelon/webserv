@@ -14,14 +14,15 @@ class Location
 
 	public:
 
-		std::string						root;
-		std::vector<std::string>		index;
-		std::vector<std::string>		limit_except;
-		int								client_max_body_size;
-		int								autoindex;
-		std::pair<size_t, std::string>	redirect;
-		int								upload;
-		std::string						upload_store;
+		std::string							root;
+		std::vector<std::string>			index;
+		std::vector<std::string>			limit_except;
+		int									client_max_body_size;
+		int									autoindex;
+		std::map<std::string, std::string>	cgi;
+		std::pair<size_t, std::string>		redirect;
+		int									upload;
+		std::string							upload_store;
 
 		Location( void );
 		Location( Location const &obj );

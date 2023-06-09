@@ -16,7 +16,7 @@ ParserHelper &ParserHelper::operator = ( ParserHelper const &obj )
 	if (this != &obj)
 	{
 		this->_tokens = obj._tokens;
-		this->_list = obj._list;
+		this->_directive_list = obj._directive_list;
 	}
 	return (*this);
 }
@@ -35,9 +35,9 @@ bool	ParserHelper::duplicated_directives( std::vector<std::string> const &tokens
 		return (false);
 	if (!tokens[0].compare("error_page") || !tokens[0].compare("cgi")
 			|| !tokens[0].compare("return") || !tokens[0].compare("location"))
-		ret = this->_list.insert(tokens[0] + tokens[1]);
+		ret = this->_directive_list.insert(tokens[0] + tokens[1]);
 	else
-		ret = this->_list.insert(tokens[0]);
+		ret = this->_directive_list.insert(tokens[0]);
 	if (ret.second == false)
 		return (true);
 	return (false);
@@ -52,9 +52,9 @@ int	ParserHelper::get_backlog( void )
 	return (ft_atoi(this->_tokens[1].c_str()));
 }
 
-std::pair<in_addr_t, int>	ParserHelper::get_listen( void )
+std::pair<std::string, int>	ParserHelper::get_listen( void )
 {
-	in_addr_t	host;
+	std::string	host;
 	int			port;
 
 	if (this->_tokens.size() != 2)
@@ -62,7 +62,7 @@ std::pair<in_addr_t, int>	ParserHelper::get_listen( void )
 	size_t idx = this->_tokens[1].find(":");
 	if (idx != std::string::npos)
 	{
-		host = inet_addr(this->_tokens[1].substr(0, idx).c_str());
+		host = this->_tokens[1].substr(0, idx);
 		port = htons(ft_atoi(this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx).c_str()));
 		if (!this->_valid_host(this->_tokens[1].substr(0, idx).c_str()))
 			throw InvalidValues("host", this->_tokens[1]);
@@ -72,12 +72,12 @@ std::pair<in_addr_t, int>	ParserHelper::get_listen( void )
 	}
 	if (this->_valid_host(this->_tokens[1]) && !this->_valid_port(this->_tokens[1]))
 	{
-		host = inet_addr(this->_tokens[1].c_str());
+		host = this->_tokens[1];
 		port = htons(80); //default
 	}
 	else if (!this->_valid_host(this->_tokens[1]) && this->_valid_port(this->_tokens[1]))
 	{
-		host = inet_addr("127.0.0.1"); //default
+		host = "127.0.0.1"; //default
 		port = htons(ft_atoi(this->_tokens[1].c_str()));
 	}
 	else
@@ -104,11 +104,16 @@ std::string	ParserHelper::get_root( void )
 {
 	if (this->_tokens.size() != 2)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	//
+	// struct stat buf;
+	// if (stat(this->_tokens[1].c_str(), &buf) == -1)
+	// 	throw ParserHelper::SystemError("root", this->_tokens[1]);
+	// if (!S_ISDIR(buf.st_mode))
+	// 	throw ParserHelper::SystemError("root", this->_tokens[1]);
 	return (this->_tokens[1]);
 }
 
-std::vector<std::string>	ParserHelper::get_index( void ){
+std::vector<std::string>	ParserHelper::get_index( void )
+{
 	if (this->_tokens.size() < 2)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
 	std::vector<std::string> args(this->_tokens.begin() + 1, this->_tokens.end());
@@ -197,9 +202,13 @@ bool	ParserHelper::get_autoindex( void )
 
 std::string	ParserHelper::get_cgi( void )
 {
-	if (this->_tokens.size() < 3)
+	if (this->_tokens.size() != 3)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	return ("ok");
+	if (!this->_valid_cgi_extension(this->_tokens[1]))
+		throw ParserHelper::InvalidValues("cgi", this->_tokens[1]);
+	if (!this->_valid_cgi_binary(this->_tokens[2]))
+		throw ParserHelper::SystemError("cgi", this->_tokens[2]);
+	return (this->_tokens[2]);
 }
 
 std::pair<size_t, std::string>	ParserHelper::get_return( void )
@@ -314,6 +323,25 @@ bool	ParserHelper::_valid_log( std::string const &log )
 	return (true);
 }
 
+bool	ParserHelper::_valid_cgi_extension( std::string const &ext )
+{
+	if (ext[0] != '.')
+		return (false);
+	for (size_t i = 1; i < ext.size(); i++)
+	{
+		if (!ft_isalnum(ext[i]) || (ext[i] >= '0' && ext[i] <= '9'))
+			return (false);
+	}
+	return (true);
+}
+
+bool	ParserHelper::_valid_cgi_binary( std::string const &bin )
+{
+	// struct stat buf;
+	(void)bin;
+	return (true);
+}
+
 ParserHelper::InvalidLine::InvalidLine( std::string const &str ) : ParserException(str)
 {
 	this->_msg = "Error: Invalid line in '" + str + "'!";
@@ -355,12 +383,33 @@ char const	*ParserHelper::InvalidValues::what( void ) const throw()
 	return (this->_msg.c_str());
 }
 
+ParserHelper::SystemError::SystemError( std::string const &field,
+											std::string const &value ) : ParserException("")
+{
+	this->_msg = "Error: Invalid value '" + value + "' for field '" + field + "' (" + strerror(errno) + ")!";
+}
+
+char const	*ParserHelper::SystemError::what( void ) const throw()
+{
+	return (this->_msg.c_str());
+}
+
 ParserHelper::UnknownDirective::UnknownDirective( std::string const &str ) : ParserException(str)
 {
 	this->_msg = "Error: Directive '" + str + "' is unknown!";
 }
 
 char const	*ParserHelper::UnknownDirective::what( void ) const throw()
+{
+	return (this->_msg.c_str());
+}
+
+ParserHelper::MissingDirectives::MissingDirectives( std::string const &str ) : ParserException(str)
+{
+	this->_msg = "Error: Directive '" + str + "' was not specified!";
+}
+
+char const	*ParserHelper::MissingDirectives::what( void ) const throw()
 {
 	return (this->_msg.c_str());
 }

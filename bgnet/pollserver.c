@@ -39,17 +39,19 @@ int get_listener_socket(void)
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-    if ((rv = getaddrinfo(NULL, PORT, &hints, &ai)) != 0) {
+    if ((rv = getaddrinfo(NULL, PORT, &hints, &ai)) != 0)
+    {
         fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
         exit(1);
     }
-    
-    for(p = ai; p != NULL; p = p->ai_next) {
+
+    for (p = ai; p != NULL; p = p->ai_next)
+    {
         listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (listener < 0) { 
             continue;
         }
-        
+
         // Lose the pesky "address already in use" error message
         setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
@@ -135,7 +137,8 @@ int main(void)
     fd_count = 1; // For the listener
 
     // Main loop
-    for(;;) {
+    for (;;)
+    {
         int poll_count = poll(pfds, fd_count, -1);
 
         if (poll_count == -1) {
@@ -144,22 +147,25 @@ int main(void)
         }
 
         // Run through the existing connections looking for data to read
-        for(int i = 0; i < fd_count; i++) {
+        for (int i = 0; i < fd_count; i++)
+        {
 
             // Check if someone's ready to read
-            if (pfds[i].revents & POLLIN) { // We got one!!
+            if (pfds[i].revents & POLLIN)
+            { // We got one!!
 
-                if (pfds[i].fd == listener) {
+                if (pfds[i].fd == listener)
+                {
                     // If listener is ready to read, handle new connection
 
                     addrlen = sizeof remoteaddr;
-                    newfd = accept(listener,
-                        (struct sockaddr *)&remoteaddr,
-                        &addrlen);
+                    newfd = accept(listener, (struct sockaddr *)&remoteaddr, &addrlen);
 
                     if (newfd == -1) {
                         perror("accept");
-                    } else {
+                    }
+                    else
+                    {
                         add_to_pfds(&pfds, newfd, &fd_count, &fd_size);
 
                         printf("pollserver: new connection from %s on "
@@ -169,13 +175,16 @@ int main(void)
                                 remoteIP, INET6_ADDRSTRLEN),
                             newfd);
                     }
-                } else {
+                }
+                else
+                {
                     // If not the listener, we're just a regular client
                     int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
 
                     int sender_fd = pfds[i].fd;
 
-                    if (nbytes <= 0) {
+                    if (nbytes <= 0)
+                    {
                         // Got error or connection closed by client
                         if (nbytes == 0) {
                             // Connection closed
@@ -188,15 +197,19 @@ int main(void)
 
                         del_from_pfds(pfds, i, &fd_count);
 
-                    } else {
+                    }
+                    else
+                    {
                         // We got some good data from a client
 
-                        for(int j = 0; j < fd_count; j++) {
+                        for (int j = 0; j < fd_count; j++)
+                        {
                             // Send to everyone!
                             int dest_fd = pfds[j].fd;
 
                             // Except the listener and ourselves
-                            if (dest_fd != listener && dest_fd != sender_fd) {
+                            if (dest_fd != listener && dest_fd != sender_fd)
+                            {
                                 if (send(dest_fd, buf, nbytes, 0) == -1) {
                                     perror("send");
                                 }
@@ -207,7 +220,6 @@ int main(void)
             } // END got ready-to-read from poll()
         } // END looping through file descriptors
     } // END for(;;)--and you thought it would never end!
-    
     return 0;
 }
 

@@ -2,7 +2,7 @@
 
 Server::Server( void )
 {
-	this->host = INT_MAX;
+	this->host = "";
 	this->port = -1;
 	this->root = "";
 	this->timeout = 0;
@@ -49,8 +49,8 @@ Server::~Server( void )
 
 void	Server::fill_with_defaults( void )
 {
-	if (this->host == INT_MAX)
-		this->host = inet_addr("127.0.0.1");
+	if (this->host.empty())
+		this->host = "127.0.0.1";
 	if (this->port == -1)
 		this->port = htons(80);
 	if (this->root.empty())
@@ -74,4 +74,19 @@ void	Server::fill_with_defaults( void )
 	if (upload_store.empty())
 		this->upload_store = "";
 	return ;
+}
+
+bool	Server::missing_directives( void )
+{
+	if (this->server_name.empty())
+	{
+		this->err = "server_name";
+		return (true);
+	}
+	if (this->location.empty())
+	{
+		this->err = "location";
+		return (true);
+	}
+	return (false);
 }

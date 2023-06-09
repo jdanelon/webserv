@@ -7,11 +7,11 @@
 # include <set>
 # include <algorithm>
 # include <cstdio>
-# include <cstdio>
-# include <cstdio>
+# include <cerrno>
 
 # include <netinet/in.h>
 # include <arpa/inet.h>
+# include <sys/stat.h>
 
 # include "utils.hpp"
 # include "ParserException.hpp"
@@ -28,7 +28,7 @@ class ParserHelper
 
 		bool							duplicated_directives( std::vector<std::string> const &tokens );
 		int								get_backlog( void );
-		std::pair<in_addr_t, int>		get_listen( void );
+		std::pair<std::string, int>		get_listen( void );
 		std::vector<std::string>		get_server_name( void );
 		std::string						get_root( void );
 		std::vector<std::string>		get_index( void );
@@ -47,13 +47,15 @@ class ParserHelper
 	private:
 
 		std::vector<std::string>	_tokens;
-		std::set<std::string>		_list;
+		std::set<std::string>		_directive_list;
 
 		bool	_valid_host( std::string const &ip );
 		bool	_valid_port( std::string const &port );
 		bool	_valid_server_name( std::string const &str );
 		bool	_valid_error_page( std::string const &str );
 		bool	_valid_log( std::string const &log );
+		bool	_valid_cgi_extension( std::string const &ext );
+		bool	_valid_cgi_binary( std::string const &bin );
 	
 	public:
 
@@ -85,15 +87,31 @@ class ParserHelper
 		{
 			public:
 
-				explicit InvalidValues( std::string const &directive, std::string const &value );
+				explicit InvalidValues( std::string const &field, std::string const &value );
 				char const	*what( void ) const throw();
 		};
 
-		class UnknownDirective: public ParserException
+		class SystemError : public ParserException
+		{
+			public:
+
+				explicit SystemError( std::string const &field, std::string const &value );
+				char const *what( void ) const throw();
+		};
+
+		class UnknownDirective : public ParserException
 		{
 			public:
 
 				explicit UnknownDirective( std::string const &str );
+				char const *what( void ) const throw();
+		};
+
+		class MissingDirectives : public ParserException
+		{
+			public:
+
+				explicit MissingDirectives( std::string const &str );
 				char const *what( void ) const throw();
 		};
 

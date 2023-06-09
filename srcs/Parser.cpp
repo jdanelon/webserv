@@ -111,8 +111,8 @@ Location	Parser::_parse_location( std::istringstream *istr )
 			loc.client_max_body_size = helper.get_client_max_body_size();
 		else if (!directive.compare("autoindex"))
 			loc.autoindex = helper.get_autoindex();
-		// else if (!directive.compare("cgi"))
-		// {}
+		else if (!directive.compare("cgi"))
+			loc.cgi[tokens[1]] = helper.get_cgi();
 		else if (!directive.compare("return"))
 			loc.redirect = helper.get_return();
 		// else if (!directive.compare("upload"))
@@ -146,7 +146,7 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			throw ParserHelper::DuplicatedDirectives(directive);
 		if (!directive.compare("listen"))
 		{
-			std::pair<in_addr_t, size_t> pair = helper.get_listen();
+			std::pair<std::string, int> pair = helper.get_listen();
 			srv.host = pair.first;
 			srv.port = pair.second;
 		}
@@ -171,8 +171,8 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			srv.error_log = helper.get_error_log();
 		else if (!directive.compare("autoindex"))
 			srv.autoindex = helper.get_autoindex();
-		// else if (!directive.compare("cgi"))
-		// {}
+		else if (!directive.compare("cgi"))
+			srv.cgi[tokens[1]] = helper.get_cgi();
 		else if (!directive.compare("return"))
 			srv.redirect = helper.get_return();
 		// else if (!directive.compare("upload"))
@@ -187,8 +187,8 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			throw ParserHelper::UnknownDirective(directive);
 	}
 	srv.fill_with_defaults();
-	// if (srv.missing_directives())
-		// throw ParserHelper::MissingDirectives();
+	if (srv.missing_directives())
+		throw ParserHelper::MissingDirectives(srv.err);
 	return (srv);
 }
 
