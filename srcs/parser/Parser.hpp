@@ -11,7 +11,7 @@
 # include "Server.hpp"
 # include "Location.hpp"
 # include "ParserHelper.hpp"
-# include "utils.hpp"
+# include "../utils.hpp"
 
 class Server;
 
@@ -28,8 +28,8 @@ class Parser
 		virtual ~Parser( void );
 
 		void	load( char *file );
-
-	// Methods
+		int		size( void );
+		Server	&operator [] ( int i );
 
 	private:
 

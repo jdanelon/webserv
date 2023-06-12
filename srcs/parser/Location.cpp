@@ -1,4 +1,5 @@
 #include "Location.hpp"
+
 Location::Location( void )
 {
 	this->root = "";

@@ -3,7 +3,7 @@
 Server::Server( void )
 {
 	this->host = "";
-	this->port = -1;
+	this->port = "";
 	this->root = "";
 	this->timeout = 0;
 	this->client_max_body_size = -1;
@@ -35,9 +35,11 @@ Server &Server::operator = ( Server const &obj )
 		this->access_log = obj.access_log;
 		this->error_log = obj.error_log;
 		this->autoindex = obj.autoindex;
+		this->cgi = obj.cgi;
 		this->redirect = obj.redirect;
 		this->upload = obj.upload;
 		this->upload_store = obj.upload_store;
+		this->location = obj.location;
 	}
 	return (*this);
 }
@@ -51,8 +53,8 @@ void	Server::fill_with_defaults( void )
 {
 	if (this->host.empty())
 		this->host = "127.0.0.1";
-	if (this->port == -1)
-		this->port = htons(80);
+	if (this->port.empty())
+		this->port = "80";
 	if (this->root.empty())
 		this->root = "";
 	if (this->index.empty())
@@ -89,4 +91,31 @@ bool	Server::missing_directives( void )
 		return (true);
 	}
 	return (false);
+}
+
+void	Server::connect_socket( int backlog )
+{
+	int				status, yes = 1;
+	struct addrinfo	hints, *res;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	status = getaddrinfo(this->host.c_str(), this->port.c_str(), &hints, &res);
+	if (status != 0)
+		// throw
+		std::cout << "Error" << std::endl;
+	this->sockfd = socket(res->ai_family, res->ai_socktype, 0);
+	// if (fd == -1)
+		// throw
+	status = setsockopt(this->sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+	// if (status == -1)
+		// throw
+	status = bind(this->sockfd, res->ai_addr, res->ai_addrlen);
+	// if (status == -1)
+		// throw
+	freeaddrinfo(res);
+	status = listen(this->sockfd, backlog);
+	// if (status == -1)
+		// throw
 }

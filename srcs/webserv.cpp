@@ -1,54 +1,53 @@
-#include "../includes/webserv.hpp"
-#include "Parser.hpp"
+#include "WebServ.hpp"
 
-static int	validateFile( char *file )
+WebServ::WebServ( void )
 {
-	std::string			tmp(file);
-	std::ifstream		in(file);
-	std::stringstream	strFile;
-	size_t				left = 0;
-	size_t				right = 0;
-
-	if (tmp.empty())
-		return (1);
-	if (in.fail())
-		return (1);
-	strFile << in.rdbuf();
-	in.close();
-	for (size_t i = 0; i < strFile.str().length(); i++)
-	{
-		if (strFile.str()[i] == '{')
-			left++;
-		if (strFile.str()[i] == '}')
-			right++;
-	}
-	if (left != right)
-		return (1);
-	return (0);
+	return ;
 }
 
-int	main( int argc, char **argv )
+WebServ::WebServ( WebServ const &obj )
 {
-	Parser	parser;
+	WebServ::operator = (obj);
+	return ;
+}
 
-	if (argc != 2)
+WebServ &WebServ::operator = ( WebServ const &obj )
+{
+	if (this != &obj)
 	{
-		std::cerr << "Usage: ./webserv [configuration file]" << std::endl;
-		return (1);
+		this->parser = obj.parser;
 	}
-	if (validateFile(argv[1]))
+	return (*this);
+}
+
+WebServ::~WebServ( void )
+{
+	std::map<int, Server *>::iterator it;
+	for (it = this->server_blocks.begin(); it != this->server_blocks.end(); it++)
+		delete it->second;
+	return ;
+}
+
+void	WebServ::init( char *file )
+{
+	this->parser.load(file);
+	this->_init_servers();
+}
+
+void	WebServ::_init_servers( void )
+{
+	for (int i = 0; i < this->parser.size(); i++)
 	{
-		std::cerr << "Error: file '" << argv[1] << "' is invalid!" << std::endl;
-		return (1);
+		Server *srv = new Server(this->parser[i]);
+		try
+		{
+			srv->connect_socket(this->parser.backlog);
+		}
+		catch(const std::exception& e)
+		{
+			delete srv;
+			throw e;
+		}
+		this->server_blocks[srv->sockfd] = srv;
 	}
-	try
-	{
-		parser.load(argv[1]);
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << std::endl;
-	}
-	// logica
-	return (0);
 }

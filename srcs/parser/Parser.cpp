@@ -35,6 +35,16 @@ void	Parser::load( char *file )
 	this->_parse(&istr);
 }
 
+int	Parser::size( void )
+{
+	return (this->_servers.size());
+}
+
+Server	&Parser::operator[] ( int i )
+{
+	return (this->_servers[i]);
+}
+
 void	Parser::_readFile( char *file )
 {
 	std::ifstream		in;
@@ -146,7 +156,7 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			throw ParserHelper::DuplicatedDirectives(directive);
 		if (!directive.compare("listen"))
 		{
-			std::pair<std::string, int> pair = helper.get_listen();
+			std::pair<std::string, std::string> pair = helper.get_listen();
 			srv.host = pair.first;
 			srv.port = pair.second;
 		}

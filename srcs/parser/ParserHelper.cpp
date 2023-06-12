@@ -52,10 +52,9 @@ int	ParserHelper::get_backlog( void )
 	return (ft_atoi(this->_tokens[1].c_str()));
 }
 
-std::pair<std::string, int>	ParserHelper::get_listen( void )
+std::pair<std::string, std::string>	ParserHelper::get_listen( void )
 {
-	std::string	host;
-	int			port;
+	std::string	host, port;
 
 	if (this->_tokens.size() != 2)
 		throw InvalidNumberArgs(this->_tokens[0]);
@@ -63,22 +62,22 @@ std::pair<std::string, int>	ParserHelper::get_listen( void )
 	if (idx != std::string::npos)
 	{
 		host = this->_tokens[1].substr(0, idx);
-		port = htons(ft_atoi(this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx).c_str()));
-		if (!this->_valid_host(this->_tokens[1].substr(0, idx).c_str()))
+		port = this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx);
+		if (!this->_valid_host(this->_tokens[1].substr(0, idx)))
 			throw InvalidValues("host", this->_tokens[1]);
-		if (!this->_valid_port(this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx).c_str()))
+		if (!this->_valid_port(this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx)))
 			throw InvalidValues("port", this->_tokens[1]);
 		return (std::make_pair(host, port));
 	}
 	if (this->_valid_host(this->_tokens[1]) && !this->_valid_port(this->_tokens[1]))
 	{
 		host = this->_tokens[1];
-		port = htons(80); //default
+		port = "80"; //default
 	}
 	else if (!this->_valid_host(this->_tokens[1]) && this->_valid_port(this->_tokens[1]))
 	{
 		host = "127.0.0.1"; //default
-		port = htons(ft_atoi(this->_tokens[1].c_str()));
+		port = this->_tokens[1];
 	}
 	else
 		throw InvalidValues("host:port", this->_tokens[1]);

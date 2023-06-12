@@ -9,7 +9,12 @@
 # include <map>
 # include <climits>
 
+# include <sys/types.h>
+# include <sys/socket.h>
+# include <netdb.h>
+
 # include "Location.hpp"
+# include "../utils.hpp"
 
 class Location;
 
@@ -19,7 +24,7 @@ class Server
 	public:
 
 		std::string							host;
-		int									port;
+		std::string							port;
 		std::vector<std::string>			server_name;
 		std::string							root;
 		std::vector<std::string>			index;
@@ -36,6 +41,8 @@ class Server
 		std::map<std::string, Location>		location;
 		std::string							err;
 
+		int									sockfd;
+
 		Server( void );
 		Server( Server const &obj );
 		Server &operator = ( Server const &obj );
@@ -43,6 +50,7 @@ class Server
 
 		void	fill_with_defaults( void );
 		bool	missing_directives( void );
+		void	connect_socket( int backlog );
 
 	private:
 	// Attributes

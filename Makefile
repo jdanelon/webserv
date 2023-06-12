@@ -4,13 +4,14 @@ SRCS_PATH = ./srcs
 
 OBJS_PATH = ./objs
 
-SRCS = webserv.cpp \
+SRCS = main.cpp \
 		utils.cpp \
-		Parser.cpp \
-		ParserHelper.cpp \
-		ParserException.cpp \
-		Server.cpp \
-		Location.cpp
+		WebServ.cpp \
+		parser/Parser.cpp \
+		parser/ParserHelper.cpp \
+		parser/ParserException.cpp \
+		parser/Server.cpp \
+		parser/Location.cpp
 
 OBJS = $(addprefix $(OBJS_PATH)/, $(SRCS:.cpp=.o))
 
@@ -28,6 +29,9 @@ $(OBJS_PATH)/%.o: $(SRCS_PATH)/%.cpp
 
 clean:
 	@$(RM) $(OBJS_PATH)/*.o
+	@$(RM) $(OBJS_PATH)/parser/*.o
+	@$(RM) $(OBJS_PATH)/request/*.o
+	@$(RM) $(OBJS_PATH)/response/*.o
 
 fclean: clean
 	@$(RM) $(NAME)
