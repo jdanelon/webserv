@@ -103,19 +103,32 @@ void	Server::connect_socket( int backlog )
 	hints.ai_socktype = SOCK_STREAM;
 	status = getaddrinfo(this->host.c_str(), this->port.c_str(), &hints, &res);
 	if (status != 0)
-		// throw
-		std::cout << "Error" << std::endl;
+		throw Server::SocketError("getaddrinfo");
 	this->sockfd = socket(res->ai_family, res->ai_socktype, 0);
-	// if (fd == -1)
-		// throw
+	if (this->sockfd == -1)
+		throw Server::SocketError("socket");
+	status = fcntl(this->sockfd, F_SETFL, O_NONBLOCK);
+	if (status == -1)
+		throw Server::SocketError("fcntl");
 	status = setsockopt(this->sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-	// if (status == -1)
-		// throw
+	if (status == -1)
+		throw Server::SocketError("setsockopt");
 	status = bind(this->sockfd, res->ai_addr, res->ai_addrlen);
-	// if (status == -1)
-		// throw
+	if (status == -1)
+		throw Server::SocketError("bind");
 	freeaddrinfo(res);
 	status = listen(this->sockfd, backlog);
-	// if (status == -1)
-		// throw
+	if (status == -1)
+		throw Server::SocketError("listen");
+	return ;
+}
+
+Server::SocketError::SocketError( std::string const &str ) : ParserException(str)
+{
+	this->_msg = "Error: At system call '" + str + "'!";
+}
+
+char const	*Server::SocketError::what( void ) const throw()
+{
+	return (this->_msg.c_str());
 }

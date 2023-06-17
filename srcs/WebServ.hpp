@@ -3,6 +3,8 @@
 
 # include <iostream>
 
+# include <poll.h>
+
 # include "parser/Parser.hpp"
 # include "parser/Server.hpp"
 
@@ -11,8 +13,10 @@ class WebServ
 
 	public:
 
-		Parser					parser;
-		std::map<int, Server *>	server_blocks;
+		Parser						parser;
+		std::map<int, Server *>		servers;
+		std::vector<int>			clients;
+		std::vector<struct pollfd>	pollfds;
 
 		WebServ( void );
 		WebServ( WebServ const &obj );

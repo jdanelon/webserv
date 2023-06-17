@@ -45,6 +45,46 @@ int	main( int argc, char **argv )
 	{
 		webserv.init(argv[1]);
 		// logica
+		while (1)
+		{
+			// int	num_revents = poll(---, webserv.pollfds.size(), -1);
+			// if (num_revents <= 0)
+			// 	break ;
+			// for (int i = 0; i < webserv.pollfds.size() && num_revents; i++)
+			// {
+			// 	short revents = webserv.pollfds[i].revents;
+			// 	if (revents == 0)
+			// 		continue ;
+			// 	bool is_server = webserv.servers.count(webserv.pollfds[i].fd);
+			// 	if (!is_server && timeout)
+			// 	{
+			// 		end_client;
+			// 		continue ;
+			// 	}
+			// 	num_revents--;
+			// 	if (is_server)
+			// 	{
+			// 		int client_fd = accept(webserv.pollfds[i].fd, ---, ---);
+			// 		if (client_fd == -1)
+			// 			break ;
+			// 		struct pollfd client;
+			// 		client.fd = client_fd;
+			// 		client.events = POLLIN;
+			// 		webserv.clients.push_back(client_fd);
+			// 		webserv.pollfds.push_back(client);
+			// 	}
+			// 	else
+			// 	{
+			// 		if (revents & POLLIN)
+			// 			---;
+			// 		else if (revents & POLLOUT)
+			// 			---;
+			// 		else
+			// 			---;
+			// 	}
+			// }
+			break ;
+		}
 	}
 	catch(const std::exception& e)
 	{

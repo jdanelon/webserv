@@ -2,18 +2,21 @@
 # define SERVER_HPP
 
 # include <iostream>
-# include <netinet/in.h>
-# include <arpa/inet.h>
 # include <cstring>
 # include <vector>
 # include <map>
 # include <climits>
+# include <unistd.h>
+# include <fcntl.h>
 
+# include <netinet/in.h>
+# include <arpa/inet.h>
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <netdb.h>
 
 # include "Location.hpp"
+# include "ParserException.hpp"
 # include "../utils.hpp"
 
 class Location;
@@ -56,6 +59,16 @@ class Server
 	// Attributes
 
 	// Methods
+
+	public:
+
+		class SocketError : public ParserException
+		{
+			public:
+
+				explicit SocketError( std::string const &str );
+				char const *what( void ) const throw();
+		};
 
 };
 

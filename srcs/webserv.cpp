@@ -23,7 +23,7 @@ WebServ &WebServ::operator = ( WebServ const &obj )
 WebServ::~WebServ( void )
 {
 	std::map<int, Server *>::iterator it;
-	for (it = this->server_blocks.begin(); it != this->server_blocks.end(); it++)
+	for (it = this->servers.begin(); it != this->servers.end(); it++)
 		delete it->second;
 	return ;
 }
@@ -48,6 +48,10 @@ void	WebServ::_init_servers( void )
 			delete srv;
 			throw e;
 		}
-		this->server_blocks[srv->sockfd] = srv;
+		this->servers[srv->sockfd] = srv;
+		struct pollfd server;
+		server.fd = srv->sockfd;
+		server.events = POLLIN;
+		this->pollfds.push_back(server);
 	}
 }
