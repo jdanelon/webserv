@@ -76,9 +76,25 @@ int	main( int argc, char **argv )
 			// 	else
 			// 	{
 			// 		if (revents & POLLIN)
-			// 			---;
+			//		{
+			//			--ready to read client socket
+			// 			*parse client request
+			//				The normal procedure for parsing an HTTP message is to read the
+   			//				start-line into a structure, read each header field into a hash table
+   			//				by field name until the empty line, and then use the parsed data to
+   			//				determine if a message body is expected.  If a message body has been
+   			//				indicated, then it is read as a stream until an amount of octets
+   			//				equal to the message body length is read or the connection is closed.
+			//			*read msg until end
+			//			*create and set response
+			//			*set event to POLLOUT
+			//		}
 			// 		else if (revents & POLLOUT)
-			// 			---;
+			//		{
+			// 			--ready to write at client socket
+			//			*send response message
+			//			*set event to POLLIN
+			//		}	
 			// 		else
 			// 			---;
 			// 	}
