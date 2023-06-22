@@ -36,7 +36,7 @@ int get_listener_socket(void)
 
     // Get us a socket and bind it
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = AF_UNSPEC; // Use IPv4 or IPv6, whichever
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
     if ((rv = getaddrinfo(NULL, PORT, &hints, &ai)) != 0)
@@ -45,7 +45,7 @@ int get_listener_socket(void)
         exit(1);
     }
 
-    for (p = ai; p != NULL; p = p->ai_next)
+    for (p = ai; p != NULL; p = p->ai_next) 
     {
         listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
         if (listener < 0) { 
@@ -139,7 +139,7 @@ int main(void)
     // Main loop
     for (;;)
     {
-        int poll_count = poll(pfds, fd_count, -1);
+        int poll_count = poll(pfds, fd_count, -1); // Block until something happens on one of the sockets
 
         if (poll_count == -1) {
             perror("poll");
@@ -183,6 +183,8 @@ int main(void)
 
                     int sender_fd = pfds[i].fd;
 
+                    printf("pollserver: got \"%s\" from %d\n", buf, sender_fd);
+
                     if (nbytes <= 0)
                     {
                         // Got error or connection closed by client
@@ -202,6 +204,10 @@ int main(void)
                     {
                         // We got some good data from a client
 
+                        // Parse do request
+                        // Prepare response
+                        pfds[i].events = POLLOUT;
+
                         for (int j = 0; j < fd_count; j++)
                         {
                             // Send to everyone!
@@ -216,8 +222,31 @@ int main(void)
                             }
                         }
                     }
-                } // END handle data from client
-            } // END got ready-to-read from poll()
+                } 
+                
+                
+                // END handle data from client
+            }
+            if (pfds[i].revents & POLLOUT) {
+                // send response
+                 if (pfds[i].fd != listener) {
+                    printf("send response\n");
+
+                    char *buf ="HTTP/1.1 200 OK\r\n"
+                        "Content-Type: text/html\r\n"
+                        "\r\n"
+                        "<html><body><h1>Hello, World!</h1></body></html>";
+                    int nbytes = strlen(buf);
+
+                    send(pfds[i].fd, buf, nbytes, 0);
+
+                    close(pfds[i].fd); // Bye!
+
+                    del_from_pfds(pfds, i, &fd_count);
+
+                    // pfds[i].events = POLLIN;
+                }
+            }// END got ready-to-read from poll()
         } // END looping through file descriptors
     } // END for(;;)--and you thought it would never end!
     return 0;
