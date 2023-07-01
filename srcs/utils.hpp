@@ -2,14 +2,17 @@
 # define UTILS_HPP
 
 # include <stdlib.h>
+# include <sys/time.h>
 
 # include "../includes/main.hpp"
 
-int		ft_isspace( char c );
-int		ft_atoi( char const *str );
-bool	ft_isalnum( char c );
-char	ft_tolower( char c );
-char	ft_toupper( char c );
-bool    ft_empty( char const *str );
+int			ft_isspace( char c );
+int			ft_atoi( char const *str );
+bool		ft_isalnum( char c );
+char		ft_tolower( char c );
+char		ft_toupper( char c );
+bool		ft_empty( char const *str );
+long long	timestamp( void );
+// void		signal_handler( void );
 
 #endif

@@ -34,6 +34,9 @@ int create_socket()
 	addr.sin_addr.s_addr = htonl(INADDR_ANY); // This sets the IP address in addr. htonl stands for "host to network long" and converts a 32-bit number from host byte order to network byte order. 
 											// INADDR_ANY specifies that the socket will listen on all network interfaces on the host machine.
 
+    int yes = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
     int bindResult = bind(server_socket, (struct sockaddr *)&addr, sizeof(addr)); // This binds the socket to the address and port number specified in addr.
 	std::cout << "server_socket ==> " << server_socket << std::endl;
 	std::cout << "bindResult ==> " << bindResult << std::endl;
@@ -96,12 +99,12 @@ int main()
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: text/html\r\n"
             "\r\n"
-            "<html><body><h1>Hello, World!</h1></body></html>";
+            "<html><body><h1>Hello, World!</h1></body></html>\r\n";
 
         // Send the HTTP response back to the client
         write(client_socket, http_response.c_str(), http_response.length());
 
-		break;
+		// break;
     }
 
     close(client_socket);

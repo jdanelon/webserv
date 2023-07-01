@@ -234,17 +234,18 @@ int main(void)
 
                     char *buf ="HTTP/1.1 200 OK\r\n"
                         "Content-Type: text/html\r\n"
+                        "Content-Length: 48\r\n"
                         "\r\n"
                         "<html><body><h1>Hello, World!</h1></body></html>";
                     int nbytes = strlen(buf);
 
                     send(pfds[i].fd, buf, nbytes, 0);
 
-                    close(pfds[i].fd); // Bye!
+                    // close(pfds[i].fd); // Bye!
 
-                    del_from_pfds(pfds, i, &fd_count);
+                    // del_from_pfds(pfds, i, &fd_count);
 
-                    // pfds[i].events = POLLIN;
+                    pfds[i].events = POLLIN;
                 }
             }// END got ready-to-read from poll()
         } // END looping through file descriptors

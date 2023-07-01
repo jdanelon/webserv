@@ -44,61 +44,52 @@ int	main( int argc, char **argv )
 	try
 	{
 		webserv.init(argv[1]);
-		// logica
 		while (1)
 		{
-			// int	num_revents = poll(---, webserv.pollfds.size(), -1);
-			// if (num_revents <= 0)
-			// 	break ;
-			// for (int i = 0; i < webserv.pollfds.size() && num_revents; i++)
-			// {
-			// 	short revents = webserv.pollfds[i].revents;
-			// 	if (revents == 0)
-			// 		continue ;
-			// 	bool is_server = webserv.servers.count(webserv.pollfds[i].fd);
-			// 	if (!is_server && timeout)
-			// 	{
-			// 		end_client;
-			// 		continue ;
-			// 	}
-			// 	num_revents--;
-			// 	if (is_server)
-			// 	{
-			// 		int client_fd = accept(webserv.pollfds[i].fd, ---, ---);
-			// 		if (client_fd == -1)
-			// 			break ;
-			// 		struct pollfd client;
-			// 		client.fd = client_fd;
-			// 		client.events = POLLIN;
-			// 		webserv.clients.push_back(client_fd);
-			// 		webserv.pollfds.push_back(client);
-			// 	}
-			// 	else
-			// 	{
-			// 		if (revents & POLLIN)
-			//		{
-			//			--ready to read client socket
-			// 			*parse client request
-			//				The normal procedure for parsing an HTTP message is to read the
-   			//				start-line into a structure, read each header field into a hash table
-   			//				by field name until the empty line, and then use the parsed data to
-   			//				determine if a message body is expected.  If a message body has been
-   			//				indicated, then it is read as a stream until an amount of octets
-   			//				equal to the message body length is read or the connection is closed.
-			//			*read msg until end
-			//			*create and set response
-			//			*set event to POLLOUT
-			//		}
-			// 		else if (revents & POLLOUT)
-			//		{
-			// 			--ready to write at client socket
-			//			*send response message
-			//			*set event to POLLIN
-			//		}	
-			// 		else
-			// 			---;
-			// 	}
-			// }
+			int	num_revents = poll(&webserv.pollfds[0], webserv.pollfds.size(), -1);
+			if (num_revents <= 0)
+				break ;
+			for (unsigned int i = 0; i < webserv.pollfds.size(); i++)
+			{
+				short revents = webserv.pollfds[i].revents;
+				if (revents == 0)
+					continue ;
+				bool is_server = webserv.servers.count(webserv.pollfds[i].fd);
+				if (!is_server && webserv.client_timeout(i))
+				{
+					webserv.end_client_connection(i);
+					continue ;
+				}
+				if (is_server)
+					webserv.accept_queued_connections(i);
+				else
+				{
+					if (revents & (POLLERR | POLLHUP | POLLNVAL))
+						webserv.end_client_connection(i);
+					// else if (revents & POLLIN)
+					// {
+					// 	--ready to read client socket
+					// 	*parse client request
+					// 		The normal procedure for parsing an HTTP message is to read the
+   					// 		start-line into a structure, read each header field into a hash table
+   					// 		by field name until the empty line, and then use the parsed data to
+   					// 		determine if a message body is expected.  If a message body has been
+   					// 		indicated, then it is read as a stream until an amount of octets
+   					// 		equal to the message body length is read or the connection is closed.
+					// 	*read msg until end
+					// 	*create and set response
+					// 	*set event to POLLOUT
+					// }
+					// else if (revents & POLLOUT)
+					// {
+					// 	--ready to write at client socket
+					// 	*send response message
+					// 	*set event to POLLIN
+					// }	
+					// else
+					// 	---;
+				}
+			}
 			break ;
 		}
 	}
