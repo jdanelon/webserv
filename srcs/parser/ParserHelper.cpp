@@ -103,11 +103,9 @@ std::string	ParserHelper::get_root( void )
 {
 	if (this->_tokens.size() != 2)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	// struct stat buf;
-	// if (stat(this->_tokens[1].c_str(), &buf) == -1)
-	// 	throw ParserHelper::SystemError("root", this->_tokens[1]);
-	// if (!S_ISDIR(buf.st_mode))
-	// 	throw ParserHelper::SystemError("root", this->_tokens[1]);
+	struct stat buf;
+	if (stat(this->_tokens[1].c_str(), &buf) == -1 || !S_ISDIR(buf.st_mode | S_IRUSR))
+		throw ParserHelper::SystemError("root", this->_tokens[1]);
 	return (this->_tokens[1]);
 }
 
@@ -115,6 +113,15 @@ std::vector<std::string>	ParserHelper::get_index( void )
 {
 	if (this->_tokens.size() < 2)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	for (size_t i = 1; i < this->_tokens.size(); i++)
+	{
+		size_t idx = this->_tokens[i].find(".");
+		if (idx == std::string::npos)
+			throw ParserHelper::InvalidValues("index", this->_tokens[i]);
+		idx = this->_tokens[i].find(".", idx + 1);
+		if (idx != std::string::npos)
+			throw ParserHelper::InvalidValues("index", this->_tokens[i]);
+	}
 	std::vector<std::string> args(this->_tokens.begin() + 1, this->_tokens.end());
 	return (args);
 }
@@ -221,7 +228,15 @@ std::pair<size_t, std::string>	ParserHelper::get_return( void )
 
 // bool	ParserHelper::get_upload( void );
 
-// std::string	ParserHelper::get_upload_store( void );
+std::string	ParserHelper::get_upload_store( void )
+{
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	struct stat buf;
+	if (stat(this->_tokens[1].c_str(), &buf) == -1 || !S_ISDIR(buf.st_mode | S_IRUSR))
+		throw ParserHelper::SystemError("upload_store", this->_tokens[1]);
+	return (this->_tokens[1]);
+}
 
 std::vector<std::string>	ParserHelper::get_limit_except( void )
 {
@@ -336,9 +351,46 @@ bool	ParserHelper::_valid_cgi_extension( std::string const &ext )
 
 bool	ParserHelper::_valid_cgi_binary( std::string const &bin )
 {
-	// struct stat buf;
-	(void)bin;
-	return (true);
+	std::vector<std::string>	bin_paths;
+	struct stat 				buf;
+
+	// set a vector with possible file paths: bin and each locale in PATH + bin
+	bin_paths = this->_get_path_vector(bin);
+	// loop over paths searching for bin
+	for (size_t i = 0; i < bin_paths.size(); i++)
+	{
+		// if file is found and it is executable -> valid binary
+		if ((stat(bin.c_str(), &buf) == 0) && (buf.st_mode & S_IXUSR))
+			return (true);
+		// if file is found and it is not executable -> invalid binary
+		if ((stat(bin.c_str(), &buf) == 0) && !(buf.st_mode & S_IXUSR))
+		{
+			errno = EACCES;
+			return (false);
+		}
+	}
+	// if loop is over (file not found) -> invalid binary
+	return (false);
+}
+
+std::vector<std::string>	ParserHelper::_get_path_vector( std::string const &bin )
+{
+	std::string					path;
+	size_t						begin_idx, end_idx;
+	std::vector<std::string>	separate_path;
+
+	separate_path.push_back("/" + bin);
+	path = std::getenv("PATH");
+	begin_idx = 0;
+	end_idx = path.find(':');
+	while (end_idx != std::string::npos)
+	{
+		separate_path.push_back(path.substr(begin_idx, end_idx - begin_idx) + "/" + bin);
+		begin_idx = end_idx + 1;
+		end_idx = path.find(':', begin_idx);
+	}
+	separate_path.push_back(path.substr(begin_idx, path.size() - begin_idx) + "/" + bin);
+	return (separate_path);
 }
 
 ParserHelper::InvalidLine::InvalidLine( std::string const &str ) : ParserException(str)
@@ -383,7 +435,7 @@ char const	*ParserHelper::InvalidValues::what( void ) const throw()
 }
 
 ParserHelper::SystemError::SystemError( std::string const &field,
-											std::string const &value ) : ParserException("")
+										std::string const &value ) : ParserException("")
 {
 	this->_msg = "Error: Invalid value '" + value + "' for field '" + field + "' (" + strerror(errno) + ")!";
 }

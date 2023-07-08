@@ -1,6 +1,8 @@
 #include "../includes/main.hpp"
 #include "WebServ.hpp"
 
+int	g_signal_code = 0;
+
 static int	validateFile( char *file )
 {
 	std::string			tmp(file);
@@ -38,16 +40,18 @@ int	main( int argc, char **argv )
 	}
 	if (validateFile(argv[1]))
 	{
-		std::cerr << "Error: file '" << argv[1] << "' is invalid!" << std::endl;
+		std::cerr << "Error: file '" << argv[1] << "' not found or could not be opened!" << std::endl;
 		return (1);
 	}
 	try
 	{
 		webserv.init(argv[1]);
-		while (1)
+		// while there are no signals to interrupt, keep loop and server alive
+		// this approach allows the destructor to be called at the end of the function		
+		while (g_signal_code == 0)
 		{
 			int	num_revents = poll(&webserv.pollfds[0], webserv.pollfds.size(), -1);
-			if (num_revents <= 0)
+			if (num_revents < 0)
 				break ;
 			for (unsigned int i = 0; i < webserv.pollfds.size(); i++)
 			{
@@ -90,12 +94,16 @@ int	main( int argc, char **argv )
 					// 	---;
 				}
 			}
-			break ;
+			if (webserv.has_closed_connections)
+				webserv.purge_connections();
 		}
 	}
 	catch(const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
 	}
-	return (0);
+	// as the program must end with a signal, there is no return(0)
+	// 128 + g_signal_code to have the return code as expected
+	// not sure if it is Windows related
+	return (128 + g_signal_code);
 }

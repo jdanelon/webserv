@@ -1,6 +1,6 @@
 #include "WebServ.hpp"
 
-WebServ::WebServ( void )
+WebServ::WebServ( void ) : has_closed_connections(false)
 {
 	return ;
 }
@@ -40,10 +40,15 @@ void	WebServ::init( char *file )
 
 void	WebServ::_catch_signals( void )
 {
-	// *in case of signal to interrupt/end program, free allocated memory and exit program 
-	// signal(SIGINT, signal_handler);
-	// signal(SIGQUIT, signal_handler);
-	// exit(128 + signal_code);
+	// in case of signal to interrupt (CTRL^C)/end program (CTRL^\), call function to handle signal 
+	std::signal(SIGINT, WebServ::_signal_handler);
+	std::signal(SIGQUIT, WebServ::_signal_handler);
+}
+
+void	WebServ::_signal_handler( int const code )
+{
+	// receive signal code from std::signal and assign it to global variable g_signal_code
+	g_signal_code = code;
 }
 
 void	WebServ::_init_servers( void )
@@ -80,8 +85,12 @@ bool	WebServ::client_timeout( int idx )
 
 void	WebServ::end_client_connection( int idx )
 {
+	close(this->pollfds[idx].fd);
+	// remove client and delete reserved client memory from this->clients
+	// ...
+	// set poll struct array to ignore client_fd and later clear every closed connection (*)
 	this->pollfds[idx].fd = -1;
-	// close(this->pollfds[idx].fd);
+	this->has_closed_connections = true;
 }
 
 void	WebServ::accept_queued_connections( int idx )
@@ -102,5 +111,17 @@ void	WebServ::accept_queued_connections( int idx )
 		this->clients[client_fd] = cli;
 
 		client_fd = accept(server_fd, NULL, NULL);
+	}
+}
+
+void	WebServ::purge_connections( void )
+{
+	std::vector<struct pollfd>::iterator	it;
+	for (it = this->pollfds.begin(); it != this->pollfds.end();)
+	{
+		if (it->fd == -1)
+			it = this->pollfds.erase(it);
+		else
+			it++;
 	}
 }

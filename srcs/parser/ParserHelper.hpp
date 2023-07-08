@@ -49,13 +49,14 @@ class ParserHelper
 		std::vector<std::string>	_tokens;
 		std::set<std::string>		_directive_list;
 
-		bool	_valid_host( std::string const &ip );
-		bool	_valid_port( std::string const &port );
-		bool	_valid_server_name( std::string const &str );
-		bool	_valid_error_page( std::string const &str );
-		bool	_valid_log( std::string const &log );
-		bool	_valid_cgi_extension( std::string const &ext );
-		bool	_valid_cgi_binary( std::string const &bin );
+		bool							_valid_host( std::string const &ip );
+		bool							_valid_port( std::string const &port );
+		bool							_valid_server_name( std::string const &str );
+		bool							_valid_error_page( std::string const &str );
+		bool							_valid_log( std::string const &log );
+		bool							_valid_cgi_extension( std::string const &ext );
+		bool							_valid_cgi_binary( std::string const &bin );
+		static std::vector<std::string>	_get_path_vector( std::string const &bin );
 	
 	public:
 

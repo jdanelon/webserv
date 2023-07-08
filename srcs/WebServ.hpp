@@ -10,6 +10,8 @@
 # include "parser/Server.hpp"
 # include "utils.hpp"
 
+extern int g_signal_code;
+
 typedef struct	s_client
 {
 	Server		*host;
@@ -25,6 +27,7 @@ class WebServ
 		std::map<int, Server *>		servers;
 		std::map<int, t_client>		clients;
 		std::vector<struct pollfd>	pollfds;
+		bool						has_closed_connections;
 
 		WebServ( void );
 		WebServ( WebServ const &obj );
@@ -35,11 +38,13 @@ class WebServ
 		bool	client_timeout( int idx );
 		void	end_client_connection( int idx );
 		void	accept_queued_connections( int idx );
+		void	purge_connections( void );
 
 	private:
 
-		void	_catch_signals( void );
-		void	_init_servers( void );
+		void		_catch_signals( void );
+		static void	_signal_handler( int const code );
+		void		_init_servers( void );
 
 };
 
