@@ -5,10 +5,68 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <map>
+#include <iostream>
+#include <fstream>
+#include <string>
 
 
 #define PORT 9990
 #define SIZE 1024
+std::string testeCaminhoDoRecurso; // o caminho do item que o request pediu, provavelmente será uma váriavel da classe
+
+std::string createResponseMessage(std::string body){
+    std::string response = "HTTP/1.1 200 OK\r\n"
+                            "Content-Type: text/html\r\n"
+                            "\r\n"
+                            + body + "\r\n";
+    return(response);
+}
+
+std::string getResponseFile(std::string responseRequestFilePath){
+    std::ifstream file(responseRequestFilePath.c_str());
+    std::string content;
+    std::string response;
+
+    if (file.is_open()){
+        std::string line;
+        while(std::getline(file, line)){
+            content += line;
+        }
+        file.close();
+    }
+    else 
+        return("Error 404");
+    response = createResponseMessage(content);
+    return (response);
+}
+
+std::string responseRequest(std::string RequestPathResource){
+    std::map<std::string, std::string> keyValueMap;
+    keyValueMap["path1"] = "/teste/abc";
+    keyValueMap["path2"] = "/teste/abc2";
+    keyValueMap["path3"] = "/teste/abc";
+    keyValueMap["path4"] = "/teste/abc2";
+    keyValueMap["path5"] = "/";
+    std::string index = "./client/index.html"; // este index vai vir do parser, geralmente o html ou php kk
+    std::string response;
+
+    for (std::map<std::string, std::string>::iterator it = keyValueMap.begin(); it != keyValueMap.end(); ++it){
+        if (it->second == RequestPathResource){
+            std::cout << "Vaaaaaalllooorrrr encontradooooo" << std::endl;
+            response = getResponseFile(index);
+            return(response);
+        }
+    }
+    return("Error 404");
+
+}
+
+
+// =---------------------------------Daqui para cime é a parte de chamado do que o request pediu
+
+//=================================== Daqui para baixo é o pareser do request
+
 
 
 bool checkGetRequest(const std::string& message, std::string method)
@@ -22,8 +80,10 @@ bool checkGetRequest(const std::string& message, std::string method)
 
     size_t resourcePathStart = message.find("/", startLine + methodSize);
     
-    if (resourcePathStart != startLine + methodSize + 1)
-        std::cout << "Resource " << resourcePathStart << "starline "<< startLine + methodSize + 1 << std::endl;
+    if (resourcePathStart != startLine + methodSize + 1){
+        std::cout << "Wrong messa in request: " << message << std::endl;
+        return(false);
+    }
 
     size_t resourcePathEnd = message.find(" ", resourcePathStart);
 
@@ -38,26 +98,30 @@ bool checkGetRequest(const std::string& message, std::string method)
     std::cout << "Método: "<< requisiton << std::endl;
     std::cout << "Caminho do recurso: " << resourcePath << std::endl;
     std::cout << "Versão HTTP: " << httpVersion << std::endl;
+    
+    testeCaminhoDoRecurso = resourcePath;
 
     return (true);
 }
 
-bool checkType(const std::string& message)
+bool checkType(const std::string& requestMessage)
 {
     bool isTypeCorrect;
 
-    if (message.substr(0, 3) == "GET")
-        isTypeCorrect = checkGetRequest(message, "GET");
+    if (requestMessage.substr(0, 3) == "GET")
+        isTypeCorrect = checkGetRequest(requestMessage, "GET");
 
-    else if (message.substr(0, 4) == "POST")
-        isTypeCorrect = checkGetRequest("POST /Caminho/do/arquivo HTTP/1.1", "POST");
-
-    else if (message.substr(0, 6) == "DELETE")
-        isTypeCorrect = checkGetRequest(message, "DELETE");
+    else if (requestMessage.substr(0, 4) == "POST")
+        isTypeCorrect = checkGetRequest(requestMessage, "POST");
+ 
+    else if (requestMessage.substr(0, 6) == "DELETE")
+        isTypeCorrect = checkGetRequest(requestMessage, "DELETE");
     
     return(isTypeCorrect);
         
 }
+
+//================================== Daqui para cima é o parser do request
 
 int create_socket()
 {
@@ -136,19 +200,19 @@ int main()
 		std::string receivedMessage(buf);
 		if (checkType(receivedMessage)) // Parte de validação da mensagem
 			printf("message in format\n");
+        
         buf[bufSize] = '\0';
         std::cout << "bufSize: ==> " << bufSize << std::endl;
         std::cout << "From client: " << buf << std::endl;
         // Construct a proper HTTP response
-        std::string http_response =
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/html\r\n"
-            "\r\n"
-            "<html><body><h1>Hello, World!</h1></body></html>";
-	
+        std::string http_response = responseRequest(testeCaminhoDoRecurso);
 
-        // Send the HTTP response back to the client
-        write(client_socket, http_response.c_str(), http_response.length());
+        if (http_response == "Error 404"){
+            std::string response = "HTTP/1.1 404 Not Found\r\nContent-Type: text/plain\r\n\r\n404 Not Found";
+            write(client_socket, response.c_str(), response.length());
+        }
+        else
+            write(client_socket, http_response.c_str(), http_response.length());
     }
 
     close(client_socket);
