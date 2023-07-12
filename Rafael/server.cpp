@@ -13,7 +13,7 @@
 
 #define PORT 9990
 #define SIZE 1024
-std::string testeCaminhoDoRecurso; // o caminho do item que o request pediu, provavelmente será uma váriavel da classe
+std::string testeCaminhoDoRecurso; // o caminho do item que o request pediu, provavelmente será uma váriavel da classe ==========================
 
 std::string createResponseMessage(std::string body){
     std::string response = "HTTP/1.1 200 OK\r\n"
