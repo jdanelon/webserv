@@ -42,6 +42,8 @@ class WebServ
 
 	private:
 
+		int			_backlog;
+
 		void		_catch_signals( void );
 		static void	_signal_handler( int const code );
 		void		_init_servers( void );

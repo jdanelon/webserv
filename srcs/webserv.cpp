@@ -34,6 +34,7 @@ WebServ::~WebServ( void )
 void	WebServ::init( char *file )
 {
 	this->parser.load(file);
+	this->_backlog = this->parser.backlog;
 	this->_catch_signals();
 	this->_init_servers();
 }
@@ -78,6 +79,9 @@ bool	WebServ::client_timeout( int idx )
 {
 	int	fd = this->pollfds[idx].fd;
 	int	timeout = this->clients[fd].host->timeout;
+
+	if (fd == -1)
+		return (false);
 	if (timestamp() - this->clients[fd].timestamp >= timeout)
 		return (true);
 	return (false);
@@ -86,7 +90,7 @@ bool	WebServ::client_timeout( int idx )
 void	WebServ::end_client_connection( int idx )
 {
 	close(this->pollfds[idx].fd);
-	// remove client and delete reserved client memory from this->clients
+	// remove client and delete reserved client memory from this->clients (?)
 	// ...
 	// set poll struct array to ignore client_fd and later clear every closed connection (*)
 	this->pollfds[idx].fd = -1;
@@ -99,6 +103,12 @@ void	WebServ::accept_queued_connections( int idx )
 	int client_fd = accept(server_fd, NULL, NULL);
 	while (client_fd != -1)
 	{
+		if (this->clients.size() == this->_backlog)
+		{
+			close(client_fd);
+			return ;
+		}
+
 		struct pollfd poll_client;
 		poll_client.fd = client_fd;
 		poll_client.events = POLLIN;
