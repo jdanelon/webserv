@@ -7,9 +7,11 @@ Server::Server( void )
 	this->root = "";
 	this->timeout = 0;
 	this->client_max_body_size = -1;
-	this->access_log = "";
-	this->error_log = "";
+	// this->access_log = "";
+	// this->error_log = "";
 	this->autoindex = -1;
+	this->redirect = std::make_pair(0, "");
+	this->upload = -1;
 	this->upload_store = "";
 	return ;
 }
@@ -32,8 +34,8 @@ Server &Server::operator = ( Server const &obj )
 		this->error_page = obj.error_page;
 		this->timeout = obj.timeout;
 		this->client_max_body_size = obj.client_max_body_size;
-		this->access_log = obj.access_log;
-		this->error_log = obj.error_log;
+		// this->access_log = obj.access_log;
+		// this->error_log = obj.error_log;
 		this->autoindex = obj.autoindex;
 		this->cgi = obj.cgi;
 		this->redirect = obj.redirect;
@@ -54,43 +56,34 @@ void	Server::fill_with_defaults( void )
 	if (this->host.empty())
 		this->host = "127.0.0.1";
 	if (this->port.empty())
-		this->port = "80";
+		this->port = "8080";
+	if (this->server_name.empty())
+	{
+		this->server_name.push_back("localhost");
+		this->server_name.push_back("www.localhost");
+	}
 	if (this->root.empty())
-		this->root = "";
+		this->root = "/root";
 	if (this->index.empty())
 	{
 		this->index.push_back("index.html");
 		this->index.push_back("index.php");
 	}
-	// error_page;
+	if (this->error_page.empty())
+		this->error_page[404] = "/error_page_404.html";
 	if (this->timeout == 0)
 		this->timeout = 30000;
-	if (this->client_max_body_size)
+	if (this->client_max_body_size == -1)
 		this->client_max_body_size = 1000000;
 	if (this->autoindex == -1)
 		this->autoindex = 0;
-	// redirect;
-	std::map<std::string, Location>::iterator it;
-	for (it = location.begin(); it != location.end(); it++)
-		it->second.fill_with_defaults(*this);
+	if (this->upload == -1)
+		this->upload = 0;
 	if (upload_store.empty())
-		this->upload_store = "";
-	return ;
-}
-
-bool	Server::missing_directives( void )
-{
-	if (this->server_name.empty())
-	{
-		this->err = "server_name";
-		return (true);
-	}
-	if (this->location.empty())
-	{
-		this->err = "location";
-		return (true);
-	}
-	return (false);
+		this->upload_store = "/upload";
+	std::map<std::string, Location>::iterator it;
+	for (it = this->location.begin(); it != this->location.end(); it++)
+		it->second.fill_with_defaults(*this);
 }
 
 void	Server::connect_socket( int backlog )
@@ -120,7 +113,6 @@ void	Server::connect_socket( int backlog )
 	status = listen(this->sockfd, backlog);
 	if (status == -1)
 		throw Server::SocketError("listen");
-	return ;
 }
 
 Server::SocketError::SocketError( std::string const &str ) : ParserException(str)

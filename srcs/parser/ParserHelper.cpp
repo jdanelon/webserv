@@ -72,7 +72,7 @@ std::pair<std::string, std::string>	ParserHelper::get_listen( void )
 	if (this->_valid_host(this->_tokens[1]) && !this->_valid_port(this->_tokens[1]))
 	{
 		host = this->_tokens[1];
-		port = "80"; //default
+		port = "8080"; //default
 	}
 	else if (!this->_valid_host(this->_tokens[1]) && this->_valid_port(this->_tokens[1]))
 	{
@@ -136,6 +136,8 @@ std::string	ParserHelper::get_error_page( void )
 		throw ParserHelper::InvalidValues("error_page", this->_tokens[2]);
 
 	size_t idx = this->_tokens[2].find_last_of("/");
+	if (idx == std::string::npos)
+		throw ParserHelper::InvalidValues("error_page", this->_tokens[2]);
 	std::string cleaned = this->_tokens[2].substr(idx, this->_tokens[2].size() - idx);
 	return (cleaned);
 }
@@ -149,7 +151,7 @@ size_t	ParserHelper::get_timeout( void )
 	return (ft_atoi(this->_tokens[1].c_str()) * 1000);
 }
 
-size_t	ParserHelper::get_client_max_body_size( void )
+int	ParserHelper::get_client_max_body_size( void )
 {
 	if (this->_tokens.size() != 2)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
@@ -170,29 +172,29 @@ size_t	ParserHelper::get_client_max_body_size( void )
 	}
 	else
 	{
-		if (ft_atoi(this->_tokens[1].c_str()) <= 0 || ft_atoi(this->_tokens[1].c_str()) > 1024000000)
+		if (ft_atoi(this->_tokens[1].c_str()) < 0 || ft_atoi(this->_tokens[1].c_str()) > 1024000000)
 			throw ParserHelper::InvalidValues("client_max_body_size", this->_tokens[1]);
 		return (ft_atoi(this->_tokens[1].c_str()));
 	}
 }
 
-std::string	ParserHelper::get_access_log( void )
-{
-	if (this->_tokens.size() != 2)
-		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	if (!this->_valid_log(this->_tokens[1]))
-		throw ParserHelper::InvalidValues("access_log", this->_tokens[1]);
-	return (this->_tokens[1]);
-}
+// std::string	ParserHelper::get_access_log( void )
+// {
+// 	if (this->_tokens.size() != 2)
+// 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+// 	if (!this->_valid_log(this->_tokens[1]))
+// 		throw ParserHelper::InvalidValues("access_log", this->_tokens[1]);
+// 	return (this->_tokens[1]);
+// }
 
-std::string	ParserHelper::get_error_log( void )
-{
-	if (this->_tokens.size() != 2)
-		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	if (!this->_valid_log(this->_tokens[1]))
-		throw ParserHelper::InvalidValues("error_log", this->_tokens[1]);
-	return (this->_tokens[1]);
-}
+// std::string	ParserHelper::get_error_log( void )
+// {
+// 	if (this->_tokens.size() != 2)
+// 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+// 	if (!this->_valid_log(this->_tokens[1]))
+// 		throw ParserHelper::InvalidValues("error_log", this->_tokens[1]);
+// 	return (this->_tokens[1]);
+// }
 
 bool	ParserHelper::get_autoindex( void )
 {
@@ -226,7 +228,17 @@ std::pair<size_t, std::string>	ParserHelper::get_return( void )
 	return (std::make_pair(ft_atoi(this->_tokens[1].c_str()), this->_tokens[2]));
 }
 
-// bool	ParserHelper::get_upload( void );
+bool	ParserHelper::get_upload( void )
+{
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	if (!this->_tokens[1].compare("on"))
+		return (true);
+	else if (!this->_tokens[1].compare("off"))
+		return (false);
+	else
+		throw ParserHelper::InvalidValues("upload", this->_tokens[1]);
+}
 
 std::string	ParserHelper::get_upload_store( void )
 {
@@ -253,7 +265,7 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 	cmp.push_back("GET");
 	cmp.push_back("POST");
 	cmp.push_back("DELETE");
-	
+
 	for (size_t i = 0; i < args.size(); i++)
 	{
 		for (size_t j = 0; j < cmp.size(); j++)
@@ -355,15 +367,15 @@ bool	ParserHelper::_valid_cgi_binary( std::string const &bin )
 	struct stat 				buf;
 
 	// set a vector with possible file paths: bin and each locale in PATH + bin
-	bin_paths = this->_get_path_vector(bin);
+	bin_paths = ParserHelper::_get_path_vector(bin);
 	// loop over paths searching for bin
 	for (size_t i = 0; i < bin_paths.size(); i++)
 	{
 		// if file is found and it is executable -> valid binary
-		if ((stat(bin.c_str(), &buf) == 0) && (buf.st_mode & S_IXUSR))
+		if ((stat(bin_paths[i].c_str(), &buf) == 0) && (buf.st_mode & S_IXUSR))
 			return (true);
 		// if file is found and it is not executable -> invalid binary
-		if ((stat(bin.c_str(), &buf) == 0) && !(buf.st_mode & S_IXUSR))
+		if ((stat(bin_paths[i].c_str(), &buf) == 0) && !(buf.st_mode & S_IXUSR))
 		{
 			errno = EACCES;
 			return (false);
@@ -463,4 +475,9 @@ ParserHelper::MissingDirectives::MissingDirectives( std::string const &str ) : P
 char const	*ParserHelper::MissingDirectives::what( void ) const throw()
 {
 	return (this->_msg.c_str());
+}
+
+char const	*ParserHelper::EmptyLocationBlock::what( void ) const throw()
+{
+	return ("Error: Location block cannot be empty!");
 }

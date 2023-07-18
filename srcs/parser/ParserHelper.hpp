@@ -34,9 +34,9 @@ class ParserHelper
 		std::vector<std::string>			get_index( void );
 		std::string							get_error_page( void );
 		size_t								get_timeout( void );
-		size_t								get_client_max_body_size( void );
-		std::string							get_access_log( void );
-		std::string							get_error_log( void );
+		int									get_client_max_body_size( void );
+		// std::string							get_access_log( void );
+		// std::string							get_error_log( void );
 		bool								get_autoindex( void );
 		std::string							get_cgi( void );
 		std::pair<size_t, std::string>		get_return( void );
@@ -49,13 +49,13 @@ class ParserHelper
 		std::vector<std::string>	_tokens;
 		std::set<std::string>		_directive_list;
 
-		bool							_valid_host( std::string const &ip );
-		bool							_valid_port( std::string const &port );
-		bool							_valid_server_name( std::string const &str );
-		bool							_valid_error_page( std::string const &str );
-		bool							_valid_log( std::string const &log );
-		bool							_valid_cgi_extension( std::string const &ext );
-		bool							_valid_cgi_binary( std::string const &bin );
+		static bool						_valid_host( std::string const &ip );
+		static bool						_valid_port( std::string const &port );
+		static bool						_valid_server_name( std::string const &str );
+		static bool						_valid_error_page( std::string const &str );
+		static bool						_valid_log( std::string const &log );
+		static bool						_valid_cgi_extension( std::string const &ext );
+		static bool						_valid_cgi_binary( std::string const &bin );
 		static std::vector<std::string>	_get_path_vector( std::string const &bin );
 	
 	public:
@@ -113,6 +113,13 @@ class ParserHelper
 			public:
 
 				explicit MissingDirectives( std::string const &str );
+				char const *what( void ) const throw();
+		};
+
+		class EmptyLocationBlock : public ParserException
+		{
+			public:
+
 				char const *what( void ) const throw();
 		};
 

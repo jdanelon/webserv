@@ -47,7 +47,7 @@ int	main( int argc, char **argv )
 	{
 		webserv.init(argv[1]);
 		// while there are no signals to interrupt, keep loop and server alive
-		// this approach allows the destructor to be called at the end of the function		
+		// this approach allows the destructor to be called at the end of the function
 		while (g_signal_code == 0)
 		{
 			int	num_revents = poll(&webserv.pollfds[0], webserv.pollfds.size(), -1);

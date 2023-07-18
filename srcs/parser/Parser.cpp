@@ -96,6 +96,7 @@ std::vector<std::string>	Parser::_get_split_lines( std::string line )
 
 Location	Parser::_parse_location( std::istringstream *istr )
 {
+	int							total_lines = 0, empty_lines = 0;
 	std::string					line, directive;
 	std::vector<std::string>	tokens;
 	Location					loc;
@@ -103,9 +104,13 @@ Location	Parser::_parse_location( std::istringstream *istr )
 
 	while (std::getline(*istr, line))
 	{
+		total_lines++;
 		if (line.length() == 0 || ft_empty(line.c_str()))
+		{
+			empty_lines++;
 			continue ;
-		tokens = this->_get_split_lines(line);
+		}
+		tokens = Parser::_get_split_lines(line);
 		if (tokens.empty())
 			throw ParserHelper::InvalidLine(line);
 		directive = tokens[0];
@@ -125,15 +130,17 @@ Location	Parser::_parse_location( std::istringstream *istr )
 			loc.cgi[tokens[1]] = helper.get_cgi();
 		else if (!directive.compare("return"))
 			loc.redirect = helper.get_return();
-		// else if (!directive.compare("upload"))
-		// 	loc.upload = helper.get_upload();
-		// else if (!directive.compare("upload_store"))
-		// 	loc.upload_store = helper.get_upload_store();
+		else if (!directive.compare("upload"))
+			loc.upload = helper.get_upload();
+		else if (!directive.compare("upload_store"))
+			loc.upload_store = helper.get_upload_store();
 		else if (!directive.compare("}"))
 			break ;
 		else
 			throw ParserHelper::UnknownDirective(directive);
 	}
+	if (total_lines == empty_lines + 1)
+		throw ParserHelper::EmptyLocationBlock();
 	return (loc);
 }
 
@@ -148,7 +155,7 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 	{
 		if (line.length() == 0 || ft_empty(line.c_str()))
 			continue ;
-		tokens = this->_get_split_lines(line);
+		tokens = Parser::_get_split_lines(line);
 		if (tokens.empty())
 			throw ParserHelper::InvalidLine(line);
 		directive = tokens[0];
@@ -175,30 +182,35 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			srv.timeout = helper.get_timeout();
 		else if (!directive.compare("client_max_body_size"))
 			srv.client_max_body_size = helper.get_client_max_body_size();
-		else if (!directive.compare("access_log"))
-			srv.access_log = helper.get_access_log();
-		else if (!directive.compare("error_log"))
-			srv.error_log = helper.get_error_log();
+		// else if (!directive.compare("access_log"))
+		// 	srv.access_log = helper.get_access_log();
+		// else if (!directive.compare("error_log"))
+		// 	srv.error_log = helper.get_error_log();
 		else if (!directive.compare("autoindex"))
 			srv.autoindex = helper.get_autoindex();
 		else if (!directive.compare("cgi"))
 			srv.cgi[tokens[1]] = helper.get_cgi();
 		else if (!directive.compare("return"))
 			srv.redirect = helper.get_return();
-		// else if (!directive.compare("upload"))
-		// 	srv.upload = helper.get_upload();
-		// else if (!directive.compare("upload_store"))
-		// 	srv.upload_store = helper.get_upload_store();
+		else if (!directive.compare("upload"))
+			srv.upload = helper.get_upload();
+		else if (!directive.compare("upload_store"))
+			srv.upload_store = helper.get_upload_store();
 		else if (!directive.compare("location"))
-			srv.location[tokens[1]] = this->_parse_location(istr);
+		{
+			if (tokens.size() == 3 && tokens[1][0] == '/' && !tokens[2].compare("{"))
+				srv.location[tokens[1]] = this->_parse_location(istr);
+			else
+				throw ParserHelper::InvalidLine(line);
+		}
 		else if (!directive.compare("}"))
 			break ;
 		else
 			throw ParserHelper::UnknownDirective(directive);
 	}
 	srv.fill_with_defaults();
-	if (srv.missing_directives())
-		throw ParserHelper::MissingDirectives(srv.err);
+	if (srv.location.empty())
+		throw ParserHelper::MissingDirectives("location");
 	return (srv);
 }
 
@@ -221,8 +233,15 @@ void	Parser::_parse( std::istringstream *istr )
 		if (!directive.compare("worker_connections"))
 			this->backlog = helper.get_backlog();
 		else if (!directive.compare("server"))
-			this->_servers.push_back(this->_parse_servers(istr));
+		{
+			if (tokens.size() == 2 && !tokens[1].compare("{"))
+				this->_servers.push_back(this->_parse_servers(istr));
+			else
+				throw ParserHelper::InvalidLine(line);
+		}
 		else
 			throw ParserHelper::UnknownDirective(directive);
 	}
+	if (this->_servers.empty())
+		throw ParserHelper::MissingDirectives("server");
 }

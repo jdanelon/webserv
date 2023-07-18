@@ -33,16 +33,15 @@ class Server
 		std::vector<std::string>			index;
 		std::map<int, std::string>			error_page;
 		size_t								timeout;
-		size_t								client_max_body_size;
-		std::string							access_log;
-		std::string							error_log;
+		int									client_max_body_size;
+		// std::string							access_log;
+		// std::string							error_log;
 		int									autoindex;
 		std::map<std::string, std::string>	cgi;
 		std::pair<size_t, std::string>		redirect;
 		int									upload;
 		std::string							upload_store;
 		std::map<std::string, Location>		location;
-		std::string							err;
 
 		int									sockfd;
 
@@ -52,7 +51,6 @@ class Server
 		virtual ~Server( void );
 
 		void	fill_with_defaults( void );
-		bool	missing_directives( void );
 		void	connect_socket( int backlog );
 
 	private:
