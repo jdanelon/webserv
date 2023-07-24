@@ -36,11 +36,11 @@ class Parser
 		std::string			_cleanFile;
 		std::vector<Server>	_servers;
 
-		void						_readFile( char *file );
-		void						_parse( std::istringstream *istr );
-		Server						_parse_servers( std::istringstream *istr );
-		Location					_parse_location( std::istringstream *istr );
-		std::vector<std::string>	_get_split_lines( std::string line );
+		void							_readFile( char *file );
+		void							_parse( std::istringstream *istr );
+		Server							_parse_servers( std::istringstream *istr );
+		static Location					_parse_location( std::istringstream *istr );
+		static std::vector<std::string>	_get_split_lines( std::string line );
 
 };
 
