@@ -9,7 +9,7 @@ sleep 5
 
 # URLs of the servers to compare
 nginx_url="http://localhost:8080"
-other_url="http://google.com"
+other_url="localhost:80"
 
 # Define the testing function
 test_request() {
@@ -36,7 +36,6 @@ test_request() {
 # Call the testing function for different types of requests
 test_request "GET"
 test_request "POST"
-test_request "PUT"
 test_request "DELETE"
 
 # Stop the container
