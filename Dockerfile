@@ -5,6 +5,7 @@ FROM nginx:stable-alpine
 RUN rm /etc/nginx/conf.d/default.conf
 
 # Add a new configuration file
-COPY conf-files/nginx-base.conf /etc/nginx/conf.d/nginx.conf
+ARG conf_file
+COPY $conf_file /etc/nginx/conf.d/nginx.conf
 
 COPY conf-files/index.html /usr/share/nginx/html/index.html
