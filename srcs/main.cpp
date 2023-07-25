@@ -55,23 +55,23 @@ int	main( int argc, char **argv )
 				break ;
 			for (unsigned int i = 0; i < webserv.pollfds.size(); i++)
 			{
-				short revents = webserv.pollfds[i].revents;
-				if (revents == 0)
-					continue ;
 				bool is_server = webserv.servers.count(webserv.pollfds[i].fd);
 				if (!is_server && webserv.client_timeout(i))
 				{
 					webserv.end_client_connection(i);
 					continue ;
 				}
+				short revents = webserv.pollfds[i].revents;
+				if (revents == 0)
+					continue ;
 				if (is_server)
 					webserv.accept_queued_connections(i);
 				else
 				{
 					if (revents & (POLLERR | POLLHUP | POLLNVAL))
 						webserv.end_client_connection(i);
-					// else if (revents & POLLIN)
-					// {
+					else if (revents & POLLIN)
+					{
 					// 	--ready to read client socket
 					// 	*parse client request
 					// 		The normal procedure for parsing an HTTP message is to read the
@@ -83,13 +83,33 @@ int	main( int argc, char **argv )
 					// 	*read msg until end
 					// 	*create and set response
 					// 	*set event to POLLOUT
-					// }
-					// else if (revents & POLLOUT)
-					// {
+						// char buf[256];
+						// int nbytes = recv(webserv.pollfds[i].fd, buf, sizeof(buf), 0);
+						// if (nbytes <= 0)
+						// {
+						// 	if (nbytes == 0)
+						// 		std::cout << "socket: '" << webserv.pollfds[i].fd << "' hung up" << std::endl;
+						// 	else
+						// 		std::cout << "recv error" << std::endl;
+						// 	webserv.end_client_connection(i);
+						// }
+						// else
+						// {
+						// 	buf[nbytes] = '\0';
+						// 	std::cout << "from socket '" << webserv.pollfds[i].fd << "': ";
+						// 	std::cout << buf << std::endl;
+						// }
+						// webserv.pollfds[i].events = POLLOUT;
+					}
+					else if (revents & POLLOUT)
+					{
 					// 	--ready to write at client socket
 					// 	*send response message
 					// 	*set event to POLLIN
-					// }	
+						// send(webserv.pollfds[i].fd, "msg received\n", 13, 0);
+						// webserv.pollfds[i].events = POLLIN;
+						// webserv.clients[webserv.pollfds[i].fd].timestamp = timestamp();
+					}
 					// else
 					// 	---;
 				}

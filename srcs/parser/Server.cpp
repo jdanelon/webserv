@@ -100,7 +100,7 @@ void	Server::connect_socket( int backlog )
 	this->sockfd = socket(res->ai_family, res->ai_socktype, 0);
 	if (this->sockfd == -1)
 		throw Server::SocketError("socket");
-	status = fcntl(this->sockfd, F_SETFL, O_NONBLOCK);
+	status = fcntl(this->sockfd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
 	if (status == -1)
 		throw Server::SocketError("fcntl");
 	status = setsockopt(this->sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
