@@ -7,7 +7,7 @@ OBJS_PATH = ./objs
 SRCS = main.cpp \
 		serverFunctions.cpp \
 		utils.cpp \
-		WebServ.cpp \
+		webserv.cpp \
 		parser/Parser.cpp \
 		parser/ParserHelper.cpp \
 		parser/ParserException.cpp \

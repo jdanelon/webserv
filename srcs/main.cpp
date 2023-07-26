@@ -1,5 +1,6 @@
 #include "../includes/main.hpp"
 #include "WebServ.hpp"
+#include "serverFunctions.hpp"
 
 int	g_signal_code = 0;
 
