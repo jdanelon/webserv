@@ -5,6 +5,7 @@ SRCS_PATH = ./srcs
 OBJS_PATH = ./objs
 
 SRCS = main.cpp \
+		serverFunctions.cpp \
 		utils.cpp \
 		WebServ.cpp \
 		parser/Parser.cpp \
