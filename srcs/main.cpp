@@ -1,5 +1,6 @@
 #include "../includes/main.hpp"
 #include "WebServ.hpp"
+#include "serverFunctions.hpp"
 
 int	g_signal_code = 0;
 
@@ -45,78 +46,7 @@ int	main( int argc, char **argv )
 	}
 	try
 	{
-		webserv.init(argv[1]);
-		// while there are no signals to interrupt, keep loop and server alive
-		// this approach allows the destructor to be called at the end of the function
-		while (g_signal_code == 0)
-		{
-			int	num_revents = poll(&webserv.pollfds[0], webserv.pollfds.size(), -1);
-			if (num_revents < 0)
-				break ;
-			for (unsigned int i = 0; i < webserv.pollfds.size(); i++)
-			{
-				bool is_server = webserv.servers.count(webserv.pollfds[i].fd);
-				if (!is_server && webserv.client_timeout(i))
-				{
-					webserv.end_client_connection(i);
-					continue ;
-				}
-				short revents = webserv.pollfds[i].revents;
-				if (revents == 0)
-					continue ;
-				if (is_server)
-					webserv.accept_queued_connections(i);
-				else
-				{
-					if (revents & (POLLERR | POLLHUP | POLLNVAL))
-						webserv.end_client_connection(i);
-					else if (revents & POLLIN)
-					{
-					// 	--ready to read client socket
-					// 	*parse client request
-					// 		The normal procedure for parsing an HTTP message is to read the
-   					// 		start-line into a structure, read each header field into a hash table
-   					// 		by field name until the empty line, and then use the parsed data to
-   					// 		determine if a message body is expected.  If a message body has been
-   					// 		indicated, then it is read as a stream until an amount of octets
-   					// 		equal to the message body length is read or the connection is closed.
-					// 	*read msg until end
-					// 	*create and set response
-					// 	*set event to POLLOUT
-						// char buf[256];
-						// int nbytes = recv(webserv.pollfds[i].fd, buf, sizeof(buf), 0);
-						// if (nbytes <= 0)
-						// {
-						// 	if (nbytes == 0)
-						// 		std::cout << "socket: '" << webserv.pollfds[i].fd << "' hung up" << std::endl;
-						// 	else
-						// 		std::cout << "recv error" << std::endl;
-						// 	webserv.end_client_connection(i);
-						// }
-						// else
-						// {
-						// 	buf[nbytes] = '\0';
-						// 	std::cout << "from socket '" << webserv.pollfds[i].fd << "': ";
-						// 	std::cout << buf << std::endl;
-						// }
-						// webserv.pollfds[i].events = POLLOUT;
-					}
-					else if (revents & POLLOUT)
-					{
-					// 	--ready to write at client socket
-					// 	*send response message
-					// 	*set event to POLLIN
-						// send(webserv.pollfds[i].fd, "msg received\n", 13, 0);
-						// webserv.pollfds[i].events = POLLIN;
-						// webserv.clients[webserv.pollfds[i].fd].timestamp = timestamp();
-					}
-					// else
-					// 	---;
-				}
-			}
-			if (webserv.has_closed_connections)
-				webserv.purge_connections();
-		}
+		run_server(webserv, argv[1]);
 	}
 	catch(const std::exception& e)
 	{
