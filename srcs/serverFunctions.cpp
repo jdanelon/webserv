@@ -1,6 +1,31 @@
 #include "../includes/main.hpp"
 #include "WebServ.hpp"
 
+bool read_client_request(WebServ &webserv, unsigned int i) {
+    char buf[16];
+    int nbytes = recv(webserv.pollfds[i].fd, buf, sizeof(buf) - 1, 0);
+
+    if (nbytes <= 0) {
+        if (nbytes == 0) // TO-DO It is supposed that nbytes == 0 means that the client has hung up?
+            std::cout << "socket: '" << webserv.pollfds[i].fd << "' hung up" << std::endl;
+        else
+            std::cout << "recv error" << std::endl;
+        webserv.end_client_connection(i);
+		webserv.client_connections.erase(i);
+        return false;
+    }
+    buf[nbytes] = '\0';
+    webserv.client_connections[i].buffer.append(buf);
+
+	// This means that the header has been fully received
+	if (webserv.client_connections[i].buffer.find("\r\n\r\n") != std::string::npos) {
+		webserv.client_connections[i].is_header_received = true;
+		return true;
+	}
+
+    return true; // Return true if successful, false if connection should be closed
+}
+
 void process_server_event(WebServ &webserv, unsigned int i) {
     webserv.accept_queued_connections(i);
 }
@@ -14,7 +39,17 @@ void process_client_event(WebServ &webserv, unsigned int i) {
         webserv.end_client_connection(i);
     }
     else if (is_input_ready) {
-        // process input from client
+		// Read the client request from the socket
+        if (!read_client_request(webserv, i)) {
+            return;
+        }
+		if (webserv.client_connections[i].is_header_received) {
+			HttpRequest request;
+			request.parse(webserv.client_connections[i].buffer);
+			request.validate();
+			request.print();
+			webserv.client_connections[i].request = request;
+		}
     }
     else if (is_output_ready) {
         // send response to client

@@ -7,3 +7,7 @@ nnn*
 template.sh
 tmp*
 local_tests
+
+# Object files
+
+objs/*
