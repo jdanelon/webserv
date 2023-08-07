@@ -5,9 +5,11 @@
 
 # include <poll.h>
 # include <csignal>
+# include <unordered_map>
 
 # include "parser/Parser.hpp"
 # include "parser/Server.hpp"
+# include "connection/ClientConnection.hpp"
 # include "utils.hpp"
 
 extern int g_signal_code;
@@ -25,8 +27,9 @@ class WebServ
 
 		Parser						parser;
 		std::map<int, Server *>		servers;
-		std::map<int, t_client>		clients;
+		std::map<int, t_client>		clients; // can be merged with clients_connections
 		std::vector<struct pollfd>	pollfds;
+		std::unordered_map<int, ClientConnection>		client_connections; // can be merged with clients
 		bool						has_closed_connections;
 
 		WebServ( void );

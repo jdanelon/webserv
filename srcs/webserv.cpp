@@ -120,6 +120,9 @@ void	WebServ::accept_queued_connections( int idx )
 		cli.timestamp = timestamp();
 		this->clients[client_fd] = cli;
 
+		ClientConnection client_connection;
+		this->client_connections[client_fd] = client_connection;
+
 		client_fd = accept(server_fd, NULL, NULL);
 	}
 }
