@@ -17,8 +17,8 @@ WebServ &WebServ::operator = ( WebServ const &obj )
 	{
 		this->parser = obj.parser;
 		this->servers = obj.servers;
-		this->clients = obj.clients;
 		this->pollfds = obj.pollfds;
+		this->client_connections = obj.client_connections;
 	}
 	return (*this);
 }
@@ -78,11 +78,11 @@ void	WebServ::_init_servers( void )
 bool	WebServ::client_timeout( int idx )
 {
 	int	fd = this->pollfds[idx].fd;
-	int	timeout = this->clients[fd].host->timeout;
+	int timeout = this->client_connections[fd].host->timeout;
 
 	if (fd == -1)
 		return (false);
-	if (timestamp() - this->clients[fd].timestamp >= timeout)
+	if (timestamp() - this->client_connections[fd].timestamp >= timeout)
 		return (true);
 	return (false);
 }
@@ -103,7 +103,7 @@ void	WebServ::accept_queued_connections( int idx )
 	int client_fd = accept(server_fd, NULL, NULL);
 	while (client_fd != -1)
 	{
-		if (this->clients.size() == this->_backlog)
+		if (this->client_connections.size() == this->_backlog)
 		{
 			close(client_fd);
 			return ;
@@ -115,12 +115,7 @@ void	WebServ::accept_queued_connections( int idx )
 		poll_client.revents = 0;
 		this->pollfds.push_back(poll_client);
 
-		t_client cli;
-		cli.host = this->servers[server_fd];
-		cli.timestamp = timestamp();
-		this->clients[client_fd] = cli;
-
-		ClientConnection client_connection;
+		ClientConnection client_connection(this->servers[server_fd], timestamp());
 		this->client_connections[client_fd] = client_connection;
 
 		client_fd = accept(server_fd, NULL, NULL);

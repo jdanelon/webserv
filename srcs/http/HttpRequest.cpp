@@ -90,7 +90,7 @@ void HttpRequest::print() {
 	std::cout << "version: " << this->version << std::endl;
 	std::cout << "host: " << this->host << std::endl;
 	std::cout << "headers: " << std::endl;
-	for (std::unordered_map<std::string, std::string>::iterator it = this->headers.begin(); it != this->headers.end(); ++it) {
+	for (std::map<std::string, std::string>::iterator it = this->headers.begin(); it != this->headers.end(); ++it) {
 		std::cout << it->first << ": " << it->second << std::endl;
 	}
 	std::cout << "body: " << this->body << std::endl;

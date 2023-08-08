@@ -1,6 +1,10 @@
 #include "ClientConnection.hpp"
 
-ClientConnection::ClientConnection( void ) : is_request_parsed(false) , is_request_completed(false) , is_header_received(false)
+ClientConnection::ClientConnection(void) : is_request_parsed(false), is_request_completed(false), is_header_received(false)
+{
+}
+
+ClientConnection::ClientConnection(Server *server, long long timestamp) : host(server), timestamp(timestamp), is_request_parsed(false), is_request_completed(false), is_header_received(false)
 {
 }
 
@@ -25,6 +29,8 @@ ClientConnection &ClientConnection::operator = ( ClientConnection const &obj )
 		this->is_header_received = obj.is_header_received;
 		this->is_request_parsed = obj.is_request_parsed;
 		this->is_request_completed = obj.is_request_completed;
+		this->timestamp = obj.timestamp;
+		this->host = obj.host;
 	}
 	return (*this);
 }
