@@ -2,7 +2,7 @@
 #define HTTP_REQUEST_HPP
 
 #include <string>
-#include <unordered_map>
+#include <map>
 #include <iostream>
 
 class HttpRequest {
@@ -11,7 +11,7 @@ class HttpRequest {
 		std::string uri;
 		std::string version;
 		std::string host;
-		std::unordered_map<std::string, std::string> headers;
+		std::map<std::string, std::string> headers;
 		std::string body;
 		std::string raw;
 
