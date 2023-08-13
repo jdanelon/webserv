@@ -36,10 +36,12 @@ $(OBJS_PATH)/%.o: $(SRCS_PATH)/%.cpp
 	$(CC) -g $(FLAGS) -c $< -o $@
 
 clean:
-	@$(RM) $(OBJS_PATH)/*.o
-	@$(RM) $(OBJS_PATH)/parser/*.o
-	@$(RM) $(OBJS_PATH)/request/*.o
-	@$(RM) $(OBJS_PATH)/response/*.o
+	# @$(RM) $(OBJS_PATH)/*.o
+	# @$(RM) $(OBJS_PATH)/connection/*.o
+	# @$(RM) $(OBJS_PATH)/http/*.o
+	# @$(RM) $(OBJS_PATH)/parser/*.o
+	# @$(RM) $(OBJS_PATH)/response/*.o
+	@$(RM) -r $(OBJS_PATH)
 
 fclean: clean
 	@$(RM) $(NAME)

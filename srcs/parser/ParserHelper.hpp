@@ -55,7 +55,7 @@ class ParserHelper
 		static bool						_valid_error_page( std::string const &str );
 		static bool						_valid_log( std::string const &log );
 		static bool						_valid_cgi_extension( std::string const &ext );
-		static bool						_valid_cgi_binary( std::string const &bin );
+		static std::string				_valid_cgi_binary( std::string const &bin );
 		static std::vector<std::string>	_get_path_vector( std::string const &bin );
 	
 	public:

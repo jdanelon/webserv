@@ -31,10 +31,10 @@ bool	ParserHelper::duplicated_directives( std::vector<std::string> const &tokens
 	std::pair<std::set<std::string>::iterator, bool>	ret;
 
 	this->_tokens = tokens;
-	if (!tokens[0].compare("server"))
+	if (tokens[0] == "server")
 		return (false);
-	if (!tokens[0].compare("error_page") || !tokens[0].compare("cgi")
-			|| !tokens[0].compare("return") || !tokens[0].compare("location"))
+	if (tokens[0] == "error_page" || tokens[0] == "cgi"
+			|| tokens[0] == "return" || tokens[0] == "location")
 		ret = this->_directive_list.insert(tokens[0] + tokens[1]);
 	else
 		ret = this->_directive_list.insert(tokens[0]);
@@ -200,9 +200,9 @@ bool	ParserHelper::get_autoindex( void )
 {
 	if (this->_tokens.size() != 2)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	if (!this->_tokens[1].compare("on"))
+	if (this->_tokens[1] == "on")
 		return (true);
-	else if (!this->_tokens[1].compare("off"))
+	else if (this->_tokens[1] == "off")
 		return (false);
 	else
 		throw ParserHelper::InvalidValues("autoindex", this->_tokens[1]);
@@ -214,9 +214,11 @@ std::string	ParserHelper::get_cgi( void )
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
 	if (!this->_valid_cgi_extension(this->_tokens[1]))
 		throw ParserHelper::InvalidValues("cgi", this->_tokens[1]);
-	if (!this->_valid_cgi_binary(this->_tokens[2]))
+
+	std::string cgi_binary = this->_valid_cgi_binary(this->_tokens[2]);
+	if (cgi_binary.empty())
 		throw ParserHelper::SystemError("cgi", this->_tokens[2]);
-	return (this->_tokens[2]);
+	return (cgi_binary);
 }
 
 std::pair<size_t, std::string>	ParserHelper::get_return( void )
@@ -232,9 +234,9 @@ bool	ParserHelper::get_upload( void )
 {
 	if (this->_tokens.size() != 2)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	if (!this->_tokens[1].compare("on"))
+	if (this->_tokens[1] == "on")
 		return (true);
-	else if (!this->_tokens[1].compare("off"))
+	else if (this->_tokens[1] == "off")
 		return (false);
 	else
 		throw ParserHelper::InvalidValues("upload", this->_tokens[1]);
@@ -270,7 +272,7 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 	{
 		for (size_t j = 0; j < cmp.size(); j++)
 		{
-			if (!args[i].compare(cmp[j]))
+			if (args[i] == cmp[j])
 				break ;
 			if (j == cmp.size())
 				throw ParserHelper::InvalidValues("get_limit_except", args[i]);
@@ -361,7 +363,7 @@ bool	ParserHelper::_valid_cgi_extension( std::string const &ext )
 	return (true);
 }
 
-bool	ParserHelper::_valid_cgi_binary( std::string const &bin )
+std::string	ParserHelper::_valid_cgi_binary( std::string const &bin )
 {
 	std::vector<std::string>	bin_paths;
 	struct stat 				buf;
@@ -373,16 +375,16 @@ bool	ParserHelper::_valid_cgi_binary( std::string const &bin )
 	{
 		// if file is found and it is executable -> valid binary
 		if ((stat(bin_paths[i].c_str(), &buf) == 0) && (buf.st_mode & S_IXUSR))
-			return (true);
+			return (bin_paths[i]);
 		// if file is found and it is not executable -> invalid binary
 		if ((stat(bin_paths[i].c_str(), &buf) == 0) && !(buf.st_mode & S_IXUSR))
 		{
 			errno = EACCES;
-			return (false);
+			return ("");
 		}
 	}
 	// if loop is over (file not found) -> invalid binary
-	return (false);
+	return ("");
 }
 
 std::vector<std::string>	ParserHelper::_get_path_vector( std::string const &bin )
