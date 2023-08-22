@@ -178,6 +178,11 @@ void	HttpRequest::validate( void ) {
 	// Other checks:
 }
 
+int	HttpRequest::get_error_code( void ) const
+{
+	return (this->_error_code);
+}
+
 void	HttpRequest::set_error_code( int const &code )
 {
 	if (this->_error_code == 0)

@@ -133,7 +133,7 @@ void	WebServ::parse_request( int idx )
 		request.parse(this->client_connections[client_fd].buffer);
 		this->client_connections[client_fd].is_request_parsed = true;
 
-		// TO-DO Check Redirections
+		// TO-DO: Check Redirections
 		std::string	path(std::getenv("PWD") + this->client_connections[client_fd].host->root);
 		chdir(path.c_str());
 		request.validate();
@@ -149,15 +149,17 @@ void	WebServ::create_response( int idx )
 {
 	int 		client_fd = this->pollfds[idx].fd;
 	HttpRequest request = this->client_connections[client_fd].request;
+	int			code = request.get_error_code();
 
-	// TO-DO Create response class with its message and member functions for each method allowed
+	// TO-DO: Create response class with its message and member functions for each allowed method
 	std::string response;
 
 	if (!this->client_connections[client_fd].is_request_completed)
 		return ;
 
-	// TO-DO Set response messages where errors happen on parsing and validation
+	// TO-DO: Set response messages where errors happen on parsing and validation
 	//
+	// (if code != 0)
 	// Afterwards each method function shall be caught and redirected
 	// as it should and responses with error or not will be set
 	if (request.method == "HEAD")
@@ -200,7 +202,7 @@ void	WebServ::send_response( int idx )
 	this->pollfds[idx].events = POLLIN;
 	this->client_connections[client_fd].timestamp = timestamp();
 
-	// TO-DO Function to clear buffer, request, response, bool checks as below
+	// TO-DO: Function to clear buffer, request, response, bool checks as below
 	//
 	// I considered clearing with the second constructor, but I do not know if we
 	// could have memory leaks due to the allocated Server in host
