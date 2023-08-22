@@ -2,6 +2,7 @@
 
 ClientConnection::ClientConnection( void ) : host(NULL),
 												timestamp(0),
+												response(""),
 												is_line_request_received(false),
 												is_header_received(false),												
 												is_request_parsed(false),
@@ -9,6 +10,7 @@ ClientConnection::ClientConnection( void ) : host(NULL),
 
 ClientConnection::ClientConnection( Server *server, long long timestamp ) : host(server),
 																			timestamp(timestamp),
+																			response(""),
 																			is_line_request_received(false),
 																			is_header_received(false),
 																			is_request_parsed(false),

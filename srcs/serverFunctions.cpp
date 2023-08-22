@@ -44,23 +44,11 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 		if (!read_client_request(webserv, i)) {
 			return ;
 		}
-		int client_fd = webserv.pollfds[i].fd;
-		if (webserv.client_connections[client_fd].is_header_received &&
-				!webserv.client_connections[client_fd].is_request_parsed) {
-			HttpRequest request;
-			request.parse(webserv.client_connections[client_fd].buffer);
-			webserv.client_connections[client_fd].is_request_parsed = true;
-
-			std::string	path(std::getenv("PWD") + webserv.client_connections[client_fd].host->root);
-			chdir(path.c_str());
-			request.validate();
-			chdir(std::getenv("PWD"));
-			request.print();
-			webserv.client_connections[client_fd].request = request;
-		}
+		webserv.parse_request(i);
+		webserv.create_response(i);
 	}
 	else if (is_output_ready) {
-		// send response to client
+		webserv.send_response(i);
 	}
 }
 
@@ -91,41 +79,3 @@ void	run_server( WebServ &webserv, char *config_file ) {
 	webserv.init(config_file);
 	poll_events(webserv);
 }
-
-// 	--ready to read client socket
-// 	*parse client request
-// 		The normal procedure for parsing an HTTP message is to read the
-// 		start-line into a structure, read each header field into a hash table
-// 		by field name until the empty line, and then use the parsed data to
-// 		determine if a message body is expected.  If a message body has been
-// 		indicated, then it is read as a stream until an amount of octets
-// 		equal to the message body length is read or the connection is closed.
-// 	*read msg until end
-// 	*create and set response
-// 	*set event to POLLOUT
-// char buf[256];
-// int nbytes = recv(webserv.pollfds[i].fd, buf, sizeof(buf), 0);
-// if (nbytes <= 0)
-// {
-// 	if (nbytes == 0)
-// 		std::cout << "socket: '" << webserv.pollfds[i].fd << "' hung up" << std::endl;
-// 	else
-// 		std::cout << "recv error" << std::endl;
-// 	webserv.end_client_connection(i);
-// }
-// else
-// {
-// 	buf[nbytes] = '\0';
-// 	std::cout << "from socket '" << webserv.pollfds[i].fd << "': ";
-// 	std::cout << buf << std::endl;
-// }
-// webserv.pollfds[i].events = POLLOUT;
-// }
-// else if (revents & POLLOUT)
-// {
-// 	--ready to write at client socket
-// 	*send response message
-// 	*set event to POLLIN
-// send(webserv.pollfds[i].fd, "msg received\n", 13, 0);
-// webserv.pollfds[i].events = POLLIN;
-// webserv.clients[webserv.pollfds[i].fd].timestamp = timestamp();

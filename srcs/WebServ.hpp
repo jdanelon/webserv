@@ -18,11 +18,11 @@ class WebServ
 
 	public:
 
-		Parser						parser;
-		std::map<int, Server *>		servers;
-		std::vector<struct pollfd>	pollfds;
+		Parser								parser;
+		std::map<int, Server *>				servers;
+		std::vector<struct pollfd>			pollfds;
 		std::map<int, ClientConnection>		client_connections;
-		bool						has_closed_connections;
+		bool								has_closed_connections;
 
 		WebServ( void );
 		WebServ( WebServ const &obj );
@@ -33,6 +33,9 @@ class WebServ
 		bool	client_timeout( int idx );
 		void	end_client_connection( int idx );
 		void	accept_queued_connections( int idx );
+		void	parse_request( int idx );
+		void	create_response( int idx );
+		void	send_response( int idx );
 		void	purge_connections( void );
 
 	private:

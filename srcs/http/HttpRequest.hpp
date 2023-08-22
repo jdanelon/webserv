@@ -22,7 +22,9 @@ struct CaseInsensitive {
 };
 
 class HttpRequest {
+
 	public:
+
 		std::string											method;
 		std::string											uri;
 		std::string											version;
@@ -40,9 +42,15 @@ class HttpRequest {
 		void	parse_request_line( std::string line );
 		void	parse_header_line( std::string line );
 		void	validate( void );
+		void	set_error_code( int const &code );
 
 		//Debug
 		void	print( void );
+	
+	private:
+
+		int	_error_code;
+
 };
 
 #endif

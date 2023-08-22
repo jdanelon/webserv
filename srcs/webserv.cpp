@@ -19,6 +19,8 @@ WebServ &WebServ::operator = ( WebServ const &obj )
 		this->servers = obj.servers;
 		this->pollfds = obj.pollfds;
 		this->client_connections = obj.client_connections;
+		this->has_closed_connections = obj.has_closed_connections;
+		this->_backlog = obj._backlog;
 	}
 	return (*this);
 }
@@ -120,6 +122,70 @@ void	WebServ::accept_queued_connections( int idx )
 
 		client_fd = accept(server_fd, NULL, NULL);
 	}
+}
+
+void	WebServ::parse_request( int idx )
+{
+	int client_fd = this->pollfds[idx].fd;
+	if (this->client_connections[client_fd].is_header_received &&
+			!this->client_connections[client_fd].is_request_parsed) {
+		HttpRequest request;
+		request.parse(this->client_connections[client_fd].buffer);
+		this->client_connections[client_fd].is_request_parsed = true;
+
+	// CHECK REDIRECTIONS
+		std::string	path(std::getenv("PWD") + this->client_connections[client_fd].host->root);
+		chdir(path.c_str());
+		request.validate();
+		chdir(std::getenv("PWD"));
+
+		// request.print();
+		this->client_connections[client_fd].request = request;
+		this->client_connections[client_fd].is_request_completed = true;
+	}
+}
+
+void	WebServ::create_response( int idx )
+{
+	int 		client_fd = this->pollfds[idx].fd;
+	HttpRequest request = this->client_connections[client_fd].request;
+	std::string response;
+
+	if (!this->client_connections[client_fd].is_request_completed)
+		return ;
+
+	if (request.method == "HEAD")
+	{
+		response += request.version + " 200 OK\r\n";
+		std::map<std::string, std::string, CaseInsensitive>::iterator it;
+		for (it = request.headers.begin(); it != request.headers.end(); ++it)
+			response += it->first + ": " + it->second + "\r\n";
+		response += "\r\n";
+	}
+	if (request.method == "GET")
+	{}
+	if (request.method == "POST")
+	{}
+	if (request.method == "DELETE")
+	{}
+	this->client_connections[client_fd].response = response;
+	this->pollfds[idx].events = POLLOUT;
+}
+
+void	WebServ::send_response( int idx )
+{
+	int 		client_fd = this->pollfds[idx].fd;
+	std::string response = this->client_connections[client_fd].response;
+
+	send(client_fd, response.c_str(), response.length(), 0);
+	this->pollfds[idx].events = POLLIN;
+	this->client_connections[client_fd].timestamp = timestamp();
+
+	// CLEAR BOOL CHECKS, REQUEST, RESPONSE
+	this->client_connections[client_fd].is_line_request_received = false;
+	this->client_connections[client_fd].is_header_received = false;
+	this->client_connections[client_fd].is_request_parsed = false;
+	this->client_connections[client_fd].is_request_completed = false;
 }
 
 void	WebServ::purge_connections( void )

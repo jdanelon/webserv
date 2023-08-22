@@ -15,11 +15,12 @@ class ClientConnection
 
 		std::string	buffer;
 		HttpRequest	request;
-		HttpRequest	response;
+		std::string	response;
 		bool		is_line_request_received;
 		bool		is_header_received;
 		bool		is_request_parsed;
 		bool		is_request_completed;
+		int			error_code;
 
 		ClientConnection( void );
 		ClientConnection( Server *server, long long timestamp );
