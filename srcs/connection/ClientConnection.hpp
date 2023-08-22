@@ -20,7 +20,6 @@ class ClientConnection
 		bool		is_header_received;
 		bool		is_request_parsed;
 		bool		is_request_completed;
-		int			error_code;
 
 		ClientConnection( void );
 		ClientConnection( Server *server, long long timestamp );
@@ -29,6 +28,12 @@ class ClientConnection
 		virtual ~ClientConnection( void );
 
 	private:
+
+		// TO-DO Create a map with status code and corresponding message
+		//
+		// I am not sure where it should be configured and if public or private
+		// The way I did here gives a memory leak, so I commented everything
+		// std::map<int, std::string>	_error_codes_map;
 
 };
 

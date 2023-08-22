@@ -76,3 +76,16 @@ long long	timestamp( void )
 	gettimeofday(&time, NULL);
 	return ((time.tv_sec * 1000) + (time.tv_usec / 1000));
 }
+
+std::string	ft_itoa( int n )
+{
+	std::string	str;
+
+	while (n >= 10)
+	{
+		str.insert(str.begin(), n % 10 + '0');
+		n /= 10;
+	}
+	str.insert(str.begin(), n % 10 + '0');
+	return (str);
+}

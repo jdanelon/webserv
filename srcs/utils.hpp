@@ -13,5 +13,6 @@ char		ft_tolower( char c );
 char		ft_toupper( char c );
 bool		ft_empty( char const *str );
 long long	timestamp( void );
+std::string ft_itoa( int n );
 
 #endif

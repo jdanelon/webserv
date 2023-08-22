@@ -133,7 +133,7 @@ void	WebServ::parse_request( int idx )
 		request.parse(this->client_connections[client_fd].buffer);
 		this->client_connections[client_fd].is_request_parsed = true;
 
-	// CHECK REDIRECTIONS
+		// TO-DO Check Redirections
 		std::string	path(std::getenv("PWD") + this->client_connections[client_fd].host->root);
 		chdir(path.c_str());
 		request.validate();
@@ -149,11 +149,17 @@ void	WebServ::create_response( int idx )
 {
 	int 		client_fd = this->pollfds[idx].fd;
 	HttpRequest request = this->client_connections[client_fd].request;
+
+	// TO-DO Create response class with its message and member functions for each method allowed
 	std::string response;
 
 	if (!this->client_connections[client_fd].is_request_completed)
 		return ;
 
+	// TO-DO Set response messages where errors happen on parsing and validation
+	//
+	// Afterwards each method function shall be caught and redirected
+	// as it should and responses with error or not will be set
 	if (request.method == "HEAD")
 	{
 		response += request.version + " 200 OK\r\n";
@@ -168,6 +174,19 @@ void	WebServ::create_response( int idx )
 	{}
 	if (request.method == "DELETE")
 	{}
+
+	// VALID MESSAGE JUST TO CLOSE CURL CONNECTION
+	if (response.empty())
+	{
+		response += "HTTP/1.1 200 OK\r\n";
+		std::map<std::string, std::string, CaseInsensitive>::iterator it;
+		for (it = request.headers.begin(); it != request.headers.end(); ++it)
+			response += it->first + ": " + it->second + "\r\n";
+		response += "Content-Length: 25\r\n";
+		response += "\r\n";
+		response += "RESPONSE NOT CONFIGURED\r\n";
+	}
+
 	this->client_connections[client_fd].response = response;
 	this->pollfds[idx].events = POLLOUT;
 }
@@ -181,7 +200,13 @@ void	WebServ::send_response( int idx )
 	this->pollfds[idx].events = POLLIN;
 	this->client_connections[client_fd].timestamp = timestamp();
 
-	// CLEAR BOOL CHECKS, REQUEST, RESPONSE
+	// TO-DO Function to clear buffer, request, response, bool checks as below
+	//
+	// I considered clearing with the second constructor, but I do not know if we
+	// could have memory leaks due to the allocated Server in host
+	this->client_connections[client_fd].buffer = "";
+	this->client_connections[client_fd].request = HttpRequest();
+	this->client_connections[client_fd].response = "";
 	this->client_connections[client_fd].is_line_request_received = false;
 	this->client_connections[client_fd].is_header_received = false;
 	this->client_connections[client_fd].is_request_parsed = false;
