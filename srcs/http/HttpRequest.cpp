@@ -110,17 +110,19 @@ void	HttpRequest::parse_header_line( std::string line ) {
 	}
 }
 
-void	HttpRequest::validate( void ) {
+void	HttpRequest::validate( std::string path ) {
 	std::cout << "Validating request:" << std::endl;
 
 	// Check if the request line is valid
-	if (this->method.empty() || this->uri.empty() || this->version.empty()) {
+	if (this->method.empty() || this->uri.empty() || this->version.empty())
+	{
 		// std::cout << "Error: Invalid request line" << std::endl;
 		// If invalid - ERROR CODE 400 (Bad Request)
 		this->set_error_code(400);
 		return ;
 	}
 
+	// TO-DO: Add limit_except functionality
 	if (this->method == "PUT" || this->method == "CONNECT" || this->method == "OPTIONS" ||
 		this->method == "TRACE" || this->method == "PATCH")
 	{
@@ -147,11 +149,9 @@ void	HttpRequest::validate( void ) {
 		return ;
 	}
 
-	char		dir[256];
 	struct stat	buf;
-	getcwd(dir, sizeof(dir));
-	std::string	path(dir + std::string("/") + this->uri);
-	if ((stat(path.c_str(), &buf) == -1) || (!S_ISDIR(buf.st_mode | S_IRUSR) && !(buf.st_mode & S_IXUSR)))
+	std::string	full_path(path + std::string("/") + this->uri);
+	if ((stat(full_path.c_str(), &buf) == -1) || (!S_ISDIR(buf.st_mode | S_IRUSR) && !(buf.st_mode & S_IXUSR)))
 	{
 		// std::cout << "Error: Not found" << std::endl;
 		// URI does not exist - ERROR CODE 404 (Not Found)

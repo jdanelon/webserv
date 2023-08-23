@@ -134,12 +134,9 @@ void	WebServ::parse_request( int idx )
 		this->client_connections[client_fd].is_request_parsed = true;
 
 		// TO-DO: Check Redirections
-		std::string	path(std::getenv("PWD") + this->client_connections[client_fd].host->root);
-		chdir(path.c_str());
-		request.validate();
-		chdir(std::getenv("PWD"));
+		request.validate(std::getenv("PWD") + this->client_connections[client_fd].host->root);
 
-		// request.print();
+		request.print();
 		this->client_connections[client_fd].request = request;
 		this->client_connections[client_fd].is_request_completed = true;
 	}
@@ -159,9 +156,10 @@ void	WebServ::create_response( int idx )
 
 	// TO-DO: Set response messages where errors happen on parsing and validation
 	//
-	// (if code != 0)
 	// Afterwards each method function shall be caught and redirected
 	// as it should and responses with error or not will be set
+	if (code != 0)
+	{}
 	if (request.method == "HEAD")
 	{
 		response += request.version + " 200 OK\r\n";

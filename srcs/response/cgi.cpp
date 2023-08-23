@@ -36,6 +36,9 @@ int	main( void )
 		// - link child fd to STDOUT
 		// - what gets printed on child's STDOUT is sent to parent fd 
 		dup2(fd[child], STDOUT_FILENO);
+
+		// TO-DO: Ignore outside environment and set local environment as string array
+		// EX: arr[num] = "PATH_INFO=" + request_uri;
 		// - set environment variables that can be accessed from cgi script (setenv)
 		setenv("CONTENT_LENGTH", "42", 1); // if msg has body present
 		setenv("CONTENT_TYPE", "", 1); // get from header

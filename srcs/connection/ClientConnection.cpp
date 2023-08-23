@@ -35,9 +35,11 @@ ClientConnection::ClientConnection( Server *server, long long timestamp ) : host
 	// this->_error_codes_map[408] = "Request Timeout";
 	// this->_error_codes_map[410] = "Gone";
 	// this->_error_codes_map[411] = "Length Required";
+	// this->_error_codes_map[413] = "Payload Too Large";
 	// this->_error_codes_map[414] = "URI Too Long";
 	// this->_error_codes_map[415] = "Unsupported Media Type";
 	// this->_error_codes_map[429] = "Too Many Requests";
+	// this->_error_codes_map[500] = "Internal Server Errror"; // EXAMPLE: TIMEOUT ON CGI
 	// this->_error_codes_map[501] = "Not Implemented";
 	// this->_error_codes_map[505] = "HTTP Version Not Supported";
 }

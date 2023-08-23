@@ -12,8 +12,8 @@
 
 struct CaseInsensitive {
 	bool	operator () ( std:: string const &s1, std::string const &s2 ) const {
-		std::string	str1(s1.length(), ' ');
-		std::string	str2(s2.length(), ' ');
+		std::string	str1(s1);
+		std::string	str2(s2);
 
 		std::transform(str1.begin(), str1.end(), str1.begin(), ft_tolower);
 		std::transform(str2.begin(), str2.end(), str2.begin(), ft_tolower);
@@ -41,7 +41,7 @@ class HttpRequest {
 		void	parse( std::string raw );
 		void	parse_request_line( std::string line );
 		void	parse_header_line( std::string line );
-		void	validate( void );
+		void	validate( std::string path );
 		int		get_error_code( void ) const;
 		void	set_error_code( int const &code );
 
