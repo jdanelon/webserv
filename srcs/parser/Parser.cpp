@@ -87,9 +87,9 @@ std::vector<std::string>	Parser::_get_split_lines( std::string line )
 		if (vecDir.back().length() == 0)
 			vecDir.pop_back();
 	}
-	if (end_line == std::string::npos && vecDir[0].compare("server") &&
-			vecDir[0].compare("location") && vecDir[0].compare("}") &&
-			vecDir[0].compare("http"))
+	if (end_line == std::string::npos && vecDir[0] != "server" &&
+			vecDir[0] != "location" && vecDir[0] != "}" &&
+			vecDir[0] != "http")
 		vecDir.clear();
 	return (vecDir);
 }
@@ -116,25 +116,25 @@ Location	Parser::_parse_location( std::istringstream *istr )
 		directive = tokens[0];
 		if (helper.duplicated_directives(tokens))
 			throw ParserHelper::DuplicatedDirectives(directive);
-		if (!directive.compare("root"))
+		if (directive == "root")
 			loc.root = helper.get_root();
-		 else if (!directive.compare("index"))
+		 else if (directive == "index")
 		 	loc.index = helper.get_index();
-		else if (!directive.compare("limit_except"))
+		else if (directive == "limit_except")
 			loc.limit_except = helper.get_limit_except();
-		else if (!directive.compare("client_max_body_size"))
+		else if (directive == "client_max_body_size")
 			loc.client_max_body_size = helper.get_client_max_body_size();
-		else if (!directive.compare("autoindex"))
+		else if (directive == "autoindex")
 			loc.autoindex = helper.get_autoindex();
-		else if (!directive.compare("cgi"))
+		else if (directive == "cgi")
 			loc.cgi[tokens[1]] = helper.get_cgi();
-		else if (!directive.compare("return"))
+		else if (directive == "return")
 			loc.redirect = helper.get_return();
-		else if (!directive.compare("upload"))
+		else if (directive == "upload")
 			loc.upload = helper.get_upload();
-		else if (!directive.compare("upload_store"))
+		else if (directive == "upload_store")
 			loc.upload_store = helper.get_upload_store();
-		else if (!directive.compare("}"))
+		else if (directive == "}")
 			break ;
 		else
 			throw ParserHelper::UnknownDirective(directive);
@@ -161,49 +161,49 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 		directive = tokens[0];
 		if (helper.duplicated_directives(tokens))
 			throw ParserHelper::DuplicatedDirectives(directive);
-		if (!directive.compare("listen"))
+		if (directive == "listen")
 		{
 			std::pair<std::string, std::string> pair = helper.get_listen();
 			srv.host = pair.first;
 			srv.port = pair.second;
 		}
-		else if (!directive.compare("server_name"))
+		else if (directive == "server_name")
 			srv.server_name = helper.get_server_name();
-		else if (!directive.compare("root"))
+		else if (directive == "root")
 			srv.root = helper.get_root();
-		else if (!directive.compare("index"))
+		else if (directive == "index")
 			srv.index = helper.get_index();
-		else if (!directive.compare("error_page"))
+		else if (directive == "error_page")
 		{
 			int code = ft_atoi(tokens[1].c_str());
 			srv.error_page[code] = helper.get_error_page();
 		}
-		else if (!directive.compare("timeout"))
+		else if (directive == "timeout")
 			srv.timeout = helper.get_timeout();
-		else if (!directive.compare("client_max_body_size"))
+		else if (directive == "client_max_body_size")
 			srv.client_max_body_size = helper.get_client_max_body_size();
-		// else if (!directive.compare("access_log"))
+		// else if (directive == "access_log")
 		// 	srv.access_log = helper.get_access_log();
-		// else if (!directive.compare("error_log"))
+		// else if (directive == "error_log")
 		// 	srv.error_log = helper.get_error_log();
-		else if (!directive.compare("autoindex"))
+		else if (directive == "autoindex")
 			srv.autoindex = helper.get_autoindex();
-		else if (!directive.compare("cgi"))
+		else if (directive == "cgi")
 			srv.cgi[tokens[1]] = helper.get_cgi();
-		else if (!directive.compare("return"))
+		else if (directive == "return")
 			srv.redirect = helper.get_return();
-		else if (!directive.compare("upload"))
+		else if (directive == "upload")
 			srv.upload = helper.get_upload();
-		else if (!directive.compare("upload_store"))
+		else if (directive == "upload_store")
 			srv.upload_store = helper.get_upload_store();
-		else if (!directive.compare("location"))
+		else if (directive == "location")
 		{
-			if (tokens.size() == 3 && tokens[1][0] == '/' && !tokens[2].compare("{"))
+			if (tokens.size() == 3 && tokens[1][0] == '/' && tokens[2]== "{")
 				srv.location[tokens[1]] = this->_parse_location(istr);
 			else
 				throw ParserHelper::InvalidLine(line);
 		}
-		else if (!directive.compare("}"))
+		else if (directive == "}")
 			break ;
 		else
 			throw ParserHelper::UnknownDirective(directive);
@@ -230,11 +230,11 @@ void	Parser::_parse( std::istringstream *istr )
 		directive = tokens[0];
 		if (helper.duplicated_directives(tokens))
 			throw ParserHelper::DuplicatedDirectives(directive);
-		if (!directive.compare("worker_connections"))
+		if (directive == "worker_connections")
 			this->backlog = helper.get_backlog();
-		else if (!directive.compare("server"))
+		else if (directive == "server")
 		{
-			if (tokens.size() == 2 && !tokens[1].compare("{"))
+			if (tokens.size() == 2 && tokens[1] == "{")
 				this->_servers.push_back(this->_parse_servers(istr));
 			else
 				throw ParserHelper::InvalidLine(line);

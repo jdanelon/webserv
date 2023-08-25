@@ -36,8 +36,24 @@ int	main( void )
 		// - link child fd to STDOUT
 		// - what gets printed on child's STDOUT is sent to parent fd 
 		dup2(fd[child], STDOUT_FILENO);
+
+		// TO-DO: Ignore outside environment and set local environment as string array
+		// EX: arr[num] = "PATH_INFO=" + request_uri;
 		// - set environment variables that can be accessed from cgi script (setenv)
-		setenv("jdanelon", "42", 1);
+		setenv("CONTENT_LENGTH", "42", 1); // if msg has body present
+		setenv("CONTENT_TYPE", "", 1); // get from header
+		setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
+		// setenv("PATH_INFO", request_uri, 1);
+		// setenv("PATH_TRANSLATED", path_to_cgi_script, 1);
+		setenv("QUERY_STRING", "", 1); // string after cgi script
+		// setenv("REMOTE_ADDR", network_address_of_the_client, 1);
+		// setenv("REMOTE_HOST", fully_qualified_domain_name_of_the_client, 1);
+		// setenv("REQUEST_METHOD", method, 1);
+		setenv("SCRIPT_NAME", "", 1); // url_of_the_script_being_executed
+		// setenv("SERVER_NAME", host_ip, 1);
+		// setenv("SERVER_PORT", host_port, 1);
+		setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+		setenv("SERVER_SOFTWARE", "webserv/1.0", 1);
 
 		// - run binary based on cgi script (execve)
 		const char	**arr = new const char *[3];
