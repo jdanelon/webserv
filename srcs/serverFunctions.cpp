@@ -57,6 +57,7 @@ void	poll_events( WebServ &webserv ) {
 		int	num_revents = poll(&webserv.pollfds[0], webserv.pollfds.size(), -1);
 		if (num_revents < 0)
 			break;
+		// webserv.print();
 		for (unsigned int i = 0; i < webserv.pollfds.size(); i++) {
 			bool is_server = webserv.servers.count(webserv.pollfds[i].fd);
 			if (!is_server && webserv.client_timeout(i)) {

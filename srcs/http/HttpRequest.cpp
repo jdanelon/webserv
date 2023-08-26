@@ -190,10 +190,11 @@ void	HttpRequest::set_error_code( int const &code )
 }
 
 // Debug
-void	HttpRequest::print( void ) {
+void	HttpRequest::print( int client_fd ) {
 	// Print a header to see where the request starts
 	std::cout << "------------------" << std::endl;
-	std::cout << "Printing parsed request:" << std::endl;
+	std::cout << "Client fd: " << client_fd << std::endl;
+	std::cout << "Parsed request:" << std::endl;
 	std::cout << "method: '" << this->method << "'" << std::endl;
 	std::cout << "uri: '" << this->uri << "'" << std::endl;
 	std::cout << "version: '" << this->version << "'" << std::endl;

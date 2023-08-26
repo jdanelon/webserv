@@ -2,6 +2,29 @@
 
 WebServ::WebServ( void ) : has_closed_connections(false)
 {
+	this->_error_codes_map[100] = "Continue";
+	this->_error_codes_map[200] = "OK";
+	this->_error_codes_map[201] = "Created";
+	this->_error_codes_map[202] = "Accepted";
+	this->_error_codes_map[204] = "No Content";
+	this->_error_codes_map[301] = "Moved Permanently";
+	this->_error_codes_map[302] = "Found";
+	this->_error_codes_map[400] = "Bad Request";
+	this->_error_codes_map[401] = "Unauthorized";
+	this->_error_codes_map[403] = "Forbidden";
+	this->_error_codes_map[404] = "Not Found";
+	this->_error_codes_map[405] = "Method Not Allowed";
+	this->_error_codes_map[408] = "Request Timeout";
+	this->_error_codes_map[410] = "Gone";
+	this->_error_codes_map[411] = "Length Required";
+	this->_error_codes_map[413] = "Payload Too Large";
+	this->_error_codes_map[414] = "URI Too Long";
+	this->_error_codes_map[415] = "Unsupported Media Type";
+	this->_error_codes_map[429] = "Too Many Requests";
+	this->_error_codes_map[500] = "Internal Server Error"; // EXAMPLE: TIMEOUT ON CGI
+	this->_error_codes_map[501] = "Not Implemented";
+	this->_error_codes_map[505] = "HTTP Version Not Supported";
+
 	return ;
 }
 
@@ -91,6 +114,7 @@ bool	WebServ::client_timeout( int idx )
 
 void	WebServ::end_client_connection( int idx )
 {
+	std::cout << "Closing connection for fd: " << this->pollfds[idx].fd << std::endl;
 	close(this->pollfds[idx].fd);
 	// remove client and delete reserved client memory from this->clients (?)
 	// ...
@@ -120,7 +144,7 @@ void	WebServ::accept_queued_connections( int idx )
 		ClientConnection client_connection(this->servers[server_fd], timestamp());
 		this->client_connections[client_fd] = client_connection;
 
-		client_fd = accept(server_fd, NULL, NULL);
+		client_fd = accept(server_fd, NULL, NULL); // ?? again
 	}
 }
 
@@ -136,7 +160,7 @@ void	WebServ::parse_request( int idx )
 		// TO-DO: Check Redirections
 		request.validate(std::getenv("PWD") + this->client_connections[client_fd].host->root);
 
-		request.print();
+		request.print(client_fd);
 		this->client_connections[client_fd].request = request;
 		this->client_connections[client_fd].is_request_completed = true;
 	}
@@ -146,55 +170,23 @@ void	WebServ::create_response( int idx )
 {
 	int 		client_fd = this->pollfds[idx].fd;
 	HttpRequest request = this->client_connections[client_fd].request;
-	int			code = request.get_error_code();
 
 	// TO-DO: Create response class with its message and member functions for each allowed method
-	std::string response;
+	HttpResponse http_response;
 
 	if (!this->client_connections[client_fd].is_request_completed)
 		return ;
+	http_response.generateResponse(request);
+	http_response.print(client_fd);
 
-	// TO-DO: Set response messages where errors happen on parsing and validation
-	//
-	// Afterwards each method function shall be caught and redirected
-	// as it should and responses with error or not will be set
-	if (code != 0)
-	{}
-	if (request.method == "HEAD")
-	{
-		response += request.version + " 200 OK\r\n";
-		std::map<std::string, std::string, CaseInsensitive>::iterator it;
-		for (it = request.headers.begin(); it != request.headers.end(); ++it)
-			response += it->first + ": " + it->second + "\r\n";
-		response += "\r\n";
-	}
-	if (request.method == "GET")
-	{}
-	if (request.method == "POST")
-	{}
-	if (request.method == "DELETE")
-	{}
-
-	// VALID MESSAGE JUST TO CLOSE CURL CONNECTION
-	if (response.empty())
-	{
-		response += "HTTP/1.1 200 OK\r\n";
-		std::map<std::string, std::string, CaseInsensitive>::iterator it;
-		for (it = request.headers.begin(); it != request.headers.end(); ++it)
-			response += it->first + ": " + it->second + "\r\n";
-		response += "Content-Length: 25\r\n";
-		response += "\r\n";
-		response += "RESPONSE NOT CONFIGURED\r\n";
-	}
-
-	this->client_connections[client_fd].response = response;
+	this->client_connections[client_fd].response = http_response;
 	this->pollfds[idx].events = POLLOUT;
 }
 
 void	WebServ::send_response( int idx )
 {
 	int 		client_fd = this->pollfds[idx].fd;
-	std::string response = this->client_connections[client_fd].response;
+	std::string response = this->client_connections[client_fd].response.getResponse();
 
 	send(client_fd, response.c_str(), response.length(), 0);
 	this->pollfds[idx].events = POLLIN;
@@ -206,7 +198,7 @@ void	WebServ::send_response( int idx )
 	// could have memory leaks due to the allocated Server in host
 	this->client_connections[client_fd].buffer = "";
 	this->client_connections[client_fd].request = HttpRequest();
-	this->client_connections[client_fd].response = "";
+	this->client_connections[client_fd].response = HttpResponse();
 	this->client_connections[client_fd].is_line_request_received = false;
 	this->client_connections[client_fd].is_header_received = false;
 	this->client_connections[client_fd].is_request_parsed = false;
@@ -223,4 +215,18 @@ void	WebServ::purge_connections( void )
 		else
 			it++;
 	}
+}
+
+// Debug
+void	WebServ::print(void) {
+	std::cout << "------------------" << std::endl;
+	std::cout << "WebServ" << std::endl;
+	std::cout << "Pollfds: " << std::endl;
+	for (unsigned int i = 0; i < this->pollfds.size(); i++) {
+		std::cout << "fd: " << this->pollfds[i].fd << std::endl;
+		std::cout << "events: " << this->pollfds[i].events << std::endl;
+		std::cout << "revents: " << this->pollfds[i].revents << std::endl;
+	}
+	std::cout << "Client connections size: " << this->client_connections.size() << std::endl;
+	std::cout << "------------------" << std::endl;
 }

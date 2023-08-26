@@ -46,12 +46,11 @@ class HttpRequest {
 		void	set_error_code( int const &code );
 
 		//Debug
-		void	print( void );
+		void	print( int client_fd );
 	
 	private:
 
 		int	_error_code;
-
 };
 
 #endif
