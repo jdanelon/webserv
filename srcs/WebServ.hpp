@@ -38,6 +38,8 @@ class WebServ
 		void	send_response( int idx );
 		void	purge_connections( void );
 
+		// Debug
+		void	print( void );
 	private:
 
 		unsigned int	_backlog;
@@ -46,6 +48,7 @@ class WebServ
 		static void	_signal_handler( int const code );
 		void		_init_servers( void );
 
+		std::map<int, std::string>	_error_codes_map;
 };
 
 #endif

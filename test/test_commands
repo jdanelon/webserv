@@ -1,0 +1,3 @@
+# Duplicated header
+
+curl localhost:3490 -H "Content-Type: value" -H "Content-Type: application/json"
