@@ -1,19 +1,104 @@
 #include <iostream> //basic c++
-#include <unistd.h> //fork, dup2
+#include <cstring> //string
+#include <sys/types.h> //pid_t
 #include <sys/socket.h> //socketpair
 #include <fcntl.h> //fcntl
+#include <unistd.h> //fork, dup2
 #include <cstdio> //perror
-#include <cstdlib> //setenv
+#include <vector> //vector
 #include <sys/wait.h> //waitpid
 
-extern char	**environ;
-
-int	main( void )
+static std::vector<std::string>	set_environment( void )
 {
-	// binary must be: absolute path + executable file
-	std::string	bin("/home/jdanelon/anaconda3/bin/python3");
-	std::string	script("cgi.py");
+	std::vector<std::string>	env;
 
+	// TO-DO: Change cgi script
+	// TO-DO: Check which variables must be set for cgi script
+	// TO-DO: Check which informations are needed to set variables
+
+	env.resize(11);
+	env[0] = "REQUEST_METHOD=GET";
+	env[1] = "QUERY_STRING=\"\"";
+	env[2] = "CONTENT_TYPE=text/html";
+	env[3] = "CONTENT_LENGTH=12";
+	env[4] = "HTTP_COOKIE=None";
+	env[5] = "HTTP_USER_AGENT=None";
+	env[6] = "DOCUMENT_ROOT=PATH";
+	env[7] = "SCRIPT_FILENAME=PATH + cgi.py";
+	env[8] = "SCRIPT_NAME=cgi.py";
+	env[9] = "REDIRECT_STATUS=200";
+	env[10] = "REQUEST_BODY=Hello World!";
+
+	// setenv("CONTENT_LENGTH", "42", 1); // if msg has body present
+	// setenv("CONTENT_TYPE", "", 1); // get from header
+	// setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
+	// // setenv("PATH_INFO", request_uri, 1);
+	// // setenv("PATH_TRANSLATED", path_to_cgi_script, 1);
+	// setenv("QUERY_STRING", "", 1); // string after cgi script
+	// // setenv("REMOTE_ADDR", network_address_of_the_client, 1);
+	// // setenv("REMOTE_HOST", fully_qualified_domain_name_of_the_client, 1);
+	// // setenv("REQUEST_METHOD", method, 1);
+	// setenv("SCRIPT_NAME", "", 1); // url_of_the_script_being_executed
+	// // setenv("SERVER_NAME", host_ip, 1);
+	// // setenv("SERVER_PORT", host_port, 1);
+	// setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+	// setenv("SERVER_SOFTWARE", "webserv/1.0", 1);
+	return (env);
+}
+
+static void	handle_child( int const child_fd, std::string bin, std::string script )
+{
+	// child will:
+	// - link child fd to STDOUT
+	// - what gets printed on child's STDOUT is sent to parent fd 
+	dup2(child_fd, STDOUT_FILENO);
+
+	// - set array with execve args
+	const char	**argv = new const char *[3];
+	argv[0] = bin.c_str();
+	argv[1] = script.c_str();
+	argv[2] = NULL;
+
+	// - set environ with CGI variables
+	std::vector<std::string>	env = set_environment();
+	const char	**envp = new const char *[12];
+	envp[0] = env[0].c_str();
+	envp[1] = env[1].c_str();
+	envp[2] = env[2].c_str();
+	envp[3] = env[3].c_str();
+	envp[4] = env[4].c_str();
+	envp[5] = env[5].c_str();
+	envp[6] = env[6].c_str();
+	envp[7] = env[7].c_str();
+	envp[8] = env[8].c_str();
+	envp[9] = env[9].c_str();
+	envp[10] = env[10].c_str();
+	envp[11] = NULL;
+
+	// - run binary based on cgi script (execve)
+	execve(argv[0], (char **)argv, (char **)envp);
+	close(child_fd);
+}
+
+static std::string	get_cgi_output( int fd )
+{
+	char		buf[1024];
+	int			nbytes = read(fd, buf, 1024);
+	std::string	cgi_output;
+
+	while (nbytes != 0)
+	{
+		buf[nbytes] = '\0';
+		cgi_output.append(buf);
+		nbytes = read(fd, buf, 1024);
+	}
+	// close parent fd
+	close(fd);
+	return (cgi_output);
+}
+
+static std::string	handle_cgi( std::string bin, std::string script )
+{
 	pid_t				pid;
 	int					fd[2], status;
 	static const int	parent = 0, child = 1;
@@ -26,64 +111,32 @@ int	main( void )
 	if (pid == -1)
 	{
 		perror("fork");
-		return (-1);
+		return ("");
 	}
 	else if (pid == 0)
 	{
-		// child will:
-		// - close parent fd
 		close(fd[parent]);
-		// - link child fd to STDOUT
-		// - what gets printed on child's STDOUT is sent to parent fd 
-		dup2(fd[child], STDOUT_FILENO);
-
-		// TO-DO: Ignore outside environment and set local environment as string array
-		// EX: arr[num] = "PATH_INFO=" + request_uri;
-		// - set environment variables that can be accessed from cgi script (setenv)
-		setenv("CONTENT_LENGTH", "42", 1); // if msg has body present
-		setenv("CONTENT_TYPE", "", 1); // get from header
-		setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
-		// setenv("PATH_INFO", request_uri, 1);
-		// setenv("PATH_TRANSLATED", path_to_cgi_script, 1);
-		setenv("QUERY_STRING", "", 1); // string after cgi script
-		// setenv("REMOTE_ADDR", network_address_of_the_client, 1);
-		// setenv("REMOTE_HOST", fully_qualified_domain_name_of_the_client, 1);
-		// setenv("REQUEST_METHOD", method, 1);
-		setenv("SCRIPT_NAME", "", 1); // url_of_the_script_being_executed
-		// setenv("SERVER_NAME", host_ip, 1);
-		// setenv("SERVER_PORT", host_port, 1);
-		setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
-		setenv("SERVER_SOFTWARE", "webserv/1.0", 1);
-
-		// - run binary based on cgi script (execve)
-		const char	**arr = new const char *[3];
-		arr[0] = bin.c_str();
-		arr[1] = script.c_str();
-		arr[2] = NULL;
-		execve(arr[0], (char **)arr, environ);
-		// - close child fd
-		close(fd[child]);
+		handle_child(fd[child], bin, script);
 	}
 	// parent will:
 	// - wait for child to finish (waitpid)
+	// - catch child timeout
 	waitpid(pid, &status, 0);
-	// - close child fd
 	close(fd[child]);
-
 	// access message body generated by script
-	char		buf[1024];
-	int			nbytes = read(fd[parent], buf, 1024);
-	std::string	cgi_output;
-	while (nbytes != 0)
-	{
-		buf[nbytes] = '\0';
-		cgi_output.append(buf);
-		nbytes = read(fd[parent], buf, 1024);
-	}
-	// cgi output saved as a long string
-	std::cout << cgi_output;
+	std::string	cgi_output = get_cgi_output(fd[parent]);
 
-	// close parent fd
-	close(fd[parent]);
+	// cgi output saved as a long string
+	return (cgi_output);
+}
+
+int	main( void )
+{
+	// binary must be: absolute path + executable file
+	std::string	bin("/home/jdanelon/anaconda3/bin/python3");
+	std::string	script("cgi.py");
+
+	std::string	output = handle_cgi(bin, script);
+	std::cout << output;
 	return (0);
 }
