@@ -158,7 +158,8 @@ void	WebServ::parse_request( int idx )
 		this->client_connections[client_fd].is_request_parsed = true;
 
 		// TO-DO: Check Redirections
-		request.validate(std::getenv("PWD") + this->client_connections[client_fd].host->root);
+		request.validate(std::getenv("PWD") + this->client_connections[client_fd].host->root,
+							this->client_connections[client_fd].host->location);
 
 		request.print(client_fd);
 		this->client_connections[client_fd].request = request;
@@ -168,11 +169,9 @@ void	WebServ::parse_request( int idx )
 
 void	WebServ::create_response( int idx )
 {
-	int 		client_fd = this->pollfds[idx].fd;
-	HttpRequest request = this->client_connections[client_fd].request;
-
-	// TO-DO: Create response class with its message and member functions for each allowed method
-	HttpResponse http_response;
+	int 			client_fd = this->pollfds[idx].fd;
+	HttpRequest		request = this->client_connections[client_fd].request;
+	HttpResponse	http_response;
 
 	if (!this->client_connections[client_fd].is_request_completed)
 		return ;

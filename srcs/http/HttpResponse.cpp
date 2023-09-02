@@ -98,7 +98,7 @@ void HttpResponse::setStatusCode( int const &code )
 void HttpResponse::generateResponseLine( void )
 {
 	this->response_line = this->http_version + " " 
-		+ std::to_string(this->status_code) + " " 
+		+ ft_itoa(this->status_code) + " " 
 		+ httpStatusCodes.getDescription(this->status_code);
 }
 
@@ -107,7 +107,7 @@ void HttpResponse::generateHeaders( void )
 	this->headers["Server"] = "webserv";
 	this->headers["Date"] = "Mon, 27 Jul 2009 12:28:53 GMT";
 	this->headers["Content-Type"] = "text/html";
-	this->headers["Content-Length"] = std::to_string(this->body.size());
+	this->headers["Content-Length"] = ft_itoa(this->body.size());
 }
 
 // Debug
