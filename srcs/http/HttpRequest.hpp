@@ -8,6 +8,7 @@
 # include <algorithm>
 # include <sys/stat.h>
 # include <unistd.h>
+# include "../parser/Location.hpp"
 # include "../utils.hpp"
 
 struct CaseInsensitive {
@@ -41,7 +42,7 @@ class HttpRequest {
 		void	parse( std::string raw );
 		void	parse_request_line( std::string line );
 		void	parse_header_line( std::string line );
-		void	validate( std::string path );
+		void	validate( std::string path, std::map<std::string, Location> locations );
 		int		get_error_code( void ) const;
 		void	set_error_code( int const &code );
 

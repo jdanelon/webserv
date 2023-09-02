@@ -264,6 +264,7 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 
 	std::vector<std::string> cmp;
 
+	cmp.push_back("HEAD");
 	cmp.push_back("GET");
 	cmp.push_back("POST");
 	cmp.push_back("DELETE");
@@ -275,7 +276,7 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 			if (args[i] == cmp[j])
 				break ;
 			if (j == cmp.size())
-				throw ParserHelper::InvalidValues("get_limit_except", args[i]);
+				throw ParserHelper::InvalidValues("limit_except", args[i]);
 		}
 	}
 	return (args);

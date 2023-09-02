@@ -53,8 +53,6 @@ void	HttpRequest::parse_request_line( std::string line ) {
 	if (first_space == std::string::npos || second_space == std::string::npos ||
 		second_space != line.find_last_of(" "))
 	{
-		// std::cout << "Error: Invalid request line" << std::endl;
-		// If invalid - ERROR CODE 400 (Bad Request)
 		this->set_error_code(400);
 		return ;
 	}
@@ -66,8 +64,6 @@ void	HttpRequest::parse_request_line( std::string line ) {
 	if (this->version.length() != 8 || this->version.compare(0, 5, "HTTP/") ||
 		!isdigit(this->version[5]) || this->version[6] != '.' || !isdigit(this->version[7]))
 	{
-		// std::cout << "Error: Invalid request line" << std::endl;
-		// If invalid - ERROR CODE 400 (Bad Request)
 		this->set_error_code(400);
 		return ;
 	}
@@ -93,8 +89,6 @@ void	HttpRequest::parse_header_line( std::string line ) {
 	value = value.substr(0, value.length() - 1);
 
 	if (key.empty() || value.empty()) {
-		// std::cout << "Error: Invalid header line" << std::endl;
-		// If invalid - ERROR CODE 400 (Bad Request)
 		this->set_error_code(400);
 		return ;
 	}
@@ -103,31 +97,48 @@ void	HttpRequest::parse_header_line( std::string line ) {
 	std::pair<std::map<std::string, std::string, CaseInsensitive>::iterator, bool>	ret;
 	ret = this->headers.insert(std::make_pair(key, value));
 	if (!ret.second) {
-		// std::cout << "Error: Invalid header line" << std::endl;
-		// If invalid - ERROR CODE 400 (Bad Request)
 		this->set_error_code(400);
 		return ;
 	}
 }
 
-void	HttpRequest::validate( std::string path ) {
+static bool	is_method_forbidden( std::string method, std::vector<std::string> allowed )
+{
+	if (method != "HEAD" && method != "GET" && method != "POST" && method != "DELETE")
+		return (false);
+
+	std::vector<std::string>::iterator	it;
+	for (it = allowed.begin(); it != allowed.end(); it++)
+	{
+		if (*it == method)
+			return (false);
+	}
+	return (true);
+}
+
+void	HttpRequest::validate( std::string path, std::map<std::string, Location> locations ) {
 	std::cout << "Validating request:" << std::endl;
 
-	// Check if the request line is valid
 	if (this->method.empty() || this->uri.empty() || this->version.empty())
 	{
-		// std::cout << "Error: Invalid request line" << std::endl;
-		// If invalid - ERROR CODE 400 (Bad Request)
 		this->set_error_code(400);
 		return ;
 	}
 
-	// TO-DO: Add limit_except functionality
+	// get first folder of uri, find it in locations
+	// if not present, no methods are forbidden
+	// if present, use limit except defined there
+	size_t idx = this->uri.find("/", 1);
+	std::map<std::string, Location>::iterator loc = locations.find(this->uri.substr(0, idx));
+	if (loc != locations.end() && is_method_forbidden(this->method, loc->second.limit_except))
+	{
+		this->set_error_code(405);
+		return ;
+	}
+
 	if (this->method == "PUT" || this->method == "CONNECT" || this->method == "OPTIONS" ||
 		this->method == "TRACE" || this->method == "PATCH")
 	{
-		// std::cout << "Error: Method not allowed" << std::endl;
-		// Method is PUT/CONNECT/OPTIONS/TRACE/PATCH? - ERROR CODE 405 (Method Not Allowed)
 		this->set_error_code(405);
 		return ;
 	}
@@ -135,16 +146,12 @@ void	HttpRequest::validate( std::string path ) {
 	if (this->method != "HEAD" && this->method != "GET" &&
 		this->method != "POST" && this->method != "DELETE")
 	{
-		// std::cout << "Error: Method not implemented" << std::endl;
-		// Method is other? - ERROR CODE 501 (Not Implemented)
 		this->set_error_code(501);
 		return ;
 	}
 
 	if (this->uri.length() > 8000)
 	{
-		// std::cout << "Error: URI too long" << std::endl;
-		// Check for URI too long(?) - ERROR CODE 414 (URI Too Long)
 		this->set_error_code(414);
 		return ;
 	}
@@ -153,24 +160,18 @@ void	HttpRequest::validate( std::string path ) {
 	std::string	full_path(path + std::string("/") + this->uri);
 	if ((stat(full_path.c_str(), &buf) == -1) || (!S_ISDIR(buf.st_mode | S_IRUSR) && !(buf.st_mode & S_IXUSR)))
 	{
-		// std::cout << "Error: Not found" << std::endl;
-		// URI does not exist - ERROR CODE 404 (Not Found)
 		this->set_error_code(404);
 		return ;
 	}
 
 	if (this->version != "HTTP/1.1")
 	{
-		// std::cout << "Error: HTTP version not supported" << std::endl;
-		// Version not HTTP/1.1 - ERROR CODE 505 (HTTP Version Not Supported)
 		this->set_error_code(505);
 		return ;
 	}
 
 	if (this->headers.find("Host") == this->headers.end())
 	{
-		// std::cout << "Error: Host header was not set" << std::endl;
-		// If invalid - ERROR CODE 400 (Bad Request)
 		this->set_error_code(400);
 		return ;
 	}
