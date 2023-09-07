@@ -7,8 +7,7 @@
 #include <cstdio> //perror
 #include <vector> //vector
 #include <sys/wait.h> //waitpid
-#include <csignal>
-#include <sys/time.h>
+#include <sys/time.h> // gettimeofday
 
 static long long	timestamp( void )
 {
@@ -62,7 +61,10 @@ static void	handle_child( int const child_fd, std::string bin, std::string scrip
 	// child will:
 	// - link child fd to STDOUT
 	// - what gets printed on child's STDOUT is sent to parent fd
+	// dup2(parent_fd, STDOUT_FILENO);
+	// close(parent_fd);
 	dup2(child_fd, STDOUT_FILENO);
+	close(child_fd);
 
 	// - set array with execve args
 	const char	**argv = new const char *[3];
@@ -89,7 +91,6 @@ static void	handle_child( int const child_fd, std::string bin, std::string scrip
 
 	// - run binary based on cgi script (execve)
 	execve(argv[0], (char **)argv, (char **)envp);
-	close(child_fd);
 }
 
 static std::string	get_cgi_output( int fd )
@@ -110,7 +111,7 @@ static std::string	get_cgi_output( int fd )
 static std::string	handle_parent( pid_t pid, int const parent_fd )
 {
 	long long	old_timestamp, new_timestamp;
-	int			timeout = 10000;
+	int			timeout = 30000;
 	std::string	output;
 
 	old_timestamp = timestamp();
@@ -146,8 +147,10 @@ static std::string	handle_cgi( std::string bin, std::string script )
 	std::string			cgi_output;
 
 	socketpair(AF_LOCAL, SOCK_STREAM, 0, fd);
-	fcntl(fd[0], F_SETFL, O_NONBLOCK, FD_CLOEXEC);
-	fcntl(fd[1], F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+	fcntl(fd[parent], F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+	fcntl(fd[child], F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+	// if (request.method == "POST")
+	// 	write(fd[child], "Hello, World!\n", 15);
 	pid = fork();
 	if (pid == -1)
 	{
@@ -171,9 +174,10 @@ int	main( void )
 {
 	// binary must be: absolute path + executable file
 	std::string	bin("/home/jdanelon/anaconda3/bin/python3");
-	std::string	script("cgi.py");
+	// std::string	script("cgi.py");
+	// std::string	script("new_cgi.py");
 	// std::string	script("loop.py");
-	// std::string	script("2048.py");
+	std::string	script("64.py");
 
 	std::string	output = handle_cgi(bin, script);
 	if (output.empty())
