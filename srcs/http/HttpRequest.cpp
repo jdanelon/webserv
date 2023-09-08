@@ -116,7 +116,7 @@ static bool	is_method_forbidden( std::string method, std::vector<std::string> al
 	return (true);
 }
 
-void	HttpRequest::validate( std::string path, std::map<std::string, Location> locations ) {
+void	HttpRequest::validate( std::string server_root, std::map<std::string, Location> locations ) {
 	std::cout << "Validating request:" << std::endl;
 
 	if (this->method.empty() || this->uri.empty() || this->version.empty())
@@ -125,16 +125,39 @@ void	HttpRequest::validate( std::string path, std::map<std::string, Location> lo
 		return ;
 	}
 
-	// get first folder of uri, find it in locations
+	// get first matched folder of uri in locations
+	size_t idx = this->uri.length();
+	std::string path(this->uri + std::string("/"));
+	std::map<std::string, Location>::iterator loc = locations.end();
+	while (idx != std::string::npos)
+	{
+		idx = path.find_last_of("/", idx);
+		if (idx == 0)
+			idx = 1;
+		path = path.substr(0, idx);
+		loc = locations.find(path);
+		if (idx == 1 || loc != locations.end())
+			break ;
+	}
 	// if not present, no methods are forbidden
 	// if present, use limit except defined there
-	size_t idx = this->uri.find("/", 1);
-	std::map<std::string, Location>::iterator loc = locations.find(this->uri.substr(0, idx));
 	if (loc != locations.end() && is_method_forbidden(this->method, loc->second.limit_except))
 	{
 		this->set_error_code(405);
 		return ;
 	}
+	std::string final_root = std::getenv("PWD") + std::string("/");
+	// Infinite redirections (which is the final location ?):
+	// - Which directives redirect?
+	// 	* index
+	// 	* return
+	//	* error_page
+	// - Setup a vector with previous paths
+	// - If new path already in vector, setup final path
+	if (loc != locations.end())
+		final_root += loc->second.root;
+	else
+		final_root += server_root;
 
 	if (this->method == "PUT" || this->method == "CONNECT" || this->method == "OPTIONS" ||
 		this->method == "TRACE" || this->method == "PATCH")
@@ -157,7 +180,9 @@ void	HttpRequest::validate( std::string path, std::map<std::string, Location> lo
 	}
 
 	struct stat	buf;
-	std::string	full_path(path + std::string("/") + this->uri);
+	// TO-DO: Setup resource variable:
+	// final_root + / + folders not matched in location + (file) ?
+	std::string	full_path(final_root + std::string("/") + this->uri);
 	if ((stat(full_path.c_str(), &buf) == -1) || (!S_ISDIR(buf.st_mode | S_IRUSR) && !(buf.st_mode & S_IXUSR)))
 	{
 		this->set_error_code(404);
@@ -177,6 +202,9 @@ void	HttpRequest::validate( std::string path, std::map<std::string, Location> lo
 	}
 
 	// Other checks:
+	// Do I have to set any location?
+	// - If so, is / mandatory?
+	// - Location block cannot be empty
 }
 
 int	HttpRequest::get_error_code( void ) const

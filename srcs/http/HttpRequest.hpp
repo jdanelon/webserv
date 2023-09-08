@@ -42,7 +42,7 @@ class HttpRequest {
 		void	parse( std::string raw );
 		void	parse_request_line( std::string line );
 		void	parse_header_line( std::string line );
-		void	validate( std::string path, std::map<std::string, Location> locations );
+		void	validate( std::string server_root, std::map<std::string, Location> locations );
 		int		get_error_code( void ) const;
 		void	set_error_code( int const &code );
 

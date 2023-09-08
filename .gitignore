@@ -6,7 +6,10 @@ miniwebserver
 nnn*
 template.sh
 tmp*
+
+# tests folders
 local_tests
+server_root
 
 # Object files
 

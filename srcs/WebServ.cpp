@@ -157,9 +157,9 @@ void	WebServ::parse_request( int idx )
 		request.parse(this->client_connections[client_fd].buffer);
 		this->client_connections[client_fd].is_request_parsed = true;
 
-		// TO-DO: Check Redirections
-		request.validate(std::getenv("PWD") + this->client_connections[client_fd].host->root,
-							this->client_connections[client_fd].host->location);
+		// std::string full_path = 
+		request.validate(this->client_connections[client_fd].host->root,
+						 this->client_connections[client_fd].host->location);
 
 		request.print(client_fd);
 		this->client_connections[client_fd].request = request;
