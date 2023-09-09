@@ -209,8 +209,8 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			throw ParserHelper::UnknownDirective(directive);
 	}
 	srv.fill_with_defaults();
-	if (srv.location.empty())
-		throw ParserHelper::MissingDirectives("location");
+	// if (srv.location.empty())
+	// 	throw ParserHelper::MissingDirectives("location");
 	return (srv);
 }
 

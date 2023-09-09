@@ -102,6 +102,25 @@ void	HttpRequest::parse_header_line( std::string line ) {
 	}
 }
 
+static std::string	get_matched_location( std::string request_uri, std::map<std::string, Location> locations )
+{
+	size_t										idx = request_uri.length();
+	std::string									path(request_uri + std::string("/"));
+	std::map<std::string, Location>::iterator	loc = locations.end();
+
+	while (idx != std::string::npos)
+	{
+		idx = path.find_last_of("/", idx);
+		if (idx == 0)
+			idx = 1;
+		path = path.substr(0, idx);
+		loc = locations.find(path);
+		if (idx == 1 || loc != locations.end())
+			break ;
+	}
+	return (path);
+}
+
 static bool	is_method_forbidden( std::string method, std::vector<std::string> allowed )
 {
 	if (method != "HEAD" && method != "GET" && method != "POST" && method != "DELETE")
@@ -125,39 +144,12 @@ void	HttpRequest::validate( std::string server_root, std::map<std::string, Locat
 		return ;
 	}
 
-	// get first matched folder of uri in locations
-	size_t idx = this->uri.length();
-	std::string path(this->uri + std::string("/"));
-	std::map<std::string, Location>::iterator loc = locations.end();
-	while (idx != std::string::npos)
-	{
-		idx = path.find_last_of("/", idx);
-		if (idx == 0)
-			idx = 1;
-		path = path.substr(0, idx);
-		loc = locations.find(path);
-		if (idx == 1 || loc != locations.end())
-			break ;
-	}
-	// if not present, no methods are forbidden
-	// if present, use limit except defined there
+	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(this->uri, locations));
 	if (loc != locations.end() && is_method_forbidden(this->method, loc->second.limit_except))
 	{
 		this->set_error_code(405);
 		return ;
 	}
-	std::string final_root = std::getenv("PWD") + std::string("/");
-	// Infinite redirections (which is the final location ?):
-	// - Which directives redirect?
-	// 	* index
-	// 	* return
-	//	* error_page
-	// - Setup a vector with previous paths
-	// - If new path already in vector, setup final path
-	if (loc != locations.end())
-		final_root += loc->second.root;
-	else
-		final_root += server_root;
 
 	if (this->method == "PUT" || this->method == "CONNECT" || this->method == "OPTIONS" ||
 		this->method == "TRACE" || this->method == "PATCH")
@@ -179,10 +171,25 @@ void	HttpRequest::validate( std::string server_root, std::map<std::string, Locat
 		return ;
 	}
 
+	std::string resource(this->uri);
+	std::string final_root = std::getenv("PWD") + std::string("/");
+	// TO-DO: Infinite redirections (which is the final location ?):
+	// - Which directives redirect?
+	// 	* index
+	// 	* return
+	//	* error_page
+	// - Setup a vector with previous paths
+	// - If new path already in vector -> setup final path / which error to set? / do not treat?
+	if (loc != locations.end())
+	{
+		final_root += loc->second.root;
+		resource = this->uri.substr(loc->first.length());
+	}
+	else
+		final_root += server_root;
+
 	struct stat	buf;
-	// TO-DO: Setup resource variable:
-	// final_root + / + folders not matched in location + (file) ?
-	std::string	full_path(final_root + std::string("/") + this->uri);
+	std::string	full_path(final_root + std::string("/") + resource);
 	if ((stat(full_path.c_str(), &buf) == -1) || (!S_ISDIR(buf.st_mode | S_IRUSR) && !(buf.st_mode & S_IXUSR)))
 	{
 		this->set_error_code(404);
@@ -200,11 +207,6 @@ void	HttpRequest::validate( std::string server_root, std::map<std::string, Locat
 		this->set_error_code(400);
 		return ;
 	}
-
-	// Other checks:
-	// Do I have to set any location?
-	// - If so, is / mandatory?
-	// - Location block cannot be empty
 }
 
 int	HttpRequest::get_error_code( void ) const
