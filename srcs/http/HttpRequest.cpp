@@ -173,13 +173,21 @@ void	HttpRequest::validate( std::string server_root, std::map<std::string, Locat
 
 	std::string resource(this->uri);
 	std::string final_root = std::getenv("PWD") + std::string("/");
-	// TO-DO: Infinite redirections (which is the final location ?):
+	// TO-DO: Multiple redirections (which is the final location ?):
 	// - Which directives redirect?
 	// 	* index
 	// 	* return
 	//	* error_page
-	// - Setup a vector with previous paths
-	// - If new path already in vector -> setup final path / which error to set? / do not treat?
+	// - Setup a vector of redirections
+	// - If path in resource redirection match location block
+	//	{
+	//   - If matched location already in vector
+	//		* setup as final path / which error to set? / do not treat?
+	//   - Else
+	//		* include matched location in vector, change resource and final_root
+	//	}
+	// - Else
+	//		* use it as resource and final_root
 	if (loc != locations.end())
 	{
 		final_root += loc->second.root;
