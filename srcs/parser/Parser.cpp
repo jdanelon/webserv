@@ -164,7 +164,7 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 		if (directive == "listen")
 		{
 			std::pair<std::string, std::string> pair = helper.get_listen();
-			srv.host = pair.first;
+			srv.ip = pair.first;
 			srv.port = pair.second;
 		}
 		else if (directive == "server_name")

@@ -35,6 +35,17 @@ void	HttpRequest::parse( std::string raw ) {
 	while (std::getline(iss, line) && line != "\r") {
 		this->parse_header_line(line);
 	}
+
+	// Define host as first part before ':' on value of 'Host' header, if present
+	// Otherwise, set Bad Request error (removed from validate and brought here)
+	std::map<std::string, std::string>::iterator host_header = this->headers.find("Host");
+	if (host_header != this->headers.end())
+	{
+		size_t pos = host_header->second.find(':');
+		this->host = host_header->second.substr(0, pos);
+	}
+	else
+		this->set_error_code(400);
 }
 
 void	HttpRequest::parse_request_line( std::string line ) {
@@ -93,7 +104,6 @@ void	HttpRequest::parse_header_line( std::string line ) {
 		return ;
 	}
 
-	// this->headers[key] = value;
 	std::pair<std::map<std::string, std::string, CaseInsensitive>::iterator, bool>	ret;
 	ret = this->headers.insert(std::make_pair(key, value));
 	if (!ret.second) {
@@ -135,41 +145,38 @@ static bool	is_method_forbidden( std::string method, std::vector<std::string> al
 	return (true);
 }
 
-void	HttpRequest::validate( std::string server_root, std::map<std::string, Location> locations ) {
+static bool	is_server_name_forbidden( std::string hostname, std::string ip, std::vector<std::string> server_names )
+{
+	if ((hostname == "localhost" || hostname == "127.0.0.1") && ip == "127.0.0.1")
+		return (false);
+	for (size_t idx = 0; idx < server_names.size(); idx++)
+	{
+		if (hostname == server_names[idx])
+			return (false);
+	}
+	return (true);
+}
+
+std::string	HttpRequest::validate( Server *srv ) {
 	std::cout << "Validating request:" << std::endl;
 
 	if (this->method.empty() || this->uri.empty() || this->version.empty())
-	{
 		this->set_error_code(400);
-		return ;
-	}
 
+	std::map<std::string, Location> locations = srv->location;
 	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(this->uri, locations));
 	if (loc != locations.end() && is_method_forbidden(this->method, loc->second.limit_except))
-	{
 		this->set_error_code(405);
-		return ;
-	}
 
 	if (this->method == "PUT" || this->method == "CONNECT" || this->method == "OPTIONS" ||
-		this->method == "TRACE" || this->method == "PATCH")
-	{
+			this->method == "TRACE" || this->method == "PATCH")
 		this->set_error_code(405);
-		return ;
-	}
 
-	if (this->method != "HEAD" && this->method != "GET" &&
-		this->method != "POST" && this->method != "DELETE")
-	{
+	if (this->method != "HEAD" && this->method != "GET" && this->method != "POST" && this->method != "DELETE")
 		this->set_error_code(501);
-		return ;
-	}
 
 	if (this->uri.length() > 8000)
-	{
 		this->set_error_code(414);
-		return ;
-	}
 
 	std::string resource(this->uri);
 	std::string final_root = std::getenv("PWD") + std::string("/");
@@ -194,27 +201,21 @@ void	HttpRequest::validate( std::string server_root, std::map<std::string, Locat
 		resource = this->uri.substr(loc->first.length());
 	}
 	else
-		final_root += server_root;
+		final_root += srv->root;
 
 	struct stat	buf;
 	std::string	full_path(final_root + std::string("/") + resource);
 	if ((stat(full_path.c_str(), &buf) == -1) || (!S_ISDIR(buf.st_mode | S_IRUSR) && !(buf.st_mode & S_IXUSR)))
-	{
 		this->set_error_code(404);
-		return ;
-	}
 
 	if (this->version != "HTTP/1.1")
-	{
 		this->set_error_code(505);
-		return ;
-	}
 
-	if (this->headers.find("Host") == this->headers.end())
-	{
-		this->set_error_code(400);
-		return ;
-	}
+	// ATTENTION: NEED TO CHANGE /ETC/HOSTS FILE TO INCLUDE OTHER SERVER_NAMES
+	if (is_server_name_forbidden(this->host, srv->ip, srv->server_name))
+		this->set_error_code(404);
+
+	return (full_path);
 }
 
 int	HttpRequest::get_error_code( void ) const

@@ -63,18 +63,18 @@ std::pair<std::string, std::string>	ParserHelper::get_listen( void )
 	{
 		host = this->_tokens[1].substr(0, idx);
 		port = this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx);
-		if (!this->_valid_host(this->_tokens[1].substr(0, idx)))
+		if (!this->_valid_ip(this->_tokens[1].substr(0, idx)))
 			throw InvalidValues("host", this->_tokens[1]);
 		if (!this->_valid_port(this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx)))
 			throw InvalidValues("port", this->_tokens[1]);
 		return (std::make_pair(host, port));
 	}
-	if (this->_valid_host(this->_tokens[1]) && !this->_valid_port(this->_tokens[1]))
+	if (this->_valid_ip(this->_tokens[1]) && !this->_valid_port(this->_tokens[1]))
 	{
 		host = this->_tokens[1];
 		port = "8080"; //default
 	}
-	else if (!this->_valid_host(this->_tokens[1]) && this->_valid_port(this->_tokens[1]))
+	else if (!this->_valid_ip(this->_tokens[1]) && this->_valid_port(this->_tokens[1]))
 	{
 		host = "127.0.0.1"; //default
 		port = this->_tokens[1];
@@ -282,7 +282,7 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 	return (args);
 }
 
-bool	ParserHelper::_valid_host( std::string const &host )
+bool	ParserHelper::_valid_ip( std::string const &host )
 {
 	size_t						begin;
 	size_t						end;

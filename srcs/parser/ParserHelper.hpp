@@ -49,7 +49,7 @@ class ParserHelper
 		std::vector<std::string>	_tokens;
 		std::set<std::string>		_directive_list;
 
-		static bool						_valid_host( std::string const &ip );
+		static bool						_valid_ip( std::string const &ip );
 		static bool						_valid_port( std::string const &port );
 		static bool						_valid_server_name( std::string const &str );
 		static bool						_valid_error_page( std::string const &str );

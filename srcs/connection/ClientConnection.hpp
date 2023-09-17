@@ -11,7 +11,7 @@ class ClientConnection
 {
 
 	public:
-		Server		*host;
+		Server		*host_server;
 		long long	timestamp;
 
 		std::string		buffer;
