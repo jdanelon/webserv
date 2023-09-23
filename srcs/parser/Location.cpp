@@ -2,7 +2,7 @@
 
 Location::Location( void )
 {
-	this->root = "";
+	this->alias = "";
 	this->client_max_body_size = -1;
 	this->autoindex = -1;
 	this->redirect = std::make_pair(0, "");
@@ -21,7 +21,7 @@ Location &Location::operator = ( Location const &obj )
 {
 	if (this != &obj)
 	{
-		this->root = obj.root;
+		this->alias = obj.alias;
 		this->index = obj.index;
 		this->limit_except = obj.limit_except;
 		this->client_max_body_size = obj.client_max_body_size;
@@ -41,8 +41,6 @@ Location::~Location( void )
 
 void	Location::fill_with_defaults( Server const &srv )
 {
-	if (this->root.empty())
-		this->root = srv.root;
 	if (this->index.empty())
 		this->index = srv.index;
 	if (this->limit_except.empty())

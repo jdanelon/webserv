@@ -116,8 +116,8 @@ Location	Parser::_parse_location( std::istringstream *istr )
 		directive = tokens[0];
 		if (helper.duplicated_directives(tokens))
 			throw ParserHelper::DuplicatedDirectives(directive);
-		if (directive == "root")
-			loc.root = helper.get_root();
+		if (directive == "alias")
+			loc.alias = helper.get_alias();
 		 else if (directive == "index")
 		 	loc.index = helper.get_index();
 		else if (directive == "limit_except")

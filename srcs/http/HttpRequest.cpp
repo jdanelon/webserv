@@ -1,6 +1,6 @@
 #include "HttpRequest.hpp"
 
-HttpRequest::HttpRequest( void ) : _error_code(0) {}
+HttpRequest::HttpRequest( void ) : autoindex(false), _error_code(0) {}
 
 HttpRequest::HttpRequest( HttpRequest const &obj ) {
 	*this = obj;
@@ -15,6 +15,7 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->headers = obj.headers;
 		this->body = obj.body;
 		this->raw = obj.raw;
+		this->autoindex = obj.autoindex;
 		this->_error_code = obj._error_code;
 	}
 	return (*this);
@@ -49,14 +50,6 @@ void	HttpRequest::parse( std::string raw ) {
 }
 
 void	HttpRequest::parse_request_line( std::string line ) {
-	std::istringstream	iss(line);
-	std::string			token;
-
-	// Store the values read from the request line and validate they exist
-	// if (!(iss >> this->method >> this->uri >> this->version) || iss.eof()) {
-	// 	std::cout << "Error: Invalid request line" << std::endl;
-	// }
-
 	size_t	first_space, second_space;
 
 	first_space = line.find_first_of(" ");
@@ -157,6 +150,19 @@ static bool	is_server_name_forbidden( std::string hostname, std::string ip, std:
 	return (true);
 }
 
+static std::string	find_final_root( std::string uri, std::string alias, std::string match )
+{
+	std::string	tmp, final_root;
+
+	tmp = uri;
+	if (match.length() == 1)
+		tmp = alias + uri;
+	else
+		tmp.replace(0, match.length(), alias);
+	final_root = tmp.substr(tmp.find_first_not_of("/"));
+	return (final_root);
+}
+
 std::string	HttpRequest::validate( Server *srv ) {
 	std::cout << "Validating request:" << std::endl;
 
@@ -178,35 +184,55 @@ std::string	HttpRequest::validate( Server *srv ) {
 	if (this->uri.length() > 8000)
 		this->set_error_code(414);
 
-	std::string resource(this->uri);
-	std::string final_root = std::getenv("PWD") + std::string("/");
-	// TO-DO: Multiple redirections (which is the final location ?):
-	// - Which directives redirect?
-	// 	* index
-	// 	* return
-	//	* error_page
-	// - Setup a vector of redirections
-	// - If path in resource redirection match location block
-	//	{
-	//   - If matched location already in vector
-	//		* setup as final path / which error to set? / do not treat?
-	//   - Else
-	//		* include matched location in vector, change resource and final_root
-	//	}
-	// - Else
-	//		* use it as resource and final_root
-	if (loc != locations.end())
-	{
-		final_root += loc->second.root;
-		resource = this->uri.substr(loc->first.length());
-	}
-	else
-		final_root += srv->root;
-
+	// TO-DO: Validate return directive (redirect variable)
+	std::string resource = this->uri.substr(this->uri.find_last_of("/") + 1);
+	std::string	final_root, new_uri, full_path;
 	struct stat	buf;
-	std::string	full_path(final_root + std::string("/") + resource);
-	if ((stat(full_path.c_str(), &buf) == -1) || (!S_ISDIR(buf.st_mode | S_IRUSR) && !(buf.st_mode & S_IXUSR)))
-		this->set_error_code(404);
+	// If request is for file: set root from redirection, full_path and set 404 if not found
+	if (resource.length() != 0)
+	{
+		if (loc != locations.end() && !loc->second.alias.empty())
+			final_root = find_final_root(this->uri, loc->second.alias, loc->first);
+		else
+			final_root = srv->root + this->uri;
+		full_path = std::getenv("PWD") + std::string("/") + final_root;
+		if ((stat(full_path.c_str(), &buf) == -1) || !(buf.st_mode & S_IXUSR))
+			this->set_error_code(404);
+	}
+	// If request is for folder: search for index files with possible multiple redirections
+	else
+	{
+		size_t	i = 0;
+		std::vector<std::string> index_files = (loc != locations.end()) ? loc->second.index : srv->index;
+		for (; i < index_files.size(); i++)
+		{
+			new_uri = this->uri;
+			new_uri += (index_files[i][0] == '/') ? index_files[i].substr(1) : index_files[i];
+			loc = locations.find(get_matched_location(new_uri, locations));
+			if (loc != locations.end() && !loc->second.alias.empty())
+				final_root = find_final_root(new_uri, loc->second.alias, loc->first);
+			else
+				final_root = srv->root + new_uri;
+			resource = new_uri.substr(new_uri.find_last_of("/") + 1);
+			full_path = std::getenv("PWD") + std::string("/") + final_root;
+			// Check if index file is found
+			if ((stat(full_path.c_str(), &buf) != -1) && (buf.st_mode & S_IXUSR))
+				break ;
+		}
+		// No index files are found
+		if (i == index_files.size())
+		{
+			// if autoindex is true, does not set 404
+			bool parsed_autoindex = (loc != locations.end()) ? loc->second.autoindex : srv->autoindex;
+			if (parsed_autoindex == true)
+			{
+				full_path = full_path.substr(0, full_path.find_last_of("/"));
+				this->autoindex = true;
+			}
+			else
+				this->set_error_code(404);
+		}
+	}
 
 	if (this->version != "HTTP/1.1")
 		this->set_error_code(505);
@@ -214,6 +240,17 @@ std::string	HttpRequest::validate( Server *srv ) {
 	// ATTENTION: NEED TO CHANGE /ETC/HOSTS FILE TO INCLUDE OTHER SERVER_NAMES
 	if (is_server_name_forbidden(this->host, srv->ip, srv->server_name))
 		this->set_error_code(404);
+
+	int	code = this->get_error_code();
+	std::map<int, std::string>::iterator it;
+	for (it = srv->error_page.begin(); it != srv->error_page.end(); it++)
+	{
+		if (it->first == code)
+		{
+			full_path = std::getenv("PWD") + std::string("/") + srv->root + it->second;
+			break ;
+		}
+	}
 
 	return (full_path);
 }

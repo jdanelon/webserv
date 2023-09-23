@@ -43,6 +43,7 @@ class ParserHelper
 		bool								get_upload( void );
 		std::string							get_upload_store( void );
 		std::vector<std::string>			get_limit_except( void );
+		std::string							get_alias( void );
 
 	private:
 

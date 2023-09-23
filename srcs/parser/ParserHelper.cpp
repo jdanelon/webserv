@@ -282,6 +282,16 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 	return (args);
 }
 
+std::string	ParserHelper::get_alias( void )
+{
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	struct stat buf;
+	if (stat(this->_tokens[1].c_str(), &buf) == -1 || !S_ISDIR(buf.st_mode | S_IRUSR))
+		throw ParserHelper::SystemError("alias", this->_tokens[1]);
+	return (this->_tokens[1]);
+}
+
 bool	ParserHelper::_valid_ip( std::string const &host )
 {
 	size_t						begin;

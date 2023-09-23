@@ -33,6 +33,7 @@ class HttpRequest {
 		std::map<std::string, std::string, CaseInsensitive>	headers;
 		std::string											body;
 		std::string											raw;
+		bool												autoindex;
 
 		HttpRequest( void );
 		HttpRequest( HttpRequest const &obj );
