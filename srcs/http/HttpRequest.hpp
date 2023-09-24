@@ -33,18 +33,19 @@ class HttpRequest {
 		std::map<std::string, std::string, CaseInsensitive>	headers;
 		std::string											body;
 		std::string											raw;
+		bool												autoindex;
 
 		HttpRequest( void );
 		HttpRequest( HttpRequest const &obj );
 		HttpRequest &operator = ( HttpRequest const &obj );
 		virtual ~HttpRequest( void );
 
-		void	parse( std::string raw );
-		void	parse_request_line( std::string line );
-		void	parse_header_line( std::string line );
-		void	validate( std::string path, std::map<std::string, Location> locations );
-		int		get_error_code( void ) const;
-		void	set_error_code( int const &code );
+		void		parse( std::string raw );
+		void		parse_request_line( std::string line );
+		void		parse_header_line( std::string line );
+		std::string	validate( Server *srv );
+		int			get_error_code( void ) const;
+		void		set_error_code( int const &code );
 
 		//Debug
 		void	print( int client_fd );

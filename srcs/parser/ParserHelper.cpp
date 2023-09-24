@@ -63,18 +63,18 @@ std::pair<std::string, std::string>	ParserHelper::get_listen( void )
 	{
 		host = this->_tokens[1].substr(0, idx);
 		port = this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx);
-		if (!this->_valid_host(this->_tokens[1].substr(0, idx)))
+		if (!this->_valid_ip(this->_tokens[1].substr(0, idx)))
 			throw InvalidValues("host", this->_tokens[1]);
 		if (!this->_valid_port(this->_tokens[1].substr(idx + 1, this->_tokens[1].length() - idx)))
 			throw InvalidValues("port", this->_tokens[1]);
 		return (std::make_pair(host, port));
 	}
-	if (this->_valid_host(this->_tokens[1]) && !this->_valid_port(this->_tokens[1]))
+	if (this->_valid_ip(this->_tokens[1]) && !this->_valid_port(this->_tokens[1]))
 	{
 		host = this->_tokens[1];
 		port = "8080"; //default
 	}
-	else if (!this->_valid_host(this->_tokens[1]) && this->_valid_port(this->_tokens[1]))
+	else if (!this->_valid_ip(this->_tokens[1]) && this->_valid_port(this->_tokens[1]))
 	{
 		host = "127.0.0.1"; //default
 		port = this->_tokens[1];
@@ -282,7 +282,17 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 	return (args);
 }
 
-bool	ParserHelper::_valid_host( std::string const &host )
+std::string	ParserHelper::get_alias( void )
+{
+	if (this->_tokens.size() != 2)
+		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
+	struct stat buf;
+	if (stat(this->_tokens[1].c_str(), &buf) == -1 || !S_ISDIR(buf.st_mode | S_IRUSR))
+		throw ParserHelper::SystemError("alias", this->_tokens[1]);
+	return (this->_tokens[1]);
+}
+
+bool	ParserHelper::_valid_ip( std::string const &host )
 {
 	size_t						begin;
 	size_t						end;

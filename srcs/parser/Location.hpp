@@ -14,7 +14,7 @@ class Location
 
 	public:
 
-		std::string							root;
+		std::string							alias;
 		std::vector<std::string>			index;
 		std::vector<std::string>			limit_except;
 		int									client_max_body_size;

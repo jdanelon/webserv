@@ -2,7 +2,7 @@
 
 Server::Server( void )
 {
-	this->host = "";
+	this->ip = "";
 	this->port = "";
 	this->root = "";
 	this->timeout = 0;
@@ -26,7 +26,7 @@ Server &Server::operator = ( Server const &obj )
 {
 	if (this != &obj)
 	{
-		this->host = obj.host;
+		this->ip = obj.ip;
 		this->port = obj.port;
 		this->server_name = obj.server_name;
 		this->root = obj.root;
@@ -53,8 +53,8 @@ Server::~Server( void )
 
 void	Server::fill_with_defaults( void )
 {
-	if (this->host.empty())
-		this->host = "127.0.0.1";
+	if (this->ip.empty())
+		this->ip = "127.0.0.1";
 	if (this->port.empty())
 		this->port = "8080";
 	if (this->server_name.empty())
@@ -86,29 +86,40 @@ void	Server::fill_with_defaults( void )
 		it->second.fill_with_defaults(*this);
 }
 
+static void	free_addrinfo_struct_and_throw( struct addrinfo *res, std::string system_call )
+{
+	freeaddrinfo(res);
+	throw Server::SocketError(system_call);
+}
+
 void	Server::connect_socket( int backlog )
 {
 	int				status, yes = 1;
 	struct addrinfo	hints, *res;
 
-	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = 0;
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	status = getaddrinfo(this->host.c_str(), this->port.c_str(), &hints, &res);
+	hints.ai_protocol = 0;
+	hints.ai_addrlen = 0;
+	hints.ai_addr = NULL;
+	hints.ai_canonname = NULL;
+	hints.ai_next = NULL;
+	status = getaddrinfo(this->ip.c_str(), this->port.c_str(), &hints, &res);
 	if (status != 0)
-		throw Server::SocketError("getaddrinfo");
+		free_addrinfo_struct_and_throw(res, "getaddrinfo");
 	this->sockfd = socket(res->ai_family, res->ai_socktype, 0);
 	if (this->sockfd == -1)
-		throw Server::SocketError("socket");
+		free_addrinfo_struct_and_throw(res, "socket");
 	status = fcntl(this->sockfd, F_SETFL, O_NONBLOCK, FD_CLOEXEC);
 	if (status == -1)
-		throw Server::SocketError("fcntl");
+		free_addrinfo_struct_and_throw(res, "fcntl");
 	status = setsockopt(this->sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
 	if (status == -1)
-		throw Server::SocketError("setsockopt");
+		free_addrinfo_struct_and_throw(res, "setsockopt");
 	status = bind(this->sockfd, res->ai_addr, res->ai_addrlen);
 	if (status == -1)
-		throw Server::SocketError("bind");
+		free_addrinfo_struct_and_throw(res, "bind");
 	freeaddrinfo(res);
 	status = listen(this->sockfd, backlog);
 	if (status == -1)

@@ -116,8 +116,8 @@ Location	Parser::_parse_location( std::istringstream *istr )
 		directive = tokens[0];
 		if (helper.duplicated_directives(tokens))
 			throw ParserHelper::DuplicatedDirectives(directive);
-		if (directive == "root")
-			loc.root = helper.get_root();
+		if (directive == "alias")
+			loc.alias = helper.get_alias();
 		 else if (directive == "index")
 		 	loc.index = helper.get_index();
 		else if (directive == "limit_except")
@@ -164,7 +164,7 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 		if (directive == "listen")
 		{
 			std::pair<std::string, std::string> pair = helper.get_listen();
-			srv.host = pair.first;
+			srv.ip = pair.first;
 			srv.port = pair.second;
 		}
 		else if (directive == "server_name")
@@ -209,8 +209,8 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 			throw ParserHelper::UnknownDirective(directive);
 	}
 	srv.fill_with_defaults();
-	if (srv.location.empty())
-		throw ParserHelper::MissingDirectives("location");
+	// if (srv.location.empty())
+	// 	throw ParserHelper::MissingDirectives("location");
 	return (srv);
 }
 

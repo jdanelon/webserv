@@ -86,7 +86,7 @@ void	WebServ::_init_servers( void )
 		{
 			srv->connect_socket(this->parser.backlog);
 		}
-		catch(const std::exception& e)
+		catch(const Server::SocketError& e)
 		{
 			delete srv;
 			throw e;
@@ -103,7 +103,7 @@ void	WebServ::_init_servers( void )
 bool	WebServ::client_timeout( int idx )
 {
 	int	fd = this->pollfds[idx].fd;
-	int timeout = this->client_connections[fd].host->timeout;
+	int timeout = this->client_connections[fd].host_server->timeout;
 
 	if (fd == -1)
 		return (false);
@@ -157,9 +157,8 @@ void	WebServ::parse_request( int idx )
 		request.parse(this->client_connections[client_fd].buffer);
 		this->client_connections[client_fd].is_request_parsed = true;
 
-		// TO-DO: Check Redirections
-		request.validate(std::getenv("PWD") + this->client_connections[client_fd].host->root,
-							this->client_connections[client_fd].host->location);
+		// Saved resource full_path to facilitate response
+		std::string resource_path = request.validate(this->client_connections[client_fd].host_server);
 
 		request.print(client_fd);
 		this->client_connections[client_fd].request = request;
@@ -182,6 +181,17 @@ void	WebServ::create_response( int idx )
 	this->pollfds[idx].events = POLLOUT;
 }
 
+void	WebServ::_clear_connection( int const client_fd )
+{
+	this->client_connections[client_fd].buffer = "";
+	this->client_connections[client_fd].request = HttpRequest();
+	this->client_connections[client_fd].response = HttpResponse();
+	this->client_connections[client_fd].is_line_request_received = false;
+	this->client_connections[client_fd].is_header_received = false;
+	this->client_connections[client_fd].is_request_parsed = false;
+	this->client_connections[client_fd].is_request_completed = false;
+}
+
 void	WebServ::send_response( int idx )
 {
 	int 		client_fd = this->pollfds[idx].fd;
@@ -190,18 +200,7 @@ void	WebServ::send_response( int idx )
 	send(client_fd, response.c_str(), response.length(), 0);
 	this->pollfds[idx].events = POLLIN;
 	this->client_connections[client_fd].timestamp = timestamp();
-
-	// TO-DO: Function to clear buffer, request, response, bool checks as below
-	//
-	// I considered clearing with the second constructor, but I do not know if we
-	// could have memory leaks due to the allocated Server in host
-	this->client_connections[client_fd].buffer = "";
-	this->client_connections[client_fd].request = HttpRequest();
-	this->client_connections[client_fd].response = HttpResponse();
-	this->client_connections[client_fd].is_line_request_received = false;
-	this->client_connections[client_fd].is_header_received = false;
-	this->client_connections[client_fd].is_request_parsed = false;
-	this->client_connections[client_fd].is_request_completed = false;
+	this->_clear_connection(client_fd);
 }
 
 void	WebServ::purge_connections( void )
