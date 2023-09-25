@@ -1,6 +1,6 @@
 #include "ClientConnection.hpp"
 
-ClientConnection::ClientConnection( void ) : host(NULL),
+ClientConnection::ClientConnection( void ) : host_server(NULL),
 												timestamp(0),
 												buffer(""),
 												request(HttpRequest()),
@@ -10,7 +10,7 @@ ClientConnection::ClientConnection( void ) : host(NULL),
 												is_request_parsed(false),
 												is_request_completed(false) {}
 
-ClientConnection::ClientConnection( Server *server, long long timestamp ) : host(server),
+ClientConnection::ClientConnection( Server *server, long long timestamp ) : host_server(server),
 																			timestamp(timestamp),
 																			buffer(""),
 																			request(HttpRequest()),
@@ -36,7 +36,7 @@ ClientConnection &ClientConnection::operator = ( ClientConnection const &obj )
 {
 	if (this != &obj)
 	{
-		this->host = obj.host;
+		this->host_server = obj.host_server;
 		this->timestamp = obj.timestamp;
 		this->buffer = obj.buffer;
 		this->request = obj.request;

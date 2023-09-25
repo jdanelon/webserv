@@ -50,6 +50,7 @@ class WebServ
 		void		_catch_signals( void );
 		static void	_signal_handler( int const code );
 		void		_init_servers( void );
+		void		_clear_connection( int const client_fd );
 
 		std::map<int, std::string>	_error_codes_map;
 };

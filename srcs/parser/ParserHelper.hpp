@@ -43,13 +43,14 @@ class ParserHelper
 		bool								get_upload( void );
 		std::string							get_upload_store( void );
 		std::vector<std::string>			get_limit_except( void );
+		std::string							get_alias( void );
 
 	private:
 
 		std::vector<std::string>	_tokens;
 		std::set<std::string>		_directive_list;
 
-		static bool						_valid_host( std::string const &ip );
+		static bool						_valid_ip( std::string const &ip );
 		static bool						_valid_port( std::string const &port );
 		static bool						_valid_server_name( std::string const &str );
 		static bool						_valid_error_page( std::string const &str );

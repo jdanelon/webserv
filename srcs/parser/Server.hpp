@@ -26,7 +26,7 @@ class Server
 
 	public:
 
-		std::string							host;
+		std::string							ip;
 		std::string							port;
 		std::vector<std::string>			server_name;
 		std::string							root;

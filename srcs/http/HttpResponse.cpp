@@ -55,7 +55,7 @@ HttpResponse &HttpResponse::operator = ( HttpResponse const &obj)
 // Called after Parsing the request
 void HttpResponse::configureResponse(HttpRequest &request)
 {
-	(void)request;
+	// print host root
 	if (request.method == "GET")
 		this->handleGet(request);
 	else if (request.method == "POST")
@@ -131,7 +131,9 @@ void updatePathAndIndexBasedOnLocation(HttpRequest &request, Server *host, std::
     for (it = host->location.begin(); it != host->location.end(); ++it) {
         if (request.uri.find(it->first) == 0) {
             Location loc = it->second;
-            rootPath = loc.root.empty() ? rootPath : loc.root;
+            // rootPath = loc.root.empty() ? rootPath : loc.root;
+			// rootPath = "";
+			(void) rootPath;
             indexFiles = loc.index.empty() ? indexFiles : loc.index;
             break;
         }
@@ -167,6 +169,7 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 {
 	std::cout << "Generating Content...." << std::endl;
     std::string content;
+	// print host root
     std::string rootPath = this->host->root;
     std::vector<std::string> indexFiles = this->host->index; // Assuming index is a property of host
 
