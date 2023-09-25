@@ -13,6 +13,8 @@
 
 extern int g_signal_code;
 
+#define RESPONSE_CHUNK_SIZE 64
+
 class WebServ
 {
 
@@ -37,6 +39,7 @@ class WebServ
 		void	create_response( int idx );
 		void	send_response( int idx );
 		void	purge_connections( void );
+		void 	clear_connection_after_response( int idx );
 
 		// Debug
 		void	print( void );

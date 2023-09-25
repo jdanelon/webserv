@@ -15,4 +15,6 @@ bool		ft_empty( char const *str );
 long long	timestamp( void );
 std::string ft_itoa( int n );
 
+std::string constructPath(const std::string &rootPath, const std::string &uri);
+
 #endif
