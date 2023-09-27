@@ -89,3 +89,20 @@ std::string	ft_itoa( int n )
 	str.insert(str.begin(), n % 10 + '0');
 	return (str);
 }
+
+std::string constructPath(const std::string &rootPath, const std::string &uri) {
+    std::string newRootPath = rootPath;
+    std::string newUri = uri;
+
+    // Remove trailing slash from rootPath, if it exists
+    if (!newRootPath.empty() && newRootPath.back() == '/') {
+        newRootPath.pop_back();
+    }
+
+    // Add leading slash to uri, if it doesn't exist
+    if (newUri.empty() || newUri.front() != '/') {
+        newUri = "/" + newUri;
+    }
+
+    return newRootPath + newUri;
+}

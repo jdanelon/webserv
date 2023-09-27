@@ -24,7 +24,7 @@ OBJ_DIRS = $(OBJS_PATH) $(OBJS_PATH)/parser $(OBJS_PATH)/connection $(OBJS_PATH)
 
 CC = c++
 
-FLAGS = -Wall -Wextra -Werror -std=c++98 -fsanitize=address
+FLAGS = -Wall -Wextra -Werror -std=c++98
 
 $(NAME): $(OBJ_DIRS) $(OBJS)
 	$(CC) -g $(OBJS) $(FLAGS) -o $(NAME)
