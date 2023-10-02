@@ -204,34 +204,33 @@ void	WebServ::send_response( int idx )
 		http_response.prepareDummyResponse();
 		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
 		this->pollfds[idx].events = POLLIN;
-	}
-	else {
-    	std::string chunkData = this->client_connections[client_fd].response.readChunkAndUpdateResponse(RESPONSE_CHUNK_SIZE);
+	} else {
+		std::string chunkData = this->client_connections[client_fd].response.readChunkAndUpdateResponse(RESPONSE_CHUNK_SIZE);
 		// this->client_connections[client_fd].response.print(client_fd);
 
 		if (this->client_connections[client_fd].response.fileOffset <= RESPONSE_CHUNK_SIZE) {
-            std::string fullResponse = this->client_connections[client_fd].response.getResponse() + chunkData;
-            send(client_fd, fullResponse.c_str(), fullResponse.length(), 0);
+			std::string fullResponse = this->client_connections[client_fd].response.getResponse() + chunkData;
+			send(client_fd, fullResponse.c_str(), fullResponse.length(), 0);
 			std::cout << "Sending Response..." << std::endl << fullResponse << std::endl;
-        } else {
-            // Otherwise, just send the chunk
+		} else {
+			// Otherwise, just send the chunk
 			std::cout << "Sending chunk: " << std::endl  << chunkData << std::endl;
-            send(client_fd, chunkData.c_str(), chunkData.length(), 0);
-        }
+			send(client_fd, chunkData.c_str(), chunkData.length(), 0);
+		}
 
-        if (this->client_connections[client_fd].response.fileOffset < this->client_connections[client_fd].response.fileSize) {
-            this->pollfds[idx].events = POLLOUT;  // Set to send more data
-        } else {
-            this->client_connections[client_fd].response.fileHandle.close();
-            this->pollfds[idx].events = POLLIN;  // Set it back to read more data
+		if (this->client_connections[client_fd].response.fileOffset < this->client_connections[client_fd].response.fileSize) {
+			this->pollfds[idx].events = POLLOUT;  // Set to send more data
+		} else {
+			this->client_connections[client_fd].response.fileHandle.close();
+			this->pollfds[idx].events = POLLIN;  // Set it back to read more data
 			this->_clear_connection(client_fd);
-        }
+		}
 		return;
 	}
 
 	this->client_connections[client_fd].timestamp = timestamp();
 
-    this->pollfds[idx].events = POLLIN;  // Set it back to read more data
+	this->pollfds[idx].events = POLLIN;  // Set it back to read more data
 	this->_clear_connection(client_fd);
 }
 
