@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #https://github.com/hastagAB/Awesome-Python-Scripts
 
 import tkinter as tk

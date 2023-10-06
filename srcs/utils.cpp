@@ -89,3 +89,15 @@ std::string	ft_itoa( int n )
 	str.insert(str.begin(), n % 10 + '0');
 	return (str);
 }
+
+std::string	get_time_string( void )
+{
+	time_t		rawtime;
+	struct tm	*timeinfo;
+	char		time_str[30];
+
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	strftime(time_str, 30, "%a, %e %h %Y %X %Z", timeinfo);
+	return std::string(time_str);
+}
