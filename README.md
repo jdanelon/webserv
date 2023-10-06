@@ -5,5 +5,5 @@
 ```
 make
 
-./webserv oneServer.conf
+./webserv conf-files/oneServer.conf
 ```

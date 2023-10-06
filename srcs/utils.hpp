@@ -16,4 +16,6 @@ long long	timestamp( void );
 std::string ft_itoa( int n );
 std::string get_time_string( void );
 
+std::string constructPath(const std::string &rootPath, const std::string &uri);
+
 #endif

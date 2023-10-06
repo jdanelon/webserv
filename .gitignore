@@ -6,9 +6,11 @@ miniwebserver
 nnn*
 template.sh
 tmp*
+
+# tests folders
 local_tests
-*.out
+server_root
 
 # Object files
-
 objs/*
+*.out

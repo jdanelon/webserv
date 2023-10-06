@@ -86,7 +86,7 @@ void	WebServ::_init_servers( void )
 		{
 			srv->connect_socket(this->parser.backlog);
 		}
-		catch(const std::exception& e)
+		catch(const Server::SocketError& e)
 		{
 			delete srv;
 			throw e;
@@ -103,7 +103,7 @@ void	WebServ::_init_servers( void )
 bool	WebServ::client_timeout( int idx )
 {
 	int	fd = this->pollfds[idx].fd;
-	int timeout = this->client_connections[fd].host->timeout;
+	int timeout = this->client_connections[fd].host_server->timeout;
 
 	if (fd == -1)
 		return (false);
@@ -157,9 +157,8 @@ void	WebServ::parse_request( int idx )
 		request.parse(this->client_connections[client_fd].buffer);
 		this->client_connections[client_fd].is_request_parsed = true;
 
-		// TO-DO: Check Redirections
-		request.validate(std::getenv("PWD") + this->client_connections[client_fd].host->root,
-							this->client_connections[client_fd].host->location);
+		// Saved resource full_path to facilitate response
+		std::string resource_path = request.validate(this->client_connections[client_fd].host_server);
 
 		request.print(client_fd);
 		this->client_connections[client_fd].request = request;
@@ -171,37 +170,69 @@ void	WebServ::create_response( int idx )
 {
 	int 			client_fd = this->pollfds[idx].fd;
 	HttpRequest		request = this->client_connections[client_fd].request;
-	HttpResponse	http_response;
+	HttpResponse	http_response(this->client_connections[client_fd].host_server);
 
 	if (!this->client_connections[client_fd].is_request_completed)
 		return ;
-	http_response.generateResponse(request);
-	http_response.print(client_fd);
+	http_response.configureResponse(request);
 
 	this->client_connections[client_fd].response = http_response;
 	this->pollfds[idx].events = POLLOUT;
 }
 
-void	WebServ::send_response( int idx )
-{
-	int 		client_fd = this->pollfds[idx].fd;
-	std::string response = this->client_connections[client_fd].response.getResponse();
-
-	send(client_fd, response.c_str(), response.length(), 0);
-	this->pollfds[idx].events = POLLIN;
-	this->client_connections[client_fd].timestamp = timestamp();
-
+void	WebServ::_clear_connection(int const client_fd) {
 	// TO-DO: Function to clear buffer, request, response, bool checks as below
 	//
 	// I considered clearing with the second constructor, but I do not know if we
 	// could have memory leaks due to the allocated Server in host
 	this->client_connections[client_fd].buffer = "";
 	this->client_connections[client_fd].request = HttpRequest();
-	this->client_connections[client_fd].response = HttpResponse();
+	this->client_connections[client_fd].response = HttpResponse(this->client_connections[client_fd].host_server);
 	this->client_connections[client_fd].is_line_request_received = false;
 	this->client_connections[client_fd].is_header_received = false;
 	this->client_connections[client_fd].is_request_parsed = false;
-	this->client_connections[client_fd].is_request_completed = false;
+	this->client_connections[client_fd].is_request_completed = false;	
+}
+
+void	WebServ::send_response( int idx )
+{
+	int 		client_fd = this->pollfds[idx].fd;
+
+	if (this->client_connections[client_fd].response.fileSize < RESPONSE_CHUNK_SIZE) {
+		// To-Do Send the full response
+		HttpResponse http_response = this->client_connections[client_fd].response;
+		http_response.prepareDummyResponse();
+		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+		this->pollfds[idx].events = POLLIN;
+	}
+	else {
+    	std::string chunkData = this->client_connections[client_fd].response.readChunkAndUpdateResponse(RESPONSE_CHUNK_SIZE);
+		// this->client_connections[client_fd].response.print(client_fd);
+
+		if (this->client_connections[client_fd].response.fileOffset <= RESPONSE_CHUNK_SIZE) {
+            std::string fullResponse = this->client_connections[client_fd].response.getResponse() + chunkData;
+            send(client_fd, fullResponse.c_str(), fullResponse.length(), 0);
+			std::cout << "Sending Response..." << std::endl << fullResponse << std::endl;
+        } else {
+            // Otherwise, just send the chunk
+			std::cout << "Sending chunk: " << std::endl  << chunkData << std::endl;
+            send(client_fd, chunkData.c_str(), chunkData.length(), 0);
+        }
+
+        if (this->client_connections[client_fd].response.fileOffset < this->client_connections[client_fd].response.fileSize) {
+            this->pollfds[idx].events = POLLOUT;  // Set to send more data
+        } else {
+            this->client_connections[client_fd].response.fileHandle.close();
+            this->pollfds[idx].events = POLLIN;  // Set it back to read more data
+			this->_clear_connection(client_fd);
+        }
+		return;
+	}
+
+	this->client_connections[client_fd].timestamp = timestamp();
+
+    this->pollfds[idx].events = POLLIN;  // Set it back to read more data
+	this->_clear_connection(client_fd);
 }
 
 void	WebServ::purge_connections( void )

@@ -101,3 +101,20 @@ std::string	get_time_string( void )
 	strftime(time_str, 30, "%a, %e %h %Y %X %Z", timeinfo);
 	return std::string(time_str);
 }
+
+std::string constructPath(const std::string &rootPath, const std::string &uri) {
+    std::string newRootPath = rootPath;
+    std::string newUri = uri;
+
+    // Remove trailing slash from rootPath, if it exists
+    if (!newRootPath.empty() && newRootPath.back() == '/') {
+        newRootPath.pop_back();
+    }
+
+    // Add leading slash to uri, if it doesn't exist
+    if (newUri.empty() || newUri.front() != '/') {
+        newUri = "/" + newUri;
+    }
+
+    return newRootPath + newUri;
+}
