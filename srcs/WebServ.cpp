@@ -198,40 +198,61 @@ void	WebServ::send_response( int idx )
 {
 	int 		client_fd = this->pollfds[idx].fd;
 
-	if (this->client_connections[client_fd].response.fileSize < RESPONSE_CHUNK_SIZE) {
-		// To-Do Send the full response
+	// 1) If request is not valid, send error response
+	if (!this->client_connections[client_fd].response.is_request_valid) {
 		HttpResponse http_response = this->client_connections[client_fd].response;
-		http_response.prepareDummyResponse();
+		http_response.prepareErrorResponse(this->client_connections[client_fd].request);
 		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+	}
+	// 2) If the response is not too big, send the full response
+	else if (this->client_connections[client_fd].response.fileSize < RESPONSE_CHUNK_SIZE) {
+		HttpResponse http_response = this->client_connections[client_fd].response;
+		try {
+			http_response.prepareFullResponse(this->client_connections[client_fd].request);
+			send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+		}
+		catch(const std::exception& e) {
+			std::cerr << e.what() << '\n';
+			http_response.prepareErrorResponse(this->client_connections[client_fd].request);
+			send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+		}
 		this->pollfds[idx].events = POLLIN;
 	}
+	// 3) If ther response is big, send it in chunks so we not block the socket
 	else {
-    	std::string chunkData = this->client_connections[client_fd].response.readChunkAndUpdateResponse(RESPONSE_CHUNK_SIZE);
-		// this->client_connections[client_fd].response.print(client_fd);
+		try {
+			std::string chunkData = this->client_connections[client_fd].response.readChunkAndUpdateResponse(RESPONSE_CHUNK_SIZE);
 
-		if (this->client_connections[client_fd].response.fileOffset <= RESPONSE_CHUNK_SIZE) {
-            std::string fullResponse = this->client_connections[client_fd].response.getResponse() + chunkData;
-            send(client_fd, fullResponse.c_str(), fullResponse.length(), 0);
-			std::cout << "Sending Response..." << std::endl << fullResponse << std::endl;
-        } else {
-            // Otherwise, just send the chunk
-			std::cout << "Sending chunk: " << std::endl  << chunkData << std::endl;
-            send(client_fd, chunkData.c_str(), chunkData.length(), 0);
-        }
+			// Check if we send the first chunk with the headers or we just send the other chunks (no headers)
+			if (this->client_connections[client_fd].response.fileOffset <= RESPONSE_CHUNK_SIZE) {
+				std::string fullResponse = this->client_connections[client_fd].response.getResponse() + chunkData;
+				send(client_fd, fullResponse.c_str(), fullResponse.length(), 0);
+				std::cout << "Sending Response..." << std::endl << fullResponse << std::endl;
+			} else {
+				// Otherwise, just send the chunk
+				std::cout << "Sending chunk: " << std::endl  << chunkData << std::endl;
+				send(client_fd, chunkData.c_str(), chunkData.length(), 0);
+			}
+		}
+		catch (const std::exception& e) {
+			std::cerr << e.what() << '\n';
+			HttpResponse http_response = this->client_connections[client_fd].response;
+			http_response.prepareErrorResponse(this->client_connections[client_fd].request);
+			send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+			this->client_connections[client_fd].response.fileOffset = this->client_connections[client_fd].response.fileSize;
+		}
 
+		// Check if we have sent the full file, If not we go back to the poll loop
         if (this->client_connections[client_fd].response.fileOffset < this->client_connections[client_fd].response.fileSize) {
             this->pollfds[idx].events = POLLOUT;  // Set to send more data
+			return;
         } else {
             this->client_connections[client_fd].response.fileHandle.close();
-            this->pollfds[idx].events = POLLIN;  // Set it back to read more data
-			this->_clear_connection(client_fd);
         }
-		return;
 	}
 
 	this->client_connections[client_fd].timestamp = timestamp();
-
-    this->pollfds[idx].events = POLLIN;  // Set it back to read more data
+    this->pollfds[idx].events = POLLIN;
 	this->_clear_connection(client_fd);
 }
 

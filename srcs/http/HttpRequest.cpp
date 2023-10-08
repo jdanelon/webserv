@@ -1,6 +1,6 @@
 #include "HttpRequest.hpp"
 
-HttpRequest::HttpRequest( void ) : autoindex(false), _error_code(0) {}
+HttpRequest::HttpRequest( void ) : autoindex(false), is_valid(true), _error_code(0) {}
 
 HttpRequest::HttpRequest( HttpRequest const &obj ) {
 	*this = obj;
@@ -17,6 +17,7 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->raw = obj.raw;
 		this->autoindex = obj.autoindex;
 		this->_error_code = obj._error_code;
+		this->is_valid = obj.is_valid;
 	}
 	return (*this);
 }
@@ -45,8 +46,9 @@ void	HttpRequest::parse( std::string raw ) {
 		size_t pos = host_header->second.find(':');
 		this->host = host_header->second.substr(0, pos);
 	}
-	else
-		this->set_error_code(400);
+	else {
+		set_error_code(400);
+	}
 }
 
 void	HttpRequest::parse_request_line( std::string line ) {
@@ -57,7 +59,7 @@ void	HttpRequest::parse_request_line( std::string line ) {
 	if (first_space == std::string::npos || second_space == std::string::npos ||
 		second_space != line.find_last_of(" "))
 	{
-		this->set_error_code(400);
+		set_error_code(400);
 		return ;
 	}
 	this->method = line.substr(0, first_space);
@@ -68,7 +70,7 @@ void	HttpRequest::parse_request_line( std::string line ) {
 	if (this->version.length() != 8 || this->version.compare(0, 5, "HTTP/") ||
 		!isdigit(this->version[5]) || this->version[6] != '.' || !isdigit(this->version[7]))
 	{
-		this->set_error_code(400);
+		set_error_code(400);
 		return ;
 	}
 }
@@ -86,21 +88,21 @@ void	HttpRequest::parse_header_line( std::string line ) {
 
 	if (value[value.length() - 1] != '\r')
 	{
-		this->set_error_code(400);
+		set_error_code(400);
 		return ;
 	}
 	// Remove '\r' at the end of value
 	value = value.substr(0, value.length() - 1);
 
 	if (key.empty() || value.empty()) {
-		this->set_error_code(400);
+		set_error_code(400);
 		return ;
 	}
 
 	std::pair<std::map<std::string, std::string, CaseInsensitive>::iterator, bool>	ret;
 	ret = this->headers.insert(std::make_pair(key, value));
 	if (!ret.second) {
-		this->set_error_code(400);
+		set_error_code(400);
 		return ;
 	}
 }
@@ -167,22 +169,22 @@ std::string	HttpRequest::validate( Server *srv ) {
 	std::cout << "Validating request:" << std::endl;
 
 	if (this->method.empty() || this->uri.empty() || this->version.empty())
-		this->set_error_code(400);
+		set_error_code(400);
 
 	std::map<std::string, Location> locations = srv->location;
 	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(this->uri, locations));
 	if (loc != locations.end() && is_method_forbidden(this->method, loc->second.limit_except))
-		this->set_error_code(405);
+		set_error_code(405);
 
 	if (this->method == "PUT" || this->method == "CONNECT" || this->method == "OPTIONS" ||
 			this->method == "TRACE" || this->method == "PATCH")
-		this->set_error_code(405);
+		set_error_code(405);
 
 	if (this->method != "HEAD" && this->method != "GET" && this->method != "POST" && this->method != "DELETE")
-		this->set_error_code(501);
+		set_error_code(501);
 
 	if (this->uri.length() > 8000)
-		this->set_error_code(414);
+		set_error_code(414);
 
 	// TO-DO: Validate return directive (redirect variable)
 	std::string resource = this->uri.substr(this->uri.find_last_of("/") + 1);
@@ -197,7 +199,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 			final_root = srv->root + this->uri;
 		full_path = std::getenv("PWD") + std::string("/") + final_root;
 		if ((stat(full_path.c_str(), &buf) == -1) || !(buf.st_mode & S_IXUSR))
-			this->set_error_code(404);
+			set_error_code(404);
 	}
 	// If request is for folder: search for index files with possible multiple redirections
 	else
@@ -230,16 +232,16 @@ std::string	HttpRequest::validate( Server *srv ) {
 				this->autoindex = true;
 			}
 			else
-				this->set_error_code(404);
+				set_error_code(404);
 		}
 	}
 
 	if (this->version != "HTTP/1.1")
-		this->set_error_code(505);
+		set_error_code(505);
 
 	// ATTENTION: NEED TO CHANGE /ETC/HOSTS FILE TO INCLUDE OTHER SERVER_NAMES
 	if (is_server_name_forbidden(this->host, srv->ip, srv->server_name))
-		this->set_error_code(404);
+		set_error_code(404);
 
 	int	code = this->get_error_code();
 	std::map<int, std::string>::iterator it;
@@ -262,8 +264,10 @@ int	HttpRequest::get_error_code( void ) const
 
 void	HttpRequest::set_error_code( int const &code )
 {
-	if (this->_error_code == 0)
+	this->is_valid = false;
+	if (this->_error_code == 0) {
 		this->_error_code = code;
+	}
 }
 
 // Debug
