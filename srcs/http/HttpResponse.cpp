@@ -163,6 +163,46 @@ void HttpResponse::openFile(const std::string &fullPath) {
 	fileHandle.open(fullPath.c_str(), std::ios::binary);
 }
 
+static std::string	get_autoindex_content( std::string path, std::string port )
+{
+	DIR	*dir = opendir(path.c_str());
+	if (!dir)
+		return ("");
+	std::string	index_page = "<!DOCTYPE html>\n<html>\n<head>\n<title>" + path +
+							 "</title>\n</head>\n<body>\n<h1>Index of " + path + "</h1>\n<p>\n";
+	struct dirent *list;
+	while ((list = readdir(dir)) != NULL)
+	{
+		std::string	item(list->d_name);
+		struct stat	buf;
+		stat(item.c_str(), &buf);
+
+		char		time_str[30];
+		std::string	last_modified("");
+		std::string	file_size("");
+		if (item != "." && item != "..")
+		{
+			std::strftime(time_str, sizeof(time_str), "%d-%b-%Y %H:%M", std::localtime(&(buf.st_ctime)));
+			last_modified = std::string(time_str);
+			if (!S_ISDIR(buf.st_mode))
+				file_size = ft_itoa(buf.st_size);
+			else
+				file_size = "-";
+		}
+		if (S_ISDIR(buf.st_mode))
+			item += "/";
+
+		std::stringstream	ss;
+		ss	<< "\t\t<p><a href=\"http://localhost" << ":" << port
+			<< path.substr(1) + (path[path.size() - 1] != '/' ? "/": "")
+			<< item + "\">" + item + "</a>&emsp;&emsp;" + last_modified + "&emsp;&emsp;" + file_size + "</p>\n";
+		index_page += ss.str();
+	}
+	index_page += "</p>\n</body>\n</html>\n";
+	closedir(dir);
+	return (index_page);
+}
+
 std::string HttpResponse::configureContent(HttpRequest &request)
 {
 	std::cout << "Generating Content...." << std::endl;
@@ -177,9 +217,10 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 	// std::string fullPath = constructPath(rootPath, request.uri);
 	// this->resourceFullPath = fullPath;
 	this->resourceFullPath = request.resource;
-	std::string	extension = this->resourceFullPath.substr(this->resourceFullPath.find_last_of("."));
-	// If extension == .html, goes through html processing
-	// If extension is in cgi extension vector, pass script through handle_cgi function and executable
+	size_t	extension_idx = this->resourceFullPath.find_last_of(".");
+	if (extension_idx == std::string::npos)
+		extension_idx = 0;
+	std::string	extension = this->resourceFullPath.substr(extension_idx);
 
 	// To-Do: Check if URI is a directory
 	// if (request.uri.empty() || request.uri[request.uri.size() - 1] == '/') {
@@ -188,8 +229,13 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 			// this->setStatusCode(httpStatusCodes.NotFound.code);
 		// }
 	// }
-	if (request.autoindex)
-	{}
+	if (request.autoindex) {
+		// AUTOINDEX
+		content = get_autoindex_content(this->resourceFullPath, this->host->port);
+		this->setStatusCode(httpStatusCodes.OK.code);
+
+		this->headers["Content-Type"] = "text/html";
+	}
 	// Check if URI is a html file
 	else if (extension == ".htm" || extension == ".html") {
 		this->openFile(this->resourceFullPath);
@@ -201,13 +247,19 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 		this->headers["Content-Type"] = "text/html";
 	}
 	else if (this->host->cgi.find(extension) != this->host->cgi.end()) {
-		// TO-DO: CGI
+		// CGI
 		std::string	exe = this->host->cgi[extension];
-		content = handle_cgi(exe, this->resourceFullPath.substr(this->resourceFullPath.find_last_of("/")), request);
+		std::cout << "Executable: " << exe << "; File: " << this->resourceFullPath << std::endl;
+		content = handle_cgi(exe, this->resourceFullPath, request);
 		if (content.empty())
 		{
 			content = "CGI has timed out!\n";
 			this->setStatusCode(httpStatusCodes.InternalServerError.code);
+		}
+		else
+		{
+			this->setStatusCode(httpStatusCodes.OK.code);
+			this->headers["Content-Type"] = "text/html";
 		}
 	}
 	else {

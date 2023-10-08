@@ -4,24 +4,19 @@ static std::vector<std::string>	set_environment( std::string script, HttpRequest
 {
 	std::vector<std::string>	env;
 	std::string					root(std::getenv("PWD"));
-	// std::string					uri("/cgi-bin/hello.py?first_name=John&last_name=Danelon");
-	// std::string					uri("/cgi-bin/hello.py");
 
 	env.resize(10);
 	env[0] = "REQUEST_METHOD=" + request.method;
-	// env[0] = "REQUEST_METHOD=POST";
 	size_t idx = request.uri.find("?");
 	std::string query_string = idx != std::string::npos ? request.uri.substr(idx + 1) : "\"\"";
 	env[1] = "QUERY_STRING=" + query_string;
 	env[2] = "CONTENT_TYPE=text/html";
 	env[3] = "CONTENT_LENGTH=" + ft_itoa(request.body.length());
-	// env[3] = "CONTENT_LENGTH=34";
 	env[4] = "DOCUMENT_ROOT=" + root;
 	env[5] = "SCRIPT_FILENAME=" + root + "/cgi" + script;
 	env[6] = "SCRIPT_NAME=/cgi/" + script;
 	env[7] = "REDIRECT_STATUS=200";
 	env[8] = "REQUEST_BODY=" + request.body;
-	// env[8] = "REQUEST_BODY=\"\"";
 	env[9] = "DISPLAY=:0";
 	return (env);
 }
@@ -79,9 +74,9 @@ static std::string	get_cgi_output( int fd )
 
 static std::string	handle_parent( pid_t pid, int const parent_fd )
 {
-	long long	old_timestamp, new_timestamp;
-	int			timeout = 30000;
-	std::string	output;
+	long long		old_timestamp, new_timestamp;
+	unsigned int	timeout = 30000;
+	std::string		output;
 
 	old_timestamp = timestamp();
 	while (1)

@@ -5,6 +5,9 @@
 # include <map>
 # include <fstream>
 # include <sstream>
+# include <sys/types.h>
+# include <dirent.h>
+# include <sys/stat.h>
 
 # include "HttpRequest.hpp"
 # include "HttpStatusCodes.hpp"
