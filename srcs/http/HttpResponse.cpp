@@ -10,6 +10,7 @@ HttpResponse::HttpResponse( void ) : response(""),
 	this->host = NULL;
 	this->status_code = 0;
 	this->fileOffset = 0;
+	this->is_request_valid = true;
 }
 
 HttpResponse::HttpResponse( Server *server ) : response(""),
@@ -19,6 +20,7 @@ HttpResponse::HttpResponse( Server *server ) : response(""),
 	this->host = server;
 	this->status_code = 0;
 	this->fileOffset = 0;
+	this->is_request_valid = true;
 }
 
 HttpResponse::HttpResponse( HttpResponse const &obj )
@@ -46,6 +48,7 @@ HttpResponse &HttpResponse::operator = ( HttpResponse const &obj)
 		this->fileOffset = obj.fileOffset;
 		this->fileSize = obj.fileSize;
 		this->resourceFullPath = obj.resourceFullPath;
+		this->is_request_valid = obj.is_request_valid;
 
 		this->fileHandle.open(obj.resourceFullPath.c_str(), std::ios::binary);
 	}
@@ -55,6 +58,12 @@ HttpResponse &HttpResponse::operator = ( HttpResponse const &obj)
 // Called after Parsing the request
 void HttpResponse::configureResponse(HttpRequest &request)
 {
+	if (!request.is_valid) {
+		std::cout << "Invalid Request" << std::endl;
+		this->is_request_valid = false;
+		this->setStatusCode(request.get_error_code());
+		return;
+	}
 	// print host root
 	if (request.method == "GET")
 		this->handleGet(request);
@@ -122,18 +131,14 @@ void HttpResponse::setStatusCode( int const &code )
 	this->status_code = code;
 }
 
-// Private
-
-// To-Do: Check if there is a location block that matches the request URI
+// Check if there is a location block that matches the request URI
 // If there is, update the root path and index files
 void updatePathAndIndexBasedOnLocation(HttpRequest &request, Server *host, std::string &rootPath, std::vector<std::string> &indexFiles) {
     std::map<std::string, Location>::const_iterator it;
     for (it = host->location.begin(); it != host->location.end(); ++it) {
         if (request.uri.find(it->first) == 0) {
             Location loc = it->second;
-            // rootPath = loc.root.empty() ? rootPath : loc.root;
-			// rootPath = "";
-			(void) rootPath;
+            rootPath = loc.alias.empty() ? rootPath : loc.alias;
             indexFiles = loc.index.empty() ? indexFiles : loc.index;
             break;
         }
@@ -188,6 +193,7 @@ std::string HttpResponse::configureContent(HttpRequest &request)
     }
 	// Check if URI is a html file
     else if (request.uri.find(".html") != std::string::npos) {
+		std::cout << "HTML file" << std::endl;
 		this->openFile(fullPath);
 		this->fileHandle.seekg(0, std::ios::end);  
     	this->fileSize = this->fileHandle.tellg();
@@ -232,8 +238,8 @@ std::string HttpResponse::readChunkAndUpdateResponse(size_t chunkSize) {
         bytesRead = this->fileHandle.gcount();  // Actual bytes read
     } else {
         // Handle the error case where fileHandle is not open
-        std::cerr << "File handle is not open!" << std::endl;
-        return ""; 
+		setStatusCode(httpStatusCodes.InternalServerError.code);
+		throw std::runtime_error("Error opening file");
     }
 
     // Null-terminate the buffer, ensuring that you don't read past the buffer size.
@@ -269,6 +275,77 @@ std::string HttpResponse::readChunkAndUpdateResponse(size_t chunkSize) {
     }
 
     return chunkedResponse;
+}
+
+void HttpResponse::prepareFullResponse(HttpRequest &request) {
+
+	std::string rootPath = this->host->root;
+    std::vector<std::string> indexFiles = this->host->index;
+    updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
+
+	std::string fileContent;
+	if (fileHandle.is_open()) {
+		fileContent.assign((std::istreambuf_iterator<char>(fileHandle)),
+                           (std::istreambuf_iterator<char>()));
+		fileHandle.close();	
+	}
+	else {
+		setStatusCode(httpStatusCodes.InternalServerError.code);
+		throw std::runtime_error("Error opening file");
+	}
+
+	this->generateResponseLine();
+	this->generateBasicHeaders();
+
+	// Set content length
+	this->headers["Content-Length"] = ft_itoa(fileContent.length());
+
+	// Response line + headers
+	this->response = this->response_line + "\r\n";
+	std::map<std::string, std::string>::iterator it;
+	for (it = this->headers.begin(); it != this->headers.end(); ++it)
+		this->response += it->first + ": " + it->second + "\r\n";
+	this->response += "\r\n";
+
+	this->response += fileContent;
+}
+
+void HttpResponse::prepareErrorResponse(HttpRequest &request) {
+	std::string rootPath = this->host->root;
+    std::vector<std::string> indexFiles = this->host->index;
+    updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
+	std::string errorPage = host->error_page[this->status_code];
+	std::string errorRoute = constructPath(rootPath, errorPage);
+
+	std::ifstream errorFile(errorRoute.c_str(), std::ios::in);
+    std::string fileContent;
+
+    if (errorFile.is_open()) {
+        fileContent.assign((std::istreambuf_iterator<char>(errorFile)),
+                           (std::istreambuf_iterator<char>()));
+        errorFile.close();
+    } else {
+		fileContent = "<html><body><h1>\n" 
+			+ httpStatusCodes.getDescription(this->status_code) 
+			+ "\n<p>This is a default error page.</p>"
+			+ "\n</h1></body></html>";
+    }
+	// Generate Response String
+	this->response = "";
+	this->generateResponseLine();
+	this->generateBasicHeaders();
+
+	// Set content length
+	this->headers["Content-Length"] = ft_itoa(fileContent.length());
+
+	// Response line + headers
+	this->response = this->response_line + "\r\n";
+	std::map<std::string, std::string>::iterator it;
+	for (it = this->headers.begin(); it != this->headers.end(); ++it)
+		this->response += it->first + ": " + it->second + "\r\n";
+	this->response += "\r\n";
+
+	this->response += fileContent;
 }
 
 // Debug
