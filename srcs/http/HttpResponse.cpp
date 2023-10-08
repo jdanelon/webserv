@@ -217,7 +217,8 @@ void HttpResponse::generateResponseLine( void )
 void HttpResponse::generateBasicHeaders( void )
 {
 	this->headers["Server"] = "webserv";
-	this->headers["Date"] = "Mon, 27 Jul 2009 12:28:53 GMT";
+	// this->headers["Date"] = "Mon, 27 Jul 2009 12:28:53 GMT";
+	this->headers["Date"] = get_time_string();
 }
 
 std::string HttpResponse::readChunkAndUpdateResponse(size_t chunkSize) {

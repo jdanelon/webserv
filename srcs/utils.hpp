@@ -14,6 +14,7 @@ char		ft_toupper( char c );
 bool		ft_empty( char const *str );
 long long	timestamp( void );
 std::string ft_itoa( int n );
+std::string get_time_string( void );
 
 std::string constructPath(const std::string &rootPath, const std::string &uri);
 

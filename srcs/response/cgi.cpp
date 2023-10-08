@@ -7,61 +7,68 @@
 #include <cstdio> //perror
 #include <vector> //vector
 #include <sys/wait.h> //waitpid
+#include <sys/time.h> // gettimeofday
+#include <cstdlib>
 
-static std::vector<std::string>	set_environment( void )
+static long long	timestamp( void )
+{
+	struct timeval	time;
+
+	gettimeofday(&time, NULL);
+	return ((time.tv_sec * 1000) + (time.tv_usec / 1000));
+}
+
+static std::vector<std::string>	set_environment( std::string script )
 {
 	std::vector<std::string>	env;
+	std::string					root(std::getenv("PWD"));
+	// std::string					uri("/cgi-bin/hello.py?first_name=John&last_name=Danelon");
+	std::string					uri("/cgi-bin/hello.py");
 
 	// TO-DO: Change cgi script
-	// TO-DO: Check which variables must be set for cgi script
-	// TO-DO: Check which informations are needed to set variables
 
-	env.resize(11);
-	env[0] = "REQUEST_METHOD=GET";
-	env[1] = "QUERY_STRING=\"\"";
+	env.resize(10);
+	// env[0] = "REQUEST_METHOD=" + request.method;
+	env[0] = "REQUEST_METHOD=POST";
+	size_t idx = uri.find("?");
+	std::string query_string = idx != std::string::npos ? uri.substr(idx + 1) : "\"\"";
+	env[1] = "QUERY_STRING=" + query_string;
 	env[2] = "CONTENT_TYPE=text/html";
-	env[3] = "CONTENT_LENGTH=12";
-	env[4] = "HTTP_COOKIE=None";
-	env[5] = "HTTP_USER_AGENT=None";
-	env[6] = "DOCUMENT_ROOT=PATH";
-	env[7] = "SCRIPT_FILENAME=PATH + cgi.py";
-	env[8] = "SCRIPT_NAME=cgi.py";
-	env[9] = "REDIRECT_STATUS=200";
-	env[10] = "REQUEST_BODY=Hello World!";
-
-	// setenv("CONTENT_LENGTH", "42", 1); // if msg has body present
-	// setenv("CONTENT_TYPE", "", 1); // get from header
-	// setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
-	// // setenv("PATH_INFO", request_uri, 1);
-	// // setenv("PATH_TRANSLATED", path_to_cgi_script, 1);
-	// setenv("QUERY_STRING", "", 1); // string after cgi script
-	// // setenv("REMOTE_ADDR", network_address_of_the_client, 1);
-	// // setenv("REMOTE_HOST", fully_qualified_domain_name_of_the_client, 1);
-	// // setenv("REQUEST_METHOD", method, 1);
-	// setenv("SCRIPT_NAME", "", 1); // url_of_the_script_being_executed
-	// // setenv("SERVER_NAME", host_ip, 1);
-	// // setenv("SERVER_PORT", host_port, 1);
-	// setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
-	// setenv("SERVER_SOFTWARE", "webserv/1.0", 1);
+	// env[3] = "CONTENT_LENGTH=" + ft_itoa(request.body.length());
+	env[3] = "CONTENT_LENGTH=34";
+	env[4] = "DOCUMENT_ROOT=" + root;
+	env[5] = "SCRIPT_FILENAME=" + root + "/cgi" + script;
+	env[6] = "SCRIPT_NAME=/cgi/" + script;
+	env[7] = "REDIRECT_STATUS=200";
+	// env[8] = "REQUEST_BODY=" + request.body;
+	env[8] = "REQUEST_BODY=\"\"";
+	env[9] = "DISPLAY=:0";
 	return (env);
 }
 
-static void	handle_child( int const child_fd, std::string bin, std::string script )
+static void	handle_child( int const parent_fd, int const child_fd, std::string bin, std::string script )
 {
 	// child will:
 	// - link child fd to STDOUT
-	// - what gets printed on child's STDOUT is sent to parent fd 
+	// - what gets printed on child's STDOUT is sent to parent fd
+	dup2(parent_fd, STDIN_FILENO);
+	close(parent_fd);
 	dup2(child_fd, STDOUT_FILENO);
+	close(child_fd);
 
+	// write(STDIN_FILENO, "first_name=John&last_name=Danelon", 34);
 	// - set array with execve args
-	const char	**argv = new const char *[3];
+	const char	**argv = new const char *[4];
 	argv[0] = bin.c_str();
 	argv[1] = script.c_str();
+	// char *post_string = request.method == "POST" ? "first_name=John&last_name=Danelon" : NULL;
 	argv[2] = NULL;
+	// argv[2] = "first_name=John&last_name=Danelon";
+	argv[3] = NULL;
 
 	// - set environ with CGI variables
-	std::vector<std::string>	env = set_environment();
-	const char	**envp = new const char *[12];
+	std::vector<std::string>	env = set_environment(script);
+	const char	**envp = new const char *[11];
 	envp[0] = env[0].c_str();
 	envp[1] = env[1].c_str();
 	envp[2] = env[2].c_str();
@@ -72,12 +79,10 @@ static void	handle_child( int const child_fd, std::string bin, std::string scrip
 	envp[7] = env[7].c_str();
 	envp[8] = env[8].c_str();
 	envp[9] = env[9].c_str();
-	envp[10] = env[10].c_str();
-	envp[11] = NULL;
+	envp[10] = NULL;
 
 	// - run binary based on cgi script (execve)
 	execve(argv[0], (char **)argv, (char **)envp);
-	close(child_fd);
 }
 
 static std::string	get_cgi_output( int fd )
@@ -92,51 +97,86 @@ static std::string	get_cgi_output( int fd )
 		cgi_output.append(buf);
 		nbytes = read(fd, buf, 1024);
 	}
-	// close parent fd
-	close(fd);
 	return (cgi_output);
+}
+
+static std::string	handle_parent( pid_t pid, int const parent_fd )
+{
+	long long	old_timestamp, new_timestamp;
+	int			timeout = 30000;
+	std::string	output;
+
+	old_timestamp = timestamp();
+	while (1)
+	{
+		pid_t result = waitpid(pid, NULL, WNOHANG);
+		if (result == -1)
+		{
+			perror("waitpit");
+			throw std::exception();
+		}
+		if (result != 0)
+			break ;
+		new_timestamp = timestamp();
+		unsigned int runtime = new_timestamp - old_timestamp;
+		if (runtime >= timeout)
+		{
+			kill(pid, SIGTERM);
+			return (std::string());
+		}
+		usleep(1000);
+	}
+	output = get_cgi_output(parent_fd);
+	close(parent_fd);
+	return (output);
 }
 
 static std::string	handle_cgi( std::string bin, std::string script )
 {
 	pid_t				pid;
-	int					fd[2], status;
+	int					fd[2];
 	static const int	parent = 0, child = 1;
+	std::string			cgi_output;
 
-	socketpair(AF_LOCAL, SOCK_STREAM, 0, fd);
-	fcntl(fd[0], F_SETFL, O_NONBLOCK, FD_CLOEXEC);
-	fcntl(fd[1], F_SETFL, O_NONBLOCK, FD_CLOEXEC);
-	// fork webserv
+	// socketpair(AF_LOCAL, SOCK_STREAM, 0, fd);
+	// fcntl(fd[parent], F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+	// fcntl(fd[child], F_SETFL, O_NONBLOCK, FD_CLOEXEC);
+	pipe(fd);
+	// if (request.method == "POST")
+	// write(fd[child], "first_name=John&last_name=Danelon", 34);
 	pid = fork();
 	if (pid == -1)
 	{
 		perror("fork");
-		return ("");
+		throw std::exception();
 	}
 	else if (pid == 0)
 	{
-		close(fd[parent]);
-		handle_child(fd[child], bin, script);
+		// close(fd[parent]);
+		handle_child(fd[parent], fd[child], bin, script);
 	}
-	// parent will:
-	// - wait for child to finish (waitpid)
-	// - catch child timeout
-	waitpid(pid, &status, 0);
-	close(fd[child]);
-	// access message body generated by script
-	std::string	cgi_output = get_cgi_output(fd[parent]);
-
-	// cgi output saved as a long string
+	else if (pid > 0)
+	{
+		close(fd[child]);
+		cgi_output = handle_parent(pid, fd[parent]);
+	}
 	return (cgi_output);
 }
 
 int	main( void )
 {
 	// binary must be: absolute path + executable file
-	std::string	bin("/home/jdanelon/anaconda3/bin/python3");
-	std::string	script("cgi.py");
+	std::string	bin("/usr/bin/python3");
+	// std::string	script("hello.py");
+	// std::string	script("loop.py");
+	std::string	script("64.py");
 
 	std::string	output = handle_cgi(bin, script);
-	std::cout << output;
+	if (output.empty())
+	{
+		std::cout << "CGI has timed out!" << std::endl;
+	}
+	else
+		std::cout << "CGI output:\n" << output;
 	return (0);
 }

@@ -12,5 +12,5 @@ local_tests
 server_root
 
 # Object files
-
 objs/*
+*.out
