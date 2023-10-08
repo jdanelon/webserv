@@ -1,11 +1,8 @@
-#include <fstream>
-#include <sstream>
 #include "HttpResponse.hpp"
-#include "HttpStatusCodes.hpp"
 
 HttpResponse::HttpResponse( void ) : response(""),
-										response_line(""),
-										headers(std::map<std::string, std::string>()) {
+									 response_line(""),
+									 headers(std::map<std::string, std::string>()) {
 	this->http_version = "HTTP/1.1";
 	this->host = NULL;
 	this->status_code = 0;
@@ -13,8 +10,8 @@ HttpResponse::HttpResponse( void ) : response(""),
 }
 
 HttpResponse::HttpResponse( Server *server ) : response(""),
-										response_line(""),
-										headers(std::map<std::string, std::string>()) {
+											   response_line(""),
+											   headers(std::map<std::string, std::string>()) {
 	this->http_version = "HTTP/1.1";
 	this->host = server;
 	this->status_code = 0;
@@ -55,6 +52,7 @@ HttpResponse &HttpResponse::operator = ( HttpResponse const &obj)
 // Called after Parsing the request
 void HttpResponse::configureResponse(HttpRequest &request)
 {
+	// TO-DO: In case of validation error (error_code != 0), set response
 	// print host root
 	if (request.method == "GET")
 		this->handleGet(request);
@@ -90,17 +88,17 @@ void HttpResponse::handlePost(HttpRequest &request)
 
 void HttpResponse::handleGet(HttpRequest &request)
 {
-    std::string uri = request.uri;
-    if (uri.empty()) {
-        this->setStatusCode(httpStatusCodes.BadRequest.code);
-        return;
-    }
+	std::string uri = request.uri;
+	if (uri.empty()) {
+		this->setStatusCode(httpStatusCodes.BadRequest.code);
+		return;
+	}
 
-    // Read the corresponding file
-    std::string content = this->configureContent(request);  
+	// Read the corresponding file
+	std::string content = this->configureContent(request);  
 
-    // Store the content as the response body
-    this->body = content;
+	// Store the content as the response body
+	this->body = content;
 }
 
 void HttpResponse::handleDelete(HttpRequest &request)
@@ -127,84 +125,96 @@ void HttpResponse::setStatusCode( int const &code )
 // To-Do: Check if there is a location block that matches the request URI
 // If there is, update the root path and index files
 void updatePathAndIndexBasedOnLocation(HttpRequest &request, Server *host, std::string &rootPath, std::vector<std::string> &indexFiles) {
-    std::map<std::string, Location>::const_iterator it;
-    for (it = host->location.begin(); it != host->location.end(); ++it) {
-        if (request.uri.find(it->first) == 0) {
-            Location loc = it->second;
-            // rootPath = loc.root.empty() ? rootPath : loc.root;
+	std::map<std::string, Location>::const_iterator it;
+	for (it = host->location.begin(); it != host->location.end(); ++it) {
+		if (request.uri.find(it->first) == 0) {
+			Location loc = it->second;
+			// rootPath = loc.root.empty() ? rootPath : loc.root;
 			// rootPath = "";
 			(void) rootPath;
-            indexFiles = loc.index.empty() ? indexFiles : loc.index;
-            break;
-        }
-    }
+			indexFiles = loc.index.empty() ? indexFiles : loc.index;
+			break;
+		}
+	}
 }
 
 // To-Do: Check if any of the index files exist in the root path
 bool handleIndexFiles(const std::string &fullPath, std::vector<std::string> &indexFiles, std::string &content, HttpResponse *response) {
-    std::vector<std::string>::const_iterator it;
-    for (it = indexFiles.begin(); it != indexFiles.end(); ++it) {
-        std::string tmpPath = fullPath + *it;
-        std::ifstream file(tmpPath.c_str());
+	std::vector<std::string>::const_iterator it;
+	for (it = indexFiles.begin(); it != indexFiles.end(); ++it) {
+		std::string tmpPath = fullPath + *it;
+		std::ifstream file(tmpPath.c_str());
 
-        if (file.is_open()) {
-            std::stringstream buffer;
-            buffer << file.rdbuf();
-            content = buffer.str();
-            response->setStatusCode(httpStatusCodes.OK.code);
-            return true;
-        }
-    }
-    return false;
+		if (file.is_open()) {
+			std::stringstream buffer;
+			buffer << file.rdbuf();
+			content = buffer.str();
+			response->setStatusCode(httpStatusCodes.OK.code);
+			return true;
+		}
+	}
+	return false;
 }
 
 void HttpResponse::openFile(const std::string &fullPath) {
-    if (fileHandle.is_open()) {
-        fileHandle.close();
-    }
-    fileHandle.open(fullPath.c_str(), std::ios::binary);
+	if (fileHandle.is_open()) {
+		fileHandle.close();
+	}
+	fileHandle.open(fullPath.c_str(), std::ios::binary);
 }
 
 std::string HttpResponse::configureContent(HttpRequest &request)
 {
 	std::cout << "Generating Content...." << std::endl;
-    std::string content;
+	std::string content;
 	// print host root
-    std::string rootPath = this->host->root;
-    std::vector<std::string> indexFiles = this->host->index; // Assuming index is a property of host
+	// std::string rootPath = this->host->root;
+	// std::vector<std::string> indexFiles = this->host->index; // Assuming index is a property of host
 
-    updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
+	// updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
 
-    // To-Do: Construct the full path
-    std::string fullPath = constructPath(rootPath, request.uri);
-	this->resourceFullPath = fullPath;
+	// To-Do: Construct the full path
+	// std::string fullPath = constructPath(rootPath, request.uri);
+	// this->resourceFullPath = fullPath;
+	this->resourceFullPath = request.resource;
+	std::string	extension = this->resourceFullPath.substr(this->resourceFullPath.find_last_of("."));
+	// If extension == .html, goes through html processing
+	// If extension is in cgi extension vector, pass script through handle_cgi function and executable
 
-    // To-Do: Check if URI is a directory
-    if (request.uri.empty() || request.uri[request.uri.size() - 1] == '/') {
-        if (!handleIndexFiles(fullPath, indexFiles, content, this)) {
-            content = httpStatusCodes.NotFound.description;
-            this->setStatusCode(httpStatusCodes.NotFound.code);
-        }
-    }
+	// To-Do: Check if URI is a directory
+	// if (request.uri.empty() || request.uri[request.uri.size() - 1] == '/') {
+		// if (!handleIndexFiles(fullPath, indexFiles, content, this)) {
+			// content = httpStatusCodes.NotFound.description;
+			// this->setStatusCode(httpStatusCodes.NotFound.code);
+		// }
+	// }
+	if (request.autoindex)
+	{}
 	// Check if URI is a html file
-    else if (request.uri.find(".html") != std::string::npos) {
-		this->openFile(fullPath);
+	else if (extension == ".htm" || extension == ".html") {
+		this->openFile(this->resourceFullPath);
 		this->fileHandle.seekg(0, std::ios::end);  
-    	this->fileSize = this->fileHandle.tellg();
-    	this->fileHandle.seekg(0, std::ios::beg);
+		this->fileSize = this->fileHandle.tellg();
+		this->fileHandle.seekg(0, std::ios::beg);
 		this->setStatusCode(httpStatusCodes.OK.code);
 
-    	this->headers["Content-Type"] = "text/html";
-    }
-    else if (request.uri.find(".cgi") != std::string::npos) {
-       // TO-DO: CGI 
-    }
-    else {
-        content = httpStatusCodes.NotFound.description;
-        this->setStatusCode(httpStatusCodes.NotFound.code);
-    }
-
-    return content;
+		this->headers["Content-Type"] = "text/html";
+	}
+	else if (this->host->cgi.find(extension) != this->host->cgi.end()) {
+		// TO-DO: CGI
+		std::string	exe = this->host->cgi[extension];
+		content = handle_cgi(exe, this->resourceFullPath.substr(this->resourceFullPath.find_last_of("/")), request);
+		if (content.empty())
+		{
+			content = "CGI has timed out!\n";
+			this->setStatusCode(httpStatusCodes.InternalServerError.code);
+		}
+	}
+	else {
+		content = httpStatusCodes.NotFound.description;
+		this->setStatusCode(httpStatusCodes.NotFound.code);
+	}
+	return (content);
 }
 
 void HttpResponse::generateResponseLine( void )
@@ -222,29 +232,29 @@ void HttpResponse::generateBasicHeaders( void )
 }
 
 std::string HttpResponse::readChunkAndUpdateResponse(size_t chunkSize) {
-    char buffer[chunkSize];
-    
-    std::streamsize bytesRead = 0;
+	char buffer[chunkSize];
 
-    if (this->fileHandle.is_open()) {
-        this->fileHandle.seekg(this->fileOffset);
-        this->fileHandle.read(buffer, chunkSize);
-        bytesRead = this->fileHandle.gcount();  // Actual bytes read
-    } else {
-        // Handle the error case where fileHandle is not open
-        std::cerr << "File handle is not open!" << std::endl;
-        return ""; 
-    }
+	std::streamsize bytesRead = 0;
 
-    // Null-terminate the buffer, ensuring that you don't read past the buffer size.
-    if (bytesRead < static_cast<std::streamsize>(chunkSize)) {
-        buffer[bytesRead] = '\0';
-    } else {
-        // This is technically an error case; the buffer is not null-terminated
-    }
+	if (this->fileHandle.is_open()) {
+		this->fileHandle.seekg(this->fileOffset);
+		this->fileHandle.read(buffer, chunkSize);
+		bytesRead = this->fileHandle.gcount();  // Actual bytes read
+	} else {
+		// Handle the error case where fileHandle is not open
+		std::cerr << "File handle is not open!" << std::endl;
+		return (""); 
+	}
 
-    // Update the offset for the next read
-    this->fileOffset += bytesRead;
+	// Null-terminate the buffer, ensuring that you don't read past the buffer size.
+	if (bytesRead < static_cast<std::streamsize>(chunkSize)) {
+		buffer[bytesRead] = '\0';
+	} else {
+		// This is technically an error case; the buffer is not null-terminated
+	}
+
+	// Update the offset for the next read
+	this->fileOffset += bytesRead;
 
 	// Set header as chunked and prepare response only if its the first chunk
 	if (this->fileOffset == bytesRead) {
@@ -252,23 +262,22 @@ std::string HttpResponse::readChunkAndUpdateResponse(size_t chunkSize) {
 		this->prepareResponseHeaders();
 	}
 
-    // Convert bytesRead to a hexadecimal string
-    std::stringstream hexStream;
-    hexStream << std::hex << bytesRead;
+	// Convert bytesRead to a hexadecimal string
+	std::stringstream hexStream;
+	hexStream << std::hex << bytesRead;
 
-    // Prepare the chunked response
-    std::string chunkedResponse;
-    chunkedResponse += hexStream.str();  // chunk size in hex
-    chunkedResponse += "\r\n";  // CRLF
-    chunkedResponse += std::string(buffer, bytesRead);  // actual chunk data
-    chunkedResponse += "\r\n";  // CRLF
+	// Prepare the chunked response
+	std::string chunkedResponse;
+	chunkedResponse += hexStream.str();  // chunk size in hex
+	chunkedResponse += "\r\n";  // CRLF
+	chunkedResponse += std::string(buffer, bytesRead);  // actual chunk data
+	chunkedResponse += "\r\n";  // CRLF
 
-    // If we're at the end of the file, append the final zero-length chunk
-    if (bytesRead < static_cast<std::streamsize>(chunkSize)) {
-        chunkedResponse += "0\r\n\r\n";
-    }
-
-    return chunkedResponse;
+	// If we're at the end of the file, append the final zero-length chunk
+	if (bytesRead < static_cast<std::streamsize>(chunkSize)) {
+		chunkedResponse += "0\r\n\r\n";
+	}
+	return (chunkedResponse);
 }
 
 // Debug

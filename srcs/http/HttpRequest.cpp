@@ -16,6 +16,7 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->body = obj.body;
 		this->raw = obj.raw;
 		this->autoindex = obj.autoindex;
+		this->resource = obj.resource;
 		this->_error_code = obj._error_code;
 	}
 	return (*this);
@@ -222,7 +223,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 		// No index files are found
 		if (i == index_files.size())
 		{
-			// if autoindex is true, does not set 404
+			// if autoindex is true, does not set 403
 			bool parsed_autoindex = (loc != locations.end()) ? loc->second.autoindex : srv->autoindex;
 			if (parsed_autoindex == true)
 			{
@@ -230,7 +231,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 				this->autoindex = true;
 			}
 			else
-				this->set_error_code(404);
+				this->set_error_code(403);
 		}
 	}
 

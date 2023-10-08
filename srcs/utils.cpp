@@ -92,13 +92,13 @@ std::string	ft_itoa( int n )
 
 std::string	get_time_string( void )
 {
-	time_t		rawtime;
+	time_t		now;
 	struct tm	*timeinfo;
 	char		time_str[30];
 
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	strftime(time_str, 30, "%a, %e %h %Y %X %Z", timeinfo);
+	now = std::time(NULL);
+	timeinfo = std::localtime(&now);
+	std::strftime(time_str, sizeof(time_str), "%a, %d %b %Y %T %Z", timeinfo);
 	return std::string(time_str);
 }
 

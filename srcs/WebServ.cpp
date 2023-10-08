@@ -161,6 +161,7 @@ void	WebServ::parse_request( int idx )
 		std::string resource_path = request.validate(this->client_connections[client_fd].host_server);
 
 		request.print(client_fd);
+		request.resource = resource_path;
 		this->client_connections[client_fd].request = request;
 		this->client_connections[client_fd].is_request_completed = true;
 	}
@@ -181,10 +182,6 @@ void	WebServ::create_response( int idx )
 }
 
 void	WebServ::_clear_connection(int const client_fd) {
-	// TO-DO: Function to clear buffer, request, response, bool checks as below
-	//
-	// I considered clearing with the second constructor, but I do not know if we
-	// could have memory leaks due to the allocated Server in host
 	this->client_connections[client_fd].buffer = "";
 	this->client_connections[client_fd].request = HttpRequest();
 	this->client_connections[client_fd].response = HttpResponse(this->client_connections[client_fd].host_server);

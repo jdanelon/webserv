@@ -16,7 +16,8 @@ SRCS = main.cpp \
 		connection/ClientConnection.cpp \
 		http/HttpRequest.cpp \
 		http/HttpResponse.cpp \
-		http/HttpStatusCodes.cpp
+		http/HttpStatusCodes.cpp \
+		cgi.cpp
 
 OBJS = $(addprefix $(OBJS_PATH)/, $(SRCS:.cpp=.o))
 
