@@ -116,5 +116,12 @@ std::string constructPath(const std::string &rootPath, const std::string &uri) {
     //     newUri = "/" + newUri;
     // }
 
-    return newRootPath + newUri;
+	std::string fullPath = newRootPath + newUri;
+
+    // Remove any leading slash from the final fullPath
+    if (!fullPath.empty() && fullPath.front() == '/') {
+        fullPath.erase(0, 1);
+    }
+
+    return fullPath;
 }

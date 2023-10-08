@@ -35,6 +35,7 @@ class HttpRequest {
 		std::string											raw;
 		bool												autoindex;
 		std::string											resource;
+		bool												is_valid;
 
 		HttpRequest( void );
 		HttpRequest( HttpRequest const &obj );
@@ -52,7 +53,6 @@ class HttpRequest {
 		void	print( int client_fd );
 	
 	private:
-
 		int	_error_code;
 };
 

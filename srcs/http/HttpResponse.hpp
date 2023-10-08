@@ -18,6 +18,13 @@ class HttpResponse {
 
 	public:
 
+		// Content/Body configuration settings
+		std::ifstream		fileHandle;
+		std::streamsize		fileSize;
+		unsigned int		fileOffset;
+		std::string			resourceFullPath;
+		bool				is_request_valid;
+
 		HttpResponse( void );
 		HttpResponse( Server *server );
 		HttpResponse( HttpResponse const &obj );
@@ -36,11 +43,8 @@ class HttpResponse {
 		std::string	getResponse( void );
 		void		setStatusCode( int const &code );
 
-		// Content configuration settings
-		std::ifstream	fileHandle;
-		std::streamsize	fileSize;
-		unsigned int	fileOffset;
-		std::string		resourceFullPath;
+		void prepareErrorResponse( HttpRequest &request );
+		void prepareFullResponse( HttpRequest &request );
 
 		// Debug
 		void prepareDummyResponse( void );
