@@ -167,27 +167,27 @@ std::string	HttpRequest::validate( Server *srv ) {
 	std::cout << "Validating request:" << std::endl;
 
 	if (this->method.empty() || this->uri.empty() || this->version.empty())
-		this->set_error_code(400);
+		set_error_code(400);
 
 	std::map<std::string, Location> locations = srv->location;
 	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(this->uri, locations));
 	if (loc != locations.end() && is_method_forbidden(this->method, loc->second.limit_except))
-		this->set_error_code(405);
+		set_error_code(405);
 
 	if (this->method == "PUT" || this->method == "CONNECT" || this->method == "OPTIONS" ||
 			this->method == "TRACE" || this->method == "PATCH")
-		this->set_error_code(405);
+		set_error_code(405);
 
 	if (this->method != "HEAD" && this->method != "GET" && this->method != "POST" && this->method != "DELETE")
-		this->set_error_code(501);
+		set_error_code(501);
 
 	if (this->uri.length() > 8000)
-		this->set_error_code(414);
+		set_error_code(414);
 
 	// Return for server block
 	if (srv->redirect.first != 0 && !srv->redirect.second.empty())
 	{
-		this->set_error_code(srv->redirect.first);
+		set_error_code(srv->redirect.first);
 		return (srv->redirect.second);
 	}
 
@@ -200,7 +200,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 		// Return if request is for file
 		if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 		{
-			this->set_error_code(loc->second.redirect.first);
+			set_error_code(loc->second.redirect.first);
 			return (loc->second.redirect.second);
 		}
 		if (loc != locations.end() && !loc->second.alias.empty())
@@ -209,7 +209,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 			final_root = srv->root + this->uri;
 		full_path = std::getenv("PWD") + std::string("/") + final_root;
 		if ((stat(full_path.c_str(), &buf) == -1) || !(buf.st_mode & S_IXUSR))
-			this->set_error_code(404);
+			set_error_code(404);
 	}
 	// If request is for folder: search for index files with possible multiple redirections
 	else
@@ -224,7 +224,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 			// Return if request is for folder
 			if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 			{
-				this->set_error_code(loc->second.redirect.first);
+				set_error_code(loc->second.redirect.first);
 				return (loc->second.redirect.second);
 			}
 			if (loc != locations.end() && !loc->second.alias.empty())
@@ -248,16 +248,16 @@ std::string	HttpRequest::validate( Server *srv ) {
 				this->autoindex = true;
 			}
 			else
-				this->set_error_code(404);
+				set_error_code(404);
 		}
 	}
 
 	if (this->version != "HTTP/1.1")
-		this->set_error_code(505);
+		set_error_code(505);
 
 	// ATTENTION: NEED TO CHANGE /ETC/HOSTS FILE TO INCLUDE OTHER SERVER_NAMES
 	if (is_server_name_forbidden(this->host, srv->ip, srv->server_name))
-		this->set_error_code(404);
+		set_error_code(404);
 
 	int	code = this->get_error_code();
 	std::map<int, std::string>::iterator it;
