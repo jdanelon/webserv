@@ -110,7 +110,11 @@ std::string	handle_cgi( std::string bin, std::string script, HttpRequest request
 	static const int	parent = 0, child = 1;
 	std::string			cgi_output;
 
-	pipe(fd);
+	if (pipe(fd) == -1)
+	{
+		perror("pipe");
+		throw std::exception();
+	}
 	if (request.method == "POST")
 		write(fd[child], request.body.c_str(), request.body.length());
 	pid = fork();

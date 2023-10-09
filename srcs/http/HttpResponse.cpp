@@ -254,17 +254,22 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 	else if (this->host->cgi.find(extension) != this->host->cgi.end()) {
 		// CGI
 		std::string	exe = this->host->cgi[extension];
-		std::cout << "Executable: " << exe << "; File: " << this->resourceFullPath << std::endl;
-		content = handle_cgi(exe, this->resourceFullPath, request);
-		if (content.empty())
-		{
-			content = "CGI has timed out!\n";
-			this->setStatusCode(httpStatusCodes.InternalServerError.code);
+		try {
+			content = handle_cgi(exe, this->resourceFullPath, request);
+			if (content.empty())
+			{
+				content = "CGI has timed out!\n";
+				this->setStatusCode(httpStatusCodes.InternalServerError.code);
+			}
+			else
+			{
+				this->setStatusCode(httpStatusCodes.OK.code);
+				this->headers["Content-Type"] = "text/html";
+			}
 		}
-		else
+		catch (const std::exception& e)
 		{
-			this->setStatusCode(httpStatusCodes.OK.code);
-			this->headers["Content-Type"] = "text/html";
+			this->setStatusCode(httpStatusCodes.InternalServerError.code);
 		}
 	}
 	else {
