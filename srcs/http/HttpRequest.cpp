@@ -16,6 +16,7 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->body = obj.body;
 		this->raw = obj.raw;
 		this->autoindex = obj.autoindex;
+		this->resource = obj.resource;
 		this->_error_code = obj._error_code;
 		this->is_valid = obj.is_valid;
 	}
@@ -186,13 +187,25 @@ std::string	HttpRequest::validate( Server *srv ) {
 	if (this->uri.length() > 8000)
 		set_error_code(414);
 
-	// TO-DO: Validate return directive (redirect variable)
+	// Return directive on server block
+	if (srv->redirect.first != 0 && !srv->redirect.second.empty())
+	{
+		set_error_code(srv->redirect.first);
+		return (srv->redirect.second);
+	}
+
 	std::string resource = this->uri.substr(this->uri.find_last_of("/") + 1);
 	std::string	final_root, new_uri, full_path;
 	struct stat	buf;
 	// If request is for file: set root from redirection, full_path and set 404 if not found
 	if (resource.length() != 0)
 	{
+		// Return directive on matched location for file request
+		if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
+		{
+			set_error_code(loc->second.redirect.first);
+			return (loc->second.redirect.second);
+		}
 		if (loc != locations.end() && !loc->second.alias.empty())
 			final_root = find_final_root(this->uri, loc->second.alias, loc->first);
 		else
@@ -211,6 +224,12 @@ std::string	HttpRequest::validate( Server *srv ) {
 			new_uri = this->uri;
 			new_uri += (index_files[i][0] == '/') ? index_files[i].substr(1) : index_files[i];
 			loc = locations.find(get_matched_location(new_uri, locations));
+			// Return directive on matched location for folder request
+			if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
+			{
+				set_error_code(loc->second.redirect.first);
+				return (loc->second.redirect.second);
+			}
 			if (loc != locations.end() && !loc->second.alias.empty())
 				final_root = find_final_root(new_uri, loc->second.alias, loc->first);
 			else
@@ -224,7 +243,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 		// No index files are found
 		if (i == index_files.size())
 		{
-			// if autoindex is true, does not set 404
+			// if autoindex is true, does not set 403
 			bool parsed_autoindex = (loc != locations.end()) ? loc->second.autoindex : srv->autoindex;
 			if (parsed_autoindex == true)
 			{
@@ -232,7 +251,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 				this->autoindex = true;
 			}
 			else
-				set_error_code(404);
+				this->set_error_code(403);
 		}
 	}
 

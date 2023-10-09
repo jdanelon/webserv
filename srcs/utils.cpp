@@ -92,13 +92,13 @@ std::string	ft_itoa( int n )
 
 std::string	get_time_string( void )
 {
-	time_t		rawtime;
+	time_t		now;
 	struct tm	*timeinfo;
 	char		time_str[30];
 
-	time(&rawtime);
-	timeinfo = localtime(&rawtime);
-	strftime(time_str, 30, "%a, %e %h %Y %X %Z", timeinfo);
+	now = std::time(NULL);
+	timeinfo = std::localtime(&now);
+	std::strftime(time_str, sizeof(time_str), "%a, %d %b %Y %T %Z", timeinfo);
 	return std::string(time_str);
 }
 
@@ -106,22 +106,22 @@ std::string constructPath(const std::string &rootPath, const std::string &uri) {
     std::string newRootPath = rootPath;
     std::string newUri = uri;
 
-    // Remove trailing slash from rootPath, if it exists
-    if (!newRootPath.empty() && newRootPath.back() == '/') {
-        newRootPath.pop_back();
-    }
+    // // Remove trailing slash from rootPath, if it exists
+    // if (!newRootPath.empty() && newRootPath.back() == '/') {
+    //     newRootPath.pop_back();
+    // }
 
-    // Add leading slash to uri, if it doesn't exist
-    if (newUri.empty() || newUri.front() != '/') {
-        newUri = "/" + newUri;
-    }
+    // // Add leading slash to uri, if it doesn't exist
+    // if (newUri.empty() || newUri.front() != '/') {
+    //     newUri = "/" + newUri;
+    // }
 
 	std::string fullPath = newRootPath + newUri;
 
     // Remove any leading slash from the final fullPath
-    if (!fullPath.empty() && fullPath.front() == '/') {
-        fullPath.erase(0, 1);
-    }
+    // if (!fullPath.empty() && fullPath.front() == '/') {
+    //     fullPath.erase(0, 1);
+    // }
 
     return fullPath;
 }

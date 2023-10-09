@@ -1,11 +1,8 @@
-#include <fstream>
-#include <sstream>
 #include "HttpResponse.hpp"
-#include "HttpStatusCodes.hpp"
 
 HttpResponse::HttpResponse( void ) : response(""),
-										response_line(""),
-										headers(std::map<std::string, std::string>()) {
+									 response_line(""),
+									 headers(std::map<std::string, std::string>()) {
 	this->http_version = "HTTP/1.1";
 	this->host = NULL;
 	this->status_code = 0;
@@ -14,8 +11,8 @@ HttpResponse::HttpResponse( void ) : response(""),
 }
 
 HttpResponse::HttpResponse( Server *server ) : response(""),
-										response_line(""),
-										headers(std::map<std::string, std::string>()) {
+											   response_line(""),
+											   headers(std::map<std::string, std::string>()) {
 	this->http_version = "HTTP/1.1";
 	this->host = server;
 	this->status_code = 0;
@@ -99,17 +96,17 @@ void HttpResponse::handlePost(HttpRequest &request)
 
 void HttpResponse::handleGet(HttpRequest &request)
 {
-    std::string uri = request.uri;
-    if (uri.empty()) {
-        this->setStatusCode(httpStatusCodes.BadRequest.code);
-        return;
-    }
+	std::string uri = request.uri;
+	if (uri.empty()) {
+		this->setStatusCode(httpStatusCodes.BadRequest.code);
+		return;
+	}
 
-    // Read the corresponding file
-    std::string content = this->configureContent(request);  
+	// Read the corresponding file
+	std::string content = this->configureContent(request);  
 
-    // Store the content as the response body
-    this->body = content;
+	// Store the content as the response body
+	this->body = content;
 }
 
 void HttpResponse::handleDelete(HttpRequest &request)
@@ -147,70 +144,139 @@ void updatePathAndIndexBasedOnLocation(HttpRequest &request, Server *host, std::
 
 // To-Do: Check if any of the index files exist in the root path
 bool handleIndexFiles(const std::string &fullPath, std::vector<std::string> &indexFiles, std::string &content, HttpResponse *response) {
-    std::vector<std::string>::const_iterator it;
-    for (it = indexFiles.begin(); it != indexFiles.end(); ++it) {
-        std::string tmpPath = fullPath + *it;
-        std::ifstream file(tmpPath.c_str());
+	std::vector<std::string>::const_iterator it;
+	for (it = indexFiles.begin(); it != indexFiles.end(); ++it) {
+		std::string tmpPath = fullPath + *it;
+		std::ifstream file(tmpPath.c_str());
 
-        if (file.is_open()) {
-            std::stringstream buffer;
-            buffer << file.rdbuf();
-            content = buffer.str();
-            response->setStatusCode(httpStatusCodes.OK.code);
-            return true;
-        }
-    }
-    return false;
+		if (file.is_open()) {
+			std::stringstream buffer;
+			buffer << file.rdbuf();
+			content = buffer.str();
+			response->setStatusCode(httpStatusCodes.OK.code);
+			return true;
+		}
+	}
+	return false;
 }
 
 void HttpResponse::openFile(const std::string &fullPath) {
-    if (fileHandle.is_open()) {
-        fileHandle.close();
-    }
-    fileHandle.open(fullPath.c_str(), std::ios::binary);
+	if (fileHandle.is_open()) {
+		fileHandle.close();
+	}
+	fileHandle.open(fullPath.c_str(), std::ios::binary);
+}
+
+static std::string	get_autoindex_content( std::string path, std::string port )
+{
+	DIR	*dir = opendir(path.c_str());
+	if (!dir)
+		return ("");
+	std::string	index_page = "<!DOCTYPE html>\n<html>\n<head>\n<title>" + path +
+							 "</title>\n</head>\n<body>\n<h1>Index of " + path + "</h1>\n<p>\n";
+	struct dirent *list;
+	while ((list = readdir(dir)) != NULL)
+	{
+		std::string	item(list->d_name);
+		struct stat	buf;
+		stat(item.c_str(), &buf);
+
+		char		time_str[30];
+		std::string	last_modified("");
+		std::string	file_size("");
+		if (item != "." && item != "..")
+		{
+			std::strftime(time_str, sizeof(time_str), "%d-%b-%Y %H:%M", std::localtime(&(buf.st_ctime)));
+			last_modified = std::string(time_str);
+			if (!S_ISDIR(buf.st_mode))
+				file_size = ft_itoa(buf.st_size);
+			else
+				file_size = "-";
+		}
+		if (S_ISDIR(buf.st_mode))
+			item += "/";
+
+		std::stringstream	ss;
+		ss	<< "\t\t<p><a href=\"http://localhost" << ":" << port
+			<< path.substr(1) + (path[path.size() - 1] != '/' ? "/": "")
+			<< item + "\">" + item + "</a>&emsp;&emsp;" + last_modified + "&emsp;&emsp;" + file_size + "</p>\n";
+		index_page += ss.str();
+	}
+	index_page += "</p>\n</body>\n</html>\n";
+	closedir(dir);
+	return (index_page);
 }
 
 std::string HttpResponse::configureContent(HttpRequest &request)
 {
 	std::cout << "Generating Content...." << std::endl;
-    std::string content;
+	std::string content;
 	// print host root
-    std::string rootPath = this->host->root;
-    std::vector<std::string> indexFiles = this->host->index; // Assuming index is a property of host
+	// std::string rootPath = this->host->root;
+	// std::vector<std::string> indexFiles = this->host->index; // Assuming index is a property of host
 
-    updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
+	// updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
 
-    // To-Do: Construct the full path
-    std::string fullPath = constructPath(rootPath, request.uri);
-	this->resourceFullPath = fullPath;
+	// To-Do: Construct the full path
+	// std::string fullPath = constructPath(rootPath, request.uri);
+	// this->resourceFullPath = fullPath;
+	this->resourceFullPath = request.resource;
+	size_t	extension_idx = this->resourceFullPath.find_last_of(".");
+	if (extension_idx == std::string::npos)
+		extension_idx = 0;
+	std::string	extension = this->resourceFullPath.substr(extension_idx);
 
-    // To-Do: Check if URI is a directory
-    if (request.uri.empty() || request.uri[request.uri.size() - 1] == '/') {
-        if (!handleIndexFiles(fullPath, indexFiles, content, this)) {
-            content = httpStatusCodes.NotFound.description;
-            this->setStatusCode(httpStatusCodes.NotFound.code);
-        }
-    }
-	// Check if URI is a html file
-    else if (request.uri.find(".html") != std::string::npos) {
-		std::cout << "HTML file" << std::endl;
-		this->openFile(fullPath);
-		this->fileHandle.seekg(0, std::ios::end);  
-    	this->fileSize = this->fileHandle.tellg();
-    	this->fileHandle.seekg(0, std::ios::beg);
+	// To-Do: Check if URI is a directory
+	// if (request.uri.empty() || request.uri[request.uri.size() - 1] == '/') {
+		// if (!handleIndexFiles(fullPath, indexFiles, content, this)) {
+			// content = httpStatusCodes.NotFound.description;
+			// this->setStatusCode(httpStatusCodes.NotFound.code);
+		// }
+	// }
+	if (request.autoindex) {
+		// AUTOINDEX
+		content = get_autoindex_content(this->resourceFullPath, this->host->port);
 		this->setStatusCode(httpStatusCodes.OK.code);
 
-    	this->headers["Content-Type"] = "text/html";
-    }
-    else if (request.uri.find(".cgi") != std::string::npos) {
-       // TO-DO: CGI 
-    }
-    else {
-        content = httpStatusCodes.NotFound.description;
-        this->setStatusCode(httpStatusCodes.NotFound.code);
-    }
+		this->headers["Content-Type"] = "text/html";
+	}
+	// Check if URI is a html file
+	else if (extension == ".htm" || extension == ".html") {
+		std::cout << "HTML file" << std::endl;
+    this->openFile(this->resourceFullPath);
+		this->fileHandle.seekg(0, std::ios::end);  
+		this->fileSize = this->fileHandle.tellg();
+		this->fileHandle.seekg(0, std::ios::beg);
+		this->setStatusCode(httpStatusCodes.OK.code);
 
-    return content;
+		this->headers["Content-Type"] = "text/html";
+	}
+	else if (this->host->cgi.find(extension) != this->host->cgi.end()) {
+		// CGI
+		std::string	exe = this->host->cgi[extension];
+		try {
+			content = handle_cgi(exe, this->resourceFullPath, request);
+			if (content.empty())
+			{
+				content = "CGI has timed out!\n";
+				this->setStatusCode(httpStatusCodes.InternalServerError.code);
+			}
+			else
+			{
+				this->setStatusCode(httpStatusCodes.OK.code);
+				this->headers["Content-Type"] = "text/html";
+			}
+		}
+		catch (const std::exception& e)
+		{
+			this->setStatusCode(httpStatusCodes.InternalServerError.code);
+		}
+	}
+	else {
+		content = httpStatusCodes.NotFound.description;
+		this->setStatusCode(httpStatusCodes.NotFound.code);
+	}
+	return (content);
 }
 
 void HttpResponse::generateResponseLine( void )
@@ -258,23 +324,22 @@ std::string HttpResponse::readChunkAndUpdateResponse(size_t chunkSize) {
 		this->prepareResponseHeaders();
 	}
 
-    // Convert bytesRead to a hexadecimal string
-    std::stringstream hexStream;
-    hexStream << std::hex << bytesRead;
+	// Convert bytesRead to a hexadecimal string
+	std::stringstream hexStream;
+	hexStream << std::hex << bytesRead;
 
-    // Prepare the chunked response
-    std::string chunkedResponse;
-    chunkedResponse += hexStream.str();  // chunk size in hex
-    chunkedResponse += "\r\n";  // CRLF
-    chunkedResponse += std::string(buffer, bytesRead);  // actual chunk data
-    chunkedResponse += "\r\n";  // CRLF
+	// Prepare the chunked response
+	std::string chunkedResponse;
+	chunkedResponse += hexStream.str();  // chunk size in hex
+	chunkedResponse += "\r\n";  // CRLF
+	chunkedResponse += std::string(buffer, bytesRead);  // actual chunk data
+	chunkedResponse += "\r\n";  // CRLF
 
-    // If we're at the end of the file, append the final zero-length chunk
-    if (bytesRead < static_cast<std::streamsize>(chunkSize)) {
-        chunkedResponse += "0\r\n\r\n";
-    }
-
-    return chunkedResponse;
+	// If we're at the end of the file, append the final zero-length chunk
+	if (bytesRead < static_cast<std::streamsize>(chunkSize)) {
+		chunkedResponse += "0\r\n\r\n";
+	}
+	return (chunkedResponse);
 }
 
 void HttpResponse::prepareFullResponse(HttpRequest &request) {
