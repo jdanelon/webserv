@@ -28,7 +28,7 @@ Parser::~Parser( void )
 	return ;
 }
 
-void	Parser::load( char *file )
+void	Parser::load( char const *file )
 {
 	this->_readFile(file);
 	std::istringstream	istr(_cleanFile);
@@ -45,7 +45,7 @@ Server	&Parser::operator[] ( int i )
 	return (this->_servers[i]);
 }
 
-void	Parser::_readFile( char *file )
+void	Parser::_readFile( char const *file )
 {
 	std::ifstream		in;
 	std::stringstream	strFile;

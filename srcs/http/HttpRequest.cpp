@@ -17,8 +17,8 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->raw = obj.raw;
 		this->autoindex = obj.autoindex;
 		this->resource = obj.resource;
-		this->_error_code = obj._error_code;
 		this->is_valid = obj.is_valid;
+		this->_error_code = obj._error_code;
 	}
 	return (*this);
 }
@@ -272,6 +272,13 @@ std::string	HttpRequest::validate( Server *srv ) {
 			break ;
 		}
 	}
+
+	size_t	headers_end = this->raw.find("\r\n\r\n") + 4;
+	this->body = this->raw.length() != headers_end ? this->raw.substr(headers_end) : "";
+	if ((srv->client_max_body_size != -1 && (int)this->body.length() > srv->client_max_body_size) ||
+			(loc != locations.end() && loc->second.client_max_body_size != -1 &&
+			(int)this->body.length() > loc->second.client_max_body_size))
+		set_error_code(413);
 
 	return (full_path);
 }

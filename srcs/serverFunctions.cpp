@@ -76,7 +76,7 @@ void	poll_events( WebServ &webserv ) {
 	}
 }
 
-void	run_server( WebServ &webserv, char *config_file ) {
+void	run_server( WebServ &webserv, char const *config_file ) {
 	webserv.init(config_file);
 	poll_events(webserv);
 }

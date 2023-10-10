@@ -27,7 +27,7 @@ class Parser
 		Parser &operator = ( Parser const &obj );
 		virtual ~Parser( void );
 
-		void	load( char *file );
+		void	load( char const *file );
 		int		size( void );
 		Server	&operator [] ( int i );
 
@@ -36,7 +36,7 @@ class Parser
 		std::string			_cleanFile;
 		std::vector<Server>	_servers;
 
-		void							_readFile( char *file );
+		void							_readFile( char const *file );
 		void							_parse( std::istringstream *istr );
 		Server							_parse_servers( std::istringstream *istr );
 		static Location					_parse_location( std::istringstream *istr );
