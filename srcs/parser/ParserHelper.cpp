@@ -178,24 +178,6 @@ int	ParserHelper::get_client_max_body_size( void )
 	}
 }
 
-// std::string	ParserHelper::get_access_log( void )
-// {
-// 	if (this->_tokens.size() != 2)
-// 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-// 	if (!this->_valid_log(this->_tokens[1]))
-// 		throw ParserHelper::InvalidValues("access_log", this->_tokens[1]);
-// 	return (this->_tokens[1]);
-// }
-
-// std::string	ParserHelper::get_error_log( void )
-// {
-// 	if (this->_tokens.size() != 2)
-// 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-// 	if (!this->_valid_log(this->_tokens[1]))
-// 		throw ParserHelper::InvalidValues("error_log", this->_tokens[1]);
-// 	return (this->_tokens[1]);
-// }
-
 bool	ParserHelper::get_autoindex( void )
 {
 	if (this->_tokens.size() != 2)
@@ -227,6 +209,9 @@ std::pair<size_t, std::string>	ParserHelper::get_return( void )
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
 	if (ft_atoi(this->_tokens[1].c_str()) < 100 || ft_atoi(this->_tokens[1].c_str()) > 507)
 		throw ParserHelper::InvalidValues("return", this->_tokens[1]);
+	struct stat buf;
+	if (stat(this->_tokens[2].c_str(), &buf) == -1 || !S_ISDIR(buf.st_mode | S_IRUSR))
+		throw ParserHelper::SystemError("return", this->_tokens[1]);
 	return (std::make_pair(ft_atoi(this->_tokens[1].c_str()), this->_tokens[2]));
 }
 

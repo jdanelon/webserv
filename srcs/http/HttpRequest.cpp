@@ -191,7 +191,9 @@ std::string	HttpRequest::validate( Server *srv ) {
 	if (srv->redirect.first != 0 && !srv->redirect.second.empty())
 	{
 		set_error_code(srv->redirect.first);
-		return (srv->redirect.second);
+		if (srv->redirect.first >= 300 && srv->redirect.first < 400)
+			this->headers.insert(std::make_pair("Location", "/" + srv->redirect.second));
+		return ("");
 	}
 
 	std::string resource = this->uri.substr(this->uri.find_last_of("/") + 1);
@@ -204,7 +206,9 @@ std::string	HttpRequest::validate( Server *srv ) {
 		if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 		{
 			set_error_code(loc->second.redirect.first);
-			return (loc->second.redirect.second);
+			if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
+				this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
+			return ("");
 		}
 		if (loc != locations.end() && !loc->second.alias.empty())
 			final_root = find_final_root(this->uri, loc->second.alias, loc->first);
@@ -228,7 +232,9 @@ std::string	HttpRequest::validate( Server *srv ) {
 			if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 			{
 				set_error_code(loc->second.redirect.first);
-				return (loc->second.redirect.second);
+				if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
+					this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
+				return ("");
 			}
 			if (loc != locations.end() && !loc->second.alias.empty())
 				final_root = find_final_root(new_uri, loc->second.alias, loc->first);
