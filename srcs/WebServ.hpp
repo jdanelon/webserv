@@ -31,7 +31,7 @@ class WebServ
 		WebServ &operator = ( WebServ const &obj );
 		virtual ~WebServ( void );
 
-		void	init( char *argv );
+		void	init( char const *argv );
 		bool	client_timeout( int idx );
 		void	end_client_connection( int idx );
 		void	accept_queued_connections( int idx );

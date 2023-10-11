@@ -17,8 +17,8 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->raw = obj.raw;
 		this->autoindex = obj.autoindex;
 		this->resource = obj.resource;
-		this->_error_code = obj._error_code;
 		this->is_valid = obj.is_valid;
+		this->_error_code = obj._error_code;
 	}
 	return (*this);
 }
@@ -191,7 +191,9 @@ std::string	HttpRequest::validate( Server *srv ) {
 	if (srv->redirect.first != 0 && !srv->redirect.second.empty())
 	{
 		set_error_code(srv->redirect.first);
-		return (srv->redirect.second);
+		if (srv->redirect.first >= 300 && srv->redirect.first < 400)
+			this->headers.insert(std::make_pair("Location", "/" + srv->redirect.second));
+		return ("");
 	}
 
 	std::string resource = this->uri.substr(this->uri.find_last_of("/") + 1);
@@ -204,7 +206,9 @@ std::string	HttpRequest::validate( Server *srv ) {
 		if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 		{
 			set_error_code(loc->second.redirect.first);
-			return (loc->second.redirect.second);
+			if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
+				this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
+			return ("");
 		}
 		if (loc != locations.end() && !loc->second.alias.empty())
 			final_root = find_final_root(this->uri, loc->second.alias, loc->first);
@@ -228,7 +232,9 @@ std::string	HttpRequest::validate( Server *srv ) {
 			if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 			{
 				set_error_code(loc->second.redirect.first);
-				return (loc->second.redirect.second);
+				if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
+					this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
+				return ("");
 			}
 			if (loc != locations.end() && !loc->second.alias.empty())
 				final_root = find_final_root(new_uri, loc->second.alias, loc->first);
@@ -272,6 +278,13 @@ std::string	HttpRequest::validate( Server *srv ) {
 			break ;
 		}
 	}
+
+	size_t	headers_end = this->raw.find("\r\n\r\n") + 4;
+	this->body = this->raw.length() != headers_end ? this->raw.substr(headers_end) : "";
+	if ((srv->client_max_body_size != -1 && (int)this->body.length() > srv->client_max_body_size) ||
+			(loc != locations.end() && loc->second.client_max_body_size != -1 &&
+			(int)this->body.length() > loc->second.client_max_body_size))
+		set_error_code(413);
 
 	return (full_path);
 }

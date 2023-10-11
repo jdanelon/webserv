@@ -59,9 +59,8 @@ void HttpResponse::configureResponse(HttpRequest &request)
 		std::cout << "Invalid Request" << std::endl;
 		this->is_request_valid = false;
 		this->setStatusCode(request.get_error_code());
-		return;
+		return ;
 	}
-	// print host root
 	if (request.method == "GET")
 		this->handleGet(request);
 	else if (request.method == "POST")
@@ -96,6 +95,7 @@ void HttpResponse::handlePost(HttpRequest &request)
 
 void HttpResponse::handleGet(HttpRequest &request)
 {
+	// Request.validate already brings 400
 	std::string uri = request.uri;
 	if (uri.empty()) {
 		this->setStatusCode(httpStatusCodes.BadRequest.code);
@@ -111,11 +111,20 @@ void HttpResponse::handleGet(HttpRequest &request)
 
 void HttpResponse::handleDelete(HttpRequest &request)
 {
-	(void)request;
-	// 1. Read Request Object
-	// 2. Generate Response line (ie: HTTP/1.1 200 OK)
-	// 3. Generate Headers
-	// 4. Generate Body
+	this->resourceFullPath = request.resource;
+
+	struct stat buf;
+	stat(this->resourceFullPath.c_str(), &buf);
+	if (S_ISDIR(buf.st_mode))
+	{
+		setStatusCode(httpStatusCodes.Forbidden.code);
+		return ;
+	}
+	std::remove(this->resourceFullPath.c_str());
+
+	this->setStatusCode(httpStatusCodes.OK.code);
+	this->headers["Content-Type"] = "text/txt";
+	this->body = "Deleted Successfully!\n";
 }
 
 std::string HttpResponse::getResponse( void )
@@ -167,7 +176,7 @@ void HttpResponse::openFile(const std::string &fullPath) {
 	fileHandle.open(fullPath.c_str(), std::ios::binary);
 }
 
-static std::string	get_autoindex_content( std::string path, std::string port )
+static std::string	autoindex_content( std::string path, std::string port )
 {
 	DIR	*dir = opendir(path.c_str());
 	if (!dir)
@@ -211,39 +220,28 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 {
 	std::cout << "Generating Content...." << std::endl;
 	std::string content;
-	// print host root
-	// std::string rootPath = this->host->root;
-	// std::vector<std::string> indexFiles = this->host->index; // Assuming index is a property of host
 
-	// updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
-
-	// To-Do: Construct the full path
-	// std::string fullPath = constructPath(rootPath, request.uri);
-	// this->resourceFullPath = fullPath;
 	this->resourceFullPath = request.resource;
 	size_t	extension_idx = this->resourceFullPath.find_last_of(".");
 	if (extension_idx == std::string::npos)
 		extension_idx = 0;
 	std::string	extension = this->resourceFullPath.substr(extension_idx);
 
-	// To-Do: Check if URI is a directory
-	// if (request.uri.empty() || request.uri[request.uri.size() - 1] == '/') {
-		// if (!handleIndexFiles(fullPath, indexFiles, content, this)) {
-			// content = httpStatusCodes.NotFound.description;
-			// this->setStatusCode(httpStatusCodes.NotFound.code);
-		// }
-	// }
 	if (request.autoindex) {
 		// AUTOINDEX
-		content = get_autoindex_content(this->resourceFullPath, this->host->port);
-		this->setStatusCode(httpStatusCodes.OK.code);
-
-		this->headers["Content-Type"] = "text/html";
+		content = autoindex_content(this->resourceFullPath, this->host->port);
+		if (content.empty())
+			this->setStatusCode(httpStatusCodes.InternalServerError.code);
+		else
+		{
+			this->setStatusCode(httpStatusCodes.OK.code);
+			this->headers["Content-Type"] = "text/html";
+		}
 	}
 	// Check if URI is a html file
 	else if (extension == ".htm" || extension == ".html") {
 		std::cout << "HTML file" << std::endl;
-    this->openFile(this->resourceFullPath);
+		this->openFile(this->resourceFullPath);
 		this->fileHandle.seekg(0, std::ios::end);  
 		this->fileSize = this->fileHandle.tellg();
 		this->fileHandle.seekg(0, std::ios::beg);
@@ -272,6 +270,9 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 			this->setStatusCode(httpStatusCodes.InternalServerError.code);
 		}
 	}
+	// Does this happen?
+	// On request validation, we already check if there is a file (folder for autoindex) to respond
+	// If not, error is set and response catches it before this function
 	else {
 		content = httpStatusCodes.NotFound.description;
 		this->setStatusCode(httpStatusCodes.NotFound.code);
@@ -289,7 +290,6 @@ void HttpResponse::generateResponseLine( void )
 void HttpResponse::generateBasicHeaders( void )
 {
 	this->headers["Server"] = "webserv";
-	// this->headers["Date"] = "Mon, 27 Jul 2009 12:28:53 GMT";
 	this->headers["Date"] = get_time_string();
 }
 

@@ -56,7 +56,7 @@ WebServ::~WebServ( void )
 	return ;
 }
 
-void	WebServ::init( char *file )
+void	WebServ::init( char const *file )
 {
 	this->parser.load(file);
 	this->_backlog = this->parser.backlog;
@@ -193,7 +193,7 @@ void	WebServ::_clear_connection(int const client_fd) {
 
 void	WebServ::send_response( int idx )
 {
-	int 		client_fd = this->pollfds[idx].fd;
+	int	client_fd = this->pollfds[idx].fd;
 
 	// 1) If request is not valid, send error response
 	if (!this->client_connections[client_fd].response.is_request_valid) {
@@ -215,7 +215,7 @@ void	WebServ::send_response( int idx )
 		}
 		this->pollfds[idx].events = POLLIN;
 	}
-	// 3) If ther response is big, send it in chunks so we not block the socket
+	// 3) If the response is big, send it in chunks so we do not block the socket
 	else {
 		try {
 			std::string chunkData = this->client_connections[client_fd].response.readChunkAndUpdateResponse(RESPONSE_CHUNK_SIZE);
@@ -227,7 +227,7 @@ void	WebServ::send_response( int idx )
 				std::cout << "Sending Response..." << std::endl << fullResponse << std::endl;
 			} else {
 				// Otherwise, just send the chunk
-				std::cout << "Sending chunk: " << std::endl  << chunkData << std::endl;
+				std::cout << "Sending chunk: " << std::endl << chunkData << std::endl;
 				send(client_fd, chunkData.c_str(), chunkData.length(), 0);
 			}
 		}

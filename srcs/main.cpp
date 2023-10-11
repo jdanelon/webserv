@@ -4,15 +4,14 @@
 
 int	g_signal_code = 0;
 
-static int	validateFile( char *file )
+static int	validateFile( std::string file )
 {
-	std::string			tmp(file);
-	std::ifstream		in(file);
+	std::ifstream		in(file.c_str());
 	std::stringstream	strFile;
 	size_t				left = 0;
 	size_t				right = 0;
 
-	if (tmp.empty())
+	if (file.empty())
 		return (1);
 	if (in.fail())
 		return (1);
@@ -34,19 +33,20 @@ int	main( int argc, char **argv )
 {
 	WebServ	webserv;
 
-	if (argc != 2)
+	if (argc > 2)
 	{
 		std::cerr << "Usage: ./webserv [configuration file]" << std::endl;
 		return (1);
 	}
-	if (validateFile(argv[1]))
+	std::string	file = (argc == 1) ? "./conf-files/oneServer.conf" : argv[1];
+	if (validateFile(file))
 	{
-		std::cerr << "Error: file '" << argv[1] << "' not found or could not be opened!" << std::endl;
+		std::cerr << "Error: file '" << file << "' not found or could not be opened!" << std::endl;
 		return (1);
 	}
 	try
 	{
-		run_server(webserv, argv[1]);
+		run_server(webserv, file.c_str());
 	}
 	catch(const std::exception& e)
 	{

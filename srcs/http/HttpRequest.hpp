@@ -31,6 +31,7 @@ class HttpRequest {
 		std::string											version;
 		std::string											host;
 		std::map<std::string, std::string, CaseInsensitive>	headers;
+		bool												chunked_body;
 		std::string											body;
 		std::string											raw;
 		bool												autoindex;
@@ -45,6 +46,7 @@ class HttpRequest {
 		void		parse( std::string raw );
 		void		parse_request_line( std::string line );
 		void		parse_header_line( std::string line );
+		void		parse_body( void );
 		std::string	validate( Server *srv );
 		int			get_error_code( void ) const;
 		void		set_error_code( int const &code );
