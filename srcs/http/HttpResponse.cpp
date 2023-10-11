@@ -176,19 +176,24 @@ void HttpResponse::openFile(const std::string &fullPath) {
 	fileHandle.open(fullPath.c_str(), std::ios::binary);
 }
 
-static std::string	autoindex_content( std::string path, std::string port )
+static std::string	autoindex_content( std::string path, std::string root, std::string port )
 {
 	DIR	*dir = opendir(path.c_str());
 	if (!dir)
 		return ("");
-	std::string	index_page = "<!DOCTYPE html>\n<html>\n<head>\n<title>" + path +
-							 "</title>\n</head>\n<body>\n<h1>Index of " + path + "</h1>\n<p>\n";
+	std::string	autoindex_path = path.substr(std::string(std::getenv("PWD")).length());
+	size_t	root_index = autoindex_path.find(root);
+	if (root_index != std::string::npos)
+		autoindex_path = autoindex_path.substr(root_index + root.length());
+	autoindex_path += "/";
+	std::string	index_page = "<!DOCTYPE html>\n<html>\n<head>\n<title>" + autoindex_path +
+							 "</title>\n</head>\n<body>\n<h1>Index of " + autoindex_path + "</h1>\n<p>\n";
 	struct dirent *list;
 	while ((list = readdir(dir)) != NULL)
 	{
 		std::string	item(list->d_name);
 		struct stat	buf;
-		stat(item.c_str(), &buf);
+		stat((path + "/" + item).c_str(), &buf);
 
 		char		time_str[30];
 		std::string	last_modified("");
@@ -206,9 +211,8 @@ static std::string	autoindex_content( std::string path, std::string port )
 			item += "/";
 
 		std::stringstream	ss;
-		ss	<< "\t\t<p><a href=\"http://localhost" << ":" << port
-			<< path.substr(1) + (path[path.size() - 1] != '/' ? "/": "")
-			<< item + "\">" + item + "</a>&emsp;&emsp;" + last_modified + "&emsp;&emsp;" + file_size + "</p>\n";
+		ss	<< "\t\t<p><a href=\"http://localhost" << ":" << port << autoindex_path
+		<< item + "\">" + item + "</a>&emsp;&emsp;" + last_modified + "&emsp;&emsp;" + file_size + "</p>\n";
 		index_page += ss.str();
 	}
 	index_page += "</p>\n</body>\n</html>\n";
@@ -229,7 +233,7 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 
 	if (request.autoindex) {
 		// AUTOINDEX
-		content = autoindex_content(this->resourceFullPath, this->host->port);
+		content = autoindex_content(this->resourceFullPath, this->host->root, this->host->port);
 		if (content.empty())
 			this->setStatusCode(httpStatusCodes.InternalServerError.code);
 		else
@@ -349,21 +353,25 @@ void HttpResponse::prepareFullResponse(HttpRequest &request) {
     updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
 
 	std::string fileContent;
-	if (fileHandle.is_open()) {
-		fileContent.assign((std::istreambuf_iterator<char>(fileHandle)),
-                           (std::istreambuf_iterator<char>()));
-		fileHandle.close();	
-	}
-	else {
-		setStatusCode(httpStatusCodes.InternalServerError.code);
-		throw std::runtime_error("Error opening file");
+	if (fileHandle.gcount()) {
+		if (fileHandle.is_open()) {
+			fileContent.assign((std::istreambuf_iterator<char>(fileHandle)),
+							(std::istreambuf_iterator<char>()));
+			fileHandle.close();	
+		}
+		else {
+			setStatusCode(httpStatusCodes.InternalServerError.code);
+			throw std::runtime_error("Error opening file");
+		}
 	}
 
 	this->generateResponseLine();
 	this->generateBasicHeaders();
 
+	std::string	response_body = fileContent.empty() ? this->body : fileContent;
+
 	// Set content length
-	this->headers["Content-Length"] = ft_itoa(fileContent.length());
+	this->headers["Content-Length"] = ft_itoa(response_body.length());
 
 	// Response line + headers
 	this->response = this->response_line + "\r\n";
@@ -372,7 +380,7 @@ void HttpResponse::prepareFullResponse(HttpRequest &request) {
 		this->response += it->first + ": " + it->second + "\r\n";
 	this->response += "\r\n";
 
-	this->response += fileContent;
+	this->response += response_body;
 }
 
 void HttpResponse::prepareErrorResponse(HttpRequest &request) {
@@ -382,10 +390,13 @@ void HttpResponse::prepareErrorResponse(HttpRequest &request) {
 	std::string errorPage = host->error_page[this->status_code];
 	std::string errorRoute = constructPath(rootPath, errorPage);
 
+	struct stat buf;
+	stat(errorRoute.c_str(), &buf);
+
 	std::ifstream errorFile(errorRoute.c_str(), std::ios::in);
     std::string fileContent;
 
-    if (errorFile.is_open()) {
+    if (!S_ISDIR(buf.st_mode) && errorFile.is_open()) {
         fileContent.assign((std::istreambuf_iterator<char>(errorFile)),
                            (std::istreambuf_iterator<char>()));
         errorFile.close();
