@@ -3,6 +3,7 @@
 
 # include <cstdio>
 # include <sys/wait.h>
+# include <csignal>
 
 # include "http/HttpRequest.hpp"
 # include "utils.hpp"

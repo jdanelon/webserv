@@ -6,15 +6,15 @@
 
 class HttpStatusCodes {
 public:
-    struct Code {
-        int code;
-        std::string description;
+	struct Code {
+		int code;
+		std::string description;
 		Code(int v, const std::string& d) : code(v), description(d) {}
-    };
+	};
 
-    Code OK;
-    Code BadRequest;
-    Code NotFound;
+	Code OK;
+	Code BadRequest;
+	Code NotFound;
 	Code Created;
 	Code Accepted;
 	Code NoContent;
@@ -34,11 +34,11 @@ public:
 	Code NotImplemented;
 	Code HTTPVersionNotSupported;
 
-    std::string getDescription(int code);
+	std::string getDescription(int code);
 
-    HttpStatusCodes();
+	HttpStatusCodes();
 private:
-    std::map<int, std::string> statusCodeMap;
+	std::map<int, std::string> statusCodeMap;
 };
 
 // Global object, available for the entire project
