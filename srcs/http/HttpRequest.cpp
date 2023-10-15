@@ -215,7 +215,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 		else
 			final_root = srv->root + this->uri;
 		full_path = std::getenv("PWD") + std::string("/") + final_root;
-		if ((stat(full_path.c_str(), &buf) == -1) || !(buf.st_mode & S_IXUSR))
+		if ((stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode))
 			set_error_code(404);
 	}
 	// If request is for folder: search for index files with possible multiple redirections
@@ -243,7 +243,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 			resource = new_uri.substr(new_uri.find_last_of("/") + 1);
 			full_path = std::getenv("PWD") + std::string("/") + final_root;
 			// Check if index file is found
-			if ((stat(full_path.c_str(), &buf) != -1) && (buf.st_mode & S_IXUSR))
+			if ((stat(full_path.c_str(), &buf) != -1) && !S_ISREG(buf.st_mode))
 				break ;
 		}
 		// No index files are found
@@ -253,11 +253,17 @@ std::string	HttpRequest::validate( Server *srv ) {
 			bool parsed_autoindex = (loc != locations.end()) ? loc->second.autoindex : srv->autoindex;
 			if (parsed_autoindex == true)
 			{
-				full_path = full_path.substr(0, full_path.find_last_of("/"));
+				full_path = full_path.substr(0, full_path.find_last_of("/") + 1);
+				struct stat buf;
+				if (stat(full_path.c_str(), &buf) != 0 || !S_ISDIR(buf.st_mode))
+				{
+					set_error_code(404);
+					return (full_path);
+				}
 				this->autoindex = true;
 			}
 			else
-				this->set_error_code(403);
+				set_error_code(403);
 		}
 	}
 

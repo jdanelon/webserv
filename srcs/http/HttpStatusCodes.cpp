@@ -1,31 +1,31 @@
 #include "HttpStatusCodes.hpp"
 
 HttpStatusCodes::HttpStatusCodes() : 
-    OK(200, "OK"), 
-    BadRequest(400, "Bad Request"), 
-    NotFound(404, "Not Found"), 
-    Created(201, "Created"),
-    Accepted(202, "Accepted"),
-    NoContent(204, "No Content"),
-    MovedPermanently(301, "Moved Permanently"),
-    Found(302, "Found"),
-    Unauthorized(401, "Unauthorized"),
-    Forbidden(403, "Forbidden"),
-    MethodNotAllowed(405, "Method Not Allowed"),
-    RequestTimeout(408, "Request Timeout"),
-    Gone(410, "Gone"),
-    LengthRequired(411, "Length Required"),
-    PayloadTooLarge(413, "Payload Too Large"),
-    URITooLong(414, "URI Too Long"),
-    UnsupportedMediaType(415, "Unsupported Media Type"),
-    TooManyRequests(429, "Too Many Requests"),
-    InternalServerError(500, "Internal Server Error"),
-    NotImplemented(501, "Not Implemented"),
-    HTTPVersionNotSupported(505, "HTTP Version Not Supported") 
+	OK(200, "OK"), 
+	BadRequest(400, "Bad Request"), 
+	NotFound(404, "Not Found"), 
+	Created(201, "Created"),
+	Accepted(202, "Accepted"),
+	NoContent(204, "No Content"),
+	MovedPermanently(301, "Moved Permanently"),
+	Found(302, "Found"),
+	Unauthorized(401, "Unauthorized"),
+	Forbidden(403, "Forbidden"),
+	MethodNotAllowed(405, "Method Not Allowed"),
+	RequestTimeout(408, "Request Timeout"),
+	Gone(410, "Gone"),
+	LengthRequired(411, "Length Required"),
+	PayloadTooLarge(413, "Payload Too Large"),
+	URITooLong(414, "URI Too Long"),
+	UnsupportedMediaType(415, "Unsupported Media Type"),
+	TooManyRequests(429, "Too Many Requests"),
+	InternalServerError(500, "Internal Server Error"),
+	NotImplemented(501, "Not Implemented"),
+	HTTPVersionNotSupported(505, "HTTP Version Not Supported") 
 {
-    statusCodeMap[OK.code] = OK.description;
-    statusCodeMap[BadRequest.code] = BadRequest.description;
-    statusCodeMap[NotFound.code] = NotFound.description;
+	statusCodeMap[OK.code] = OK.description;
+	statusCodeMap[BadRequest.code] = BadRequest.description;
+	statusCodeMap[NotFound.code] = NotFound.description;
 	statusCodeMap[Created.code] = Created.description;
 	statusCodeMap[Accepted.code] = Accepted.description;
 	statusCodeMap[NoContent.code] = NoContent.description;
@@ -47,12 +47,12 @@ HttpStatusCodes::HttpStatusCodes() :
 }
 
 std::string HttpStatusCodes::getDescription(int code) {
-    std::map<int, std::string>::iterator it = statusCodeMap.find(code);
-    if (it != statusCodeMap.end()) {
-        return it->second;
-    } else {
-        return "Unknown";
-    }
+	std::map<int, std::string>::iterator it = statusCodeMap.find(code);
+	if (it != statusCodeMap.end()) {
+		return it->second;
+	} else {
+		return "Unknown";
+	}
 }
 
 // Initializing the global object

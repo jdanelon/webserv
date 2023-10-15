@@ -14,6 +14,8 @@
 # include "../utils.hpp"
 # include "../cgi.hpp"
 
+# define DFL_TMP_FILE "/__tmp_file.txt"
+
 class HttpResponse {
 
 	public:

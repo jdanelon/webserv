@@ -178,6 +178,10 @@ void	WebServ::create_response( int idx )
 	http_response.configureResponse(request);
 
 	this->client_connections[client_fd].response = http_response;
+	size_t	last_bar = http_response.resourceFullPath.find_last_of("/");
+	if (last_bar != std::string::npos && http_response.resourceFullPath.substr(last_bar) == DFL_TMP_FILE)
+		std::remove(http_response.resourceFullPath.c_str());
+
 	this->pollfds[idx].events = POLLOUT;
 }
 
@@ -240,16 +244,16 @@ void	WebServ::send_response( int idx )
 		}
 
 		// Check if we have sent the full file, If not we go back to the poll loop
-        if (this->client_connections[client_fd].response.fileOffset < this->client_connections[client_fd].response.fileSize) {
-            this->pollfds[idx].events = POLLOUT;  // Set to send more data
-			return;
-        } else {
-            this->client_connections[client_fd].response.fileHandle.close();
-        }
+		if (this->client_connections[client_fd].response.fileOffset < this->client_connections[client_fd].response.fileSize) {
+			this->pollfds[idx].events = POLLOUT;  // Set to send more data
+			return ;
+		} else {
+			this->client_connections[client_fd].response.fileHandle.close();
+		}
 	}
 
 	this->client_connections[client_fd].timestamp = timestamp();
-    this->pollfds[idx].events = POLLIN;
+	this->pollfds[idx].events = POLLIN;
 	this->_clear_connection(client_fd);
 }
 
