@@ -36,6 +36,7 @@ class HttpRequest {
 		std::string											raw;
 		bool												autoindex;
 		std::string											resource;
+		std::string											query_string;
 		bool												is_valid;
 
 		HttpRequest( void );

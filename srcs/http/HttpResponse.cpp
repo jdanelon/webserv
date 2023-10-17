@@ -268,9 +268,14 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 			content = handle_cgi(exe, this->resourceFullPath, request);
 			if (content.empty())
 			{
-				content = "CGI has timed out!\n";
+				content = "<!DOCTYPE html>\n";
+				content += "<html>\n<head>\n";
+				content += "<title>Internal Server Error</title>\n";
+				content += "</head>\n<body>\n";
+				content += "CGI has timed out!\n";
+				content += "</body>\n</html>\n";
 				this->setStatusCode(httpStatusCodes.InternalServerError.code);
-				this->headers["Content-Type"] = "text/txt";
+				this->headers["Content-Type"] = "text/html";
 			}
 			else
 			{
@@ -282,10 +287,11 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 		{
 			this->setStatusCode(httpStatusCodes.InternalServerError.code);
 		}
-		std::ofstream output_file(DFL_TMP_FILE);
+		this->resourceFullPath = this->resourceFullPath.substr(0, this->resourceFullPath.find_last_of("/")) + DFL_TMP_FILE;
+		std::ofstream output_file(this->resourceFullPath.c_str());
 		output_file << content;
 		output_file.close();
-		this->openFile(DFL_TMP_FILE);
+		this->openFile(this->resourceFullPath);
 		this->fileHandle.seekg(0, std::ios::end);
 		this->fileSize = this->fileHandle.tellg();
 		this->fileHandle.seekg(0, std::ios::beg);

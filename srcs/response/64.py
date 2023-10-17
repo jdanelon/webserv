@@ -144,6 +144,8 @@ class Game(tk.Frame):
 
     def on_close(self):
         print(f"Player exited with {self.score} points")
+        print('</body>')
+        print('</html>')
         self.master.destroy()
 
 
@@ -307,6 +309,8 @@ class Game(tk.Frame):
                 fg=GAME_OVER_FONT_COLOR,
                 font=GAME_OVER_FONT).pack()
             print(f"You win! - You scored: {self.score} points")
+            print('</body>')
+            print('</html>')
             exit()
         elif not any(0 in row for row in self.matrix) and not self.horizontal_move_exists()\
           and not self.vertical_move_exists():
@@ -319,10 +323,18 @@ class Game(tk.Frame):
                 fg=GAME_OVER_FONT_COLOR,
                 font=GAME_OVER_FONT).pack()
             print(f"Game over! - You scored: {self.score} points")
+            print('</body>')
+            print('</html>')
             exit()
 
 
 def main():
+    print('<!DOCTYPE html>')
+    print('<html>')
+    print('<head>')
+    print('<title>64 - A much smaller 2048</title>')
+    print('</head>')
+    print('<body>')
     Game()
 
 

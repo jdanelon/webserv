@@ -7,8 +7,7 @@ static std::vector<std::string>	set_environment( std::string script, HttpRequest
 
 	env.resize(10);
 	env[0] = "REQUEST_METHOD=" + request.method;
-	size_t idx = request.uri.find("?");
-	std::string query_string = idx != std::string::npos ? request.uri.substr(idx + 1) : "\"\"";
+	std::string query_string = request.query_string.empty() ? "\"\"" : request.query_string.substr(1);
 	env[1] = "QUERY_STRING=" + query_string;
 	env[2] = "CONTENT_TYPE=text/html";
 	env[3] = "CONTENT_LENGTH=" + ft_itoa(request.body.length());
