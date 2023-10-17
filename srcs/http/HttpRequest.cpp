@@ -1,6 +1,6 @@
 #include "HttpRequest.hpp"
 
-HttpRequest::HttpRequest( void ) : autoindex(false), is_valid(true), _error_code(0) {}
+HttpRequest::HttpRequest( void ) : autoindex(false), query_string(""), is_valid(true), _error_code(0) {}
 
 HttpRequest::HttpRequest( HttpRequest const &obj ) {
 	*this = obj;
@@ -17,6 +17,7 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->raw = obj.raw;
 		this->autoindex = obj.autoindex;
 		this->resource = obj.resource;
+		this->query_string = obj.query_string;
 		this->is_valid = obj.is_valid;
 		this->_error_code = obj._error_code;
 	}
@@ -196,12 +197,21 @@ std::string	HttpRequest::validate( Server *srv ) {
 		return ("");
 	}
 
-	std::string resource = this->uri.substr(this->uri.find_last_of("/") + 1);
+	size_t	query_idx = this->uri.find("?");
+	size_t	resource_idx = this->uri.find_last_of("/") + 1;
+	std::string	resource;
+	if (query_idx != std::string::npos) {
+		this->query_string = this->uri.substr(query_idx);
+		resource = this->uri.substr(resource_idx, query_idx - resource_idx);
+	}
+	else
+		resource = this->uri.substr(resource_idx);
 	std::string	final_root, new_uri, full_path;
 	struct stat	buf;
 	// If request is for file: set root from redirection, full_path and set 404 if not found
 	if (resource.length() != 0)
 	{
+		new_uri = this->uri.substr(0, query_idx);
 		// Return directive on matched location for file request
 		if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 		{
@@ -211,9 +221,9 @@ std::string	HttpRequest::validate( Server *srv ) {
 			return ("");
 		}
 		if (loc != locations.end() && !loc->second.alias.empty())
-			final_root = find_final_root(this->uri, loc->second.alias, loc->first);
+			final_root = find_final_root(new_uri, loc->second.alias, loc->first);
 		else
-			final_root = srv->root + this->uri;
+			final_root = srv->root + new_uri;
 		full_path = std::getenv("PWD") + std::string("/") + final_root;
 		if ((stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode))
 			set_error_code(404);
@@ -225,7 +235,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 		std::vector<std::string> index_files = (loc != locations.end()) ? loc->second.index : srv->index;
 		for (; i < index_files.size(); i++)
 		{
-			new_uri = this->uri;
+			new_uri = this->uri.substr(0, query_idx);
 			new_uri += (index_files[i][0] == '/') ? index_files[i].substr(1) : index_files[i];
 			loc = locations.find(get_matched_location(new_uri, locations));
 			// Return directive on matched location for folder request
