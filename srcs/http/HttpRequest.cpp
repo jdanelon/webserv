@@ -1,9 +1,14 @@
 #include "HttpRequest.hpp"
 
-HttpRequest::HttpRequest( void ) : autoindex(false), query_string(""), is_valid(true), _error_code(0) {}
+HttpRequest::HttpRequest( void ) : autoindex(false), query_string(""), is_valid(true), _error_code(0) {
+	// Create a new body parser
+	std::cout << "Creating new HttpRequest" << std::endl;
+	this->body_parser = HttpRequestBody();
+}
 
 HttpRequest::HttpRequest( HttpRequest const &obj ) {
-	*this = obj;
+	(void) obj;
+	// *this = obj;
 }
 
 HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
@@ -20,6 +25,9 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->query_string = obj.query_string;
 		this->is_valid = obj.is_valid;
 		this->_error_code = obj._error_code;
+		this->has_body = obj.has_body;
+		this->is_body_parsed = obj.is_body_parsed;
+		this->body_parser = obj.body_parser;
 	}
 	return (*this);
 }
@@ -51,6 +59,26 @@ void	HttpRequest::parse( std::string raw ) {
 	else {
 		set_error_code(400);
 	}
+
+    // Check if the body is chunked
+    std::map<std::string, std::string>::iterator transfer_encoding_header = this->headers.find("Transfer-Encoding");
+    if (transfer_encoding_header != this->headers.end() && transfer_encoding_header->second == "chunked") {
+        this->has_body = true;
+    }
+
+	// Check if the body is a file upload
+	std::map<std::string, std::string>::iterator content_type_header = this->headers.find("Content-Type");
+	if (content_type_header != this->headers.end() && content_type_header->second.find("multipart/form-data") != std::string::npos) {
+		this->has_body = true;
+	}
+
+    // Check if there is a body and it's not a GET request
+    if (this->method != "GET") {
+        std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
+        if (content_length_header != this->headers.end()) {
+            this->has_body = true;
+        }
+    }
 }
 
 void	HttpRequest::parse_request_line( std::string line ) {
@@ -106,6 +134,65 @@ void	HttpRequest::parse_header_line( std::string line ) {
 	if (!ret.second) {
 		set_error_code(400);
 		return ;
+	}
+
+	// If header is multipart/form-data, and boundary is not present, set Bad Request error
+	if (key == "Content-Type" && value.find("multipart/form-data") != std::string::npos)
+	{
+		size_t pos = value.find("boundary=");
+		if (pos == std::string::npos)
+		{
+			set_error_code(400);
+			return ;
+		}
+		// set boundary string as value of a new header 'boundary'
+		std::string boundary = value.substr(pos + 9);
+		this->headers.insert(std::make_pair("boundary", boundary));
+		// set the value of Content-Type header to 'multipart/form-data'
+		this->headers["Content-Type"] = "multipart/form-data";
+		this->body_parser.setBoundary(boundary);
+	}
+}
+
+void	HttpRequest::parse_body( std::string partial_body ) {
+	// We parse differently depending on whether the body is chunked or not
+	if (this->headers.find("Transfer-Encoding") != this->headers.end() &&
+		this->headers["Transfer-Encoding"] == "chunked")
+	{
+		// If the body is chunked, we need to parse the chunks
+		this->body_parser.parseChunkedBody(partial_body);
+	}
+	// Check if the body is a file upload
+	else if (this->headers.find("Content-Type") != this->headers.end() &&
+			this->headers["Content-Type"].find("multipart/form-data") != std::string::npos)
+	{
+		// If the body is a file upload, we need to parse the multipart body
+		this->body_parser.parseMultipartBody(partial_body);
+	}
+	else {
+		// If the body is not chunked, we just append the partial body to the body
+		// We need to check if we finish reading the body, so we check the Content-Length header
+		std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
+		if (content_length_header == this->headers.end())
+		{
+			set_error_code(400);
+			this->is_body_parsed = true;
+			return ;
+		}
+		int content_length = atoi(content_length_header->second.c_str());
+		if ((int)this->body.length() + (int)partial_body.length() > content_length)
+		{
+			set_error_code(400);
+			this->is_body_parsed = true;
+			return ;
+		}
+		this->body.append(partial_body);
+		// We set the body as parsed if we have read the whole body
+		if ((int)this->body.length() == content_length)
+			this->is_body_parsed = true;
+		else {
+			this->is_body_parsed = false;
+		}
 	}
 }
 

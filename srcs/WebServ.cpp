@@ -148,9 +148,11 @@ void	WebServ::accept_queued_connections( int idx )
 	}
 }
 
-void	WebServ::parse_request( int idx )
+void	WebServ::parse_request_headers( int idx )
 {
 	int client_fd = this->pollfds[idx].fd;
+
+	// First time reading the request, we create it
 	if (this->client_connections[client_fd].is_header_received &&
 			!this->client_connections[client_fd].is_request_parsed) {
 		HttpRequest request;
@@ -158,11 +160,33 @@ void	WebServ::parse_request( int idx )
 		this->client_connections[client_fd].is_request_parsed = true;
 
 		// Saved resource full_path to facilitate response
+		// Todo: why is not doing this internally in the request?
 		std::string resource_path = request.validate(this->client_connections[client_fd].host_server);
 
 		request.print(client_fd);
 		request.resource = resource_path;
 		this->client_connections[client_fd].request = request;
+
+		// If request has body, we inform the connection so he can start parsing it
+		if (request.has_body) {
+			this->client_connections[client_fd].request_has_body = true;
+			this->client_connections[client_fd].is_request_body_parsing = true;
+		}
+		else {
+			this->client_connections[client_fd].is_request_completed = true;
+		}
+	}
+}
+
+void	WebServ::parse_request_body( int idx ) {
+	int client_fd = this->pollfds[idx].fd;
+
+	// We call the parser function of the request
+	this->client_connections[client_fd].request.parse_body(this->client_connections[client_fd].body_buffer);
+
+	// If the request is completed, we inform the connection
+	if (client_connections[client_fd].request.is_body_parsed) {
+		this->client_connections[client_fd].is_request_body_parsed = true;
 		this->client_connections[client_fd].is_request_completed = true;
 	}
 }

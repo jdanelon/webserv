@@ -97,6 +97,7 @@ void HttpResponse::handlePost(HttpRequest &request)
 void HttpResponse::handleGet(HttpRequest &request)
 {
 	// Request.validate already brings 400
+	// TODO, I think it was validated before
 	std::string uri = request.uri;
 	if (uri.empty()) {
 		this->setStatusCode(httpStatusCodes.BadRequest.code);
