@@ -15,12 +15,16 @@ class ClientConnection
 		long long	timestamp;
 
 		std::string		buffer;
+		std::string		body_buffer;
 		HttpRequest		request;
 		HttpResponse	response;
 		bool			is_line_request_received;
 		bool			is_header_received;
 		bool			is_request_parsed;
 		bool			is_request_completed;
+		bool			is_request_body_parsing;
+		bool			is_request_body_parsed;
+		bool			request_has_body;
 
 		ClientConnection( void );
 		ClientConnection( Server *server, long long timestamp );

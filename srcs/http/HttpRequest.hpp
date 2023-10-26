@@ -10,6 +10,7 @@
 # include <unistd.h>
 # include "../parser/Location.hpp"
 # include "../utils.hpp"
+# include "HttpRequestBody.hpp"
 
 struct CaseInsensitive {
 	bool	operator () ( std:: string const &s1, std::string const &s2 ) const {
@@ -39,6 +40,10 @@ class HttpRequest {
 		std::string											path_info;
 		std::string											query_string;
 		bool												is_valid;
+		bool												has_body;
+		bool												is_body_parsed;
+
+		HttpRequestBody										body_parser;
 
 		HttpRequest( void );
 		HttpRequest( HttpRequest const &obj );
@@ -48,7 +53,7 @@ class HttpRequest {
 		void	parse( std::string raw );
 		void	parse_request_line( std::string line );
 		void	parse_header_line( std::string line );
-		void	parse_body( void );
+		void	parse_body( std::string partial_body );
 		void	validate( Server *srv );
 		int		get_error_code( void ) const;
 		void	set_error_code( int const &code );
