@@ -107,7 +107,8 @@ bool	WebServ::client_timeout( int idx )
 
 	if (fd == -1)
 		return (false);
-	if (timestamp() - this->client_connections[fd].timestamp >= timeout)
+	long long	elapsed_time = timestamp() - this->client_connections[fd].timestamp;
+	if (elapsed_time >= timeout)
 		return (true);
 	return (false);
 }
@@ -158,10 +159,9 @@ void	WebServ::parse_request( int idx )
 		this->client_connections[client_fd].is_request_parsed = true;
 
 		// Saved resource full_path to facilitate response
-		std::string resource_path = request.validate(this->client_connections[client_fd].host_server);
+		request.validate(this->client_connections[client_fd].host_server);
 
 		request.print(client_fd);
-		request.resource = resource_path;
 		this->client_connections[client_fd].request = request;
 		this->client_connections[client_fd].is_request_completed = true;
 	}
@@ -178,9 +178,6 @@ void	WebServ::create_response( int idx )
 	http_response.configureResponse(request);
 
 	this->client_connections[client_fd].response = http_response;
-	size_t	last_bar = http_response.resourceFullPath.find_last_of("/");
-	if (last_bar != std::string::npos && http_response.resourceFullPath.substr(last_bar) == DFL_TMP_FILE)
-		std::remove(http_response.resourceFullPath.c_str());
 
 	this->pollfds[idx].events = POLLOUT;
 }
@@ -251,6 +248,10 @@ void	WebServ::send_response( int idx )
 			this->client_connections[client_fd].response.fileHandle.close();
 		}
 	}
+
+	size_t	last_bar = this->client_connections[client_fd].response.resourceFullPath.find_last_of("/");
+	if (last_bar != std::string::npos && this->client_connections[client_fd].response.resourceFullPath.substr(last_bar) == DFL_TMP_FILE)
+		std::remove(this->client_connections[client_fd].response.resourceFullPath.c_str());
 
 	this->client_connections[client_fd].timestamp = timestamp();
 	this->pollfds[idx].events = POLLIN;

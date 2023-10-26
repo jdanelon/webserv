@@ -8,8 +8,10 @@ template.sh
 tmp*
 
 # tests folders
+bin
 local_tests
 server_root
+wrk
 
 # Object files
 objs/*

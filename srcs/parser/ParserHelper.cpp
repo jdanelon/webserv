@@ -249,7 +249,6 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 
 	std::vector<std::string> cmp;
 
-	cmp.push_back("HEAD");
 	cmp.push_back("GET");
 	cmp.push_back("POST");
 	cmp.push_back("DELETE");
@@ -389,7 +388,7 @@ std::vector<std::string>	ParserHelper::_get_path_vector( std::string const &bin 
 	size_t						begin_idx, end_idx;
 	std::vector<std::string>	separate_path;
 
-	separate_path.push_back("/" + bin);
+	separate_path.push_back(bin);
 	path = std::getenv("PATH");
 	begin_idx = 0;
 	end_idx = path.find(':');

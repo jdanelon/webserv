@@ -45,7 +45,6 @@ void	Location::fill_with_defaults( Server const &srv )
 		this->index = srv.index;
 	if (this->limit_except.empty())
 	{
-		this->limit_except.push_back("HEAD");
 		this->limit_except.push_back("GET");
 		this->limit_except.push_back("POST");
 		this->limit_except.push_back("DELETE");

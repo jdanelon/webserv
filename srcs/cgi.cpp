@@ -5,18 +5,21 @@ static std::vector<std::string>	set_environment( std::string script, HttpRequest
 	std::vector<std::string>	env;
 	std::string					root(std::getenv("PWD"));
 
-	env.resize(10);
+	env.resize(12);
 	env[0] = "REQUEST_METHOD=" + request.method;
+	env[1] = "SERVER_PROTOCOL=HTTP/1.1";
+	std::string	path_info = request.path_info.empty() ? "\"\"" : request.path_info;
+	env[2] = "PATH_INFO=" + path_info;
 	std::string query_string = request.query_string.empty() ? "\"\"" : request.query_string.substr(1);
-	env[1] = "QUERY_STRING=" + query_string;
-	env[2] = "CONTENT_TYPE=text/html";
-	env[3] = "CONTENT_LENGTH=" + ft_itoa(request.body.length());
-	env[4] = "DOCUMENT_ROOT=" + root;
-	env[5] = "SCRIPT_FILENAME=" + root + "/cgi" + script;
-	env[6] = "SCRIPT_NAME=/cgi/" + script;
-	env[7] = "REDIRECT_STATUS=200";
-	env[8] = "REQUEST_BODY=" + request.body;
-	env[9] = "DISPLAY=:0";
+	env[3] = "QUERY_STRING=" + query_string;
+	env[4] = "CONTENT_TYPE=text/html";
+	env[5] = "CONTENT_LENGTH=" + ft_itoa(request.body.length());
+	env[6] = "DOCUMENT_ROOT=" + root;
+	env[7] = "SCRIPT_FILENAME=" + root + "/cgi/" + script;
+	env[8] = "SCRIPT_NAME=/cgi/" + script;
+	env[9] = "REDIRECT_STATUS=200";
+	env[10] = "REQUEST_BODY=" + request.body;
+	env[11] = "DISPLAY=:0";
 	return (env);
 }
 
@@ -39,7 +42,7 @@ static void	handle_child( int const parent_fd, int const child_fd, std::string b
 
 	// - set environ with CGI variables
 	std::vector<std::string>	env = set_environment(script, request);
-	const char	**envp = new const char *[11];
+	const char	**envp = new const char *[13];
 	envp[0] = env[0].c_str();
 	envp[1] = env[1].c_str();
 	envp[2] = env[2].c_str();
@@ -50,7 +53,9 @@ static void	handle_child( int const parent_fd, int const child_fd, std::string b
 	envp[7] = env[7].c_str();
 	envp[8] = env[8].c_str();
 	envp[9] = env[9].c_str();
-	envp[10] = NULL;
+	envp[10] = env[10].c_str();
+	envp[11] = env[11].c_str();
+	envp[12] = NULL;
 
 	// - run binary based on cgi script (execve)
 	execve(argv[0], (char **)argv, (char **)envp);
