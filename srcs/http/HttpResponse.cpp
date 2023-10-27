@@ -137,7 +137,7 @@ void HttpResponse::handleDelete(HttpRequest &request)
 	this->fileHandle.seekg(0, std::ios::beg);
 
 	this->setStatusCode(httpStatusCodes.OK.code);
-	this->headers["Content-Type"] = "text/txt";
+	this->headers["Content-Type"] = "text/plain";
 }
 
 std::string HttpResponse::getResponse( void )
@@ -285,6 +285,7 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 		std::string	exe = this->host->cgi[extension];
 		try {
 			content = handle_cgi(exe, this->resourceFullPath, request);
+			this->headers["Content-Type"] = "text/html";
 			if (content.empty())
 			{
 				content = "<!DOCTYPE html>\n";
@@ -294,13 +295,9 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 				content += "CGI has timed out!\n";
 				content += "</body>\n</html>\n";
 				this->setStatusCode(httpStatusCodes.InternalServerError.code);
-				this->headers["Content-Type"] = "text/html";
 			}
 			else
-			{
 				this->setStatusCode(httpStatusCodes.OK.code);
-				this->headers["Content-Type"] = "text/html";
-			}
 		}
 		catch (const std::exception& e)
 		{
@@ -317,8 +314,32 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 	}
 	// File exists, but is not html and not handled by cgi
 	else {
-		content = httpStatusCodes.NotFound.description;
-		this->setStatusCode(httpStatusCodes.NotFound.code);
+		std::string contentType = httpContentTypes.getDescription(extension);
+		if (contentType.empty())
+			this->setStatusCode(httpStatusCodes.UnsupportedMediaType.code);
+		else
+		{
+			this->headers["Content-Type"] = contentType;
+
+			this->openFile(this->resourceFullPath);
+			this->fileHandle.seekg(0, std::ios::end);
+			this->fileSize = this->fileHandle.tellg();
+			this->fileHandle.seekg(0, std::ios::beg);
+			if (this->fileSize == 0)
+			{
+				this->resourceFullPath = this->resourceFullPath.substr(0, this->resourceFullPath.find_last_of("/")) + DFL_TMP_FILE;
+				std::ofstream output_file(this->resourceFullPath.c_str());
+				output_file << "No Content\n";
+				output_file.close();
+				this->openFile(this->resourceFullPath);
+				this->fileHandle.seekg(0, std::ios::end);
+				this->fileSize = this->fileHandle.tellg();
+				this->fileHandle.seekg(0, std::ios::beg);
+				this->setStatusCode(httpStatusCodes.NoContent.code);
+			}
+			else
+				this->setStatusCode(httpStatusCodes.OK.code);
+		}
 	}
 	return (content);
 }

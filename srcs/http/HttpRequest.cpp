@@ -4,12 +4,12 @@ HttpRequest::HttpRequest( void ) : autoindex(false), path_info(""), query_string
 	// Create a new body parser
 	std::cout << "Creating new HttpRequest" << std::endl;
 	this->body_parser = HttpRequestBody();
+	this->has_body = false;
 	this->full_resource_path = "";
 }
 
 HttpRequest::HttpRequest( HttpRequest const &obj ) {
-	(void) obj;
-	// *this = obj;
+	*this = obj;
 }
 
 HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
@@ -296,6 +296,7 @@ void	HttpRequest::validate( Server *srv ) {
 	if (srv->redirect.first != 0 && !srv->redirect.second.empty())
 	{
 		set_error_code(srv->redirect.first);
+		// std::cout << "\t1 - REDIRECT: '" << srv->redirect.second << "'" << std::endl;
 		if (srv->redirect.first >= 300 && srv->redirect.first < 400)
 			this->headers.insert(std::make_pair("Location", "/" + srv->redirect.second));
 		return ;
@@ -338,6 +339,7 @@ void	HttpRequest::validate( Server *srv ) {
 		if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 		{
 			set_error_code(loc->second.redirect.first);
+			// std::cout << "\t2 - REDIRECT: '" << loc->second.redirect.second << "'" << std::endl;
 			if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
 				this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
 			return ;
@@ -367,6 +369,7 @@ void	HttpRequest::validate( Server *srv ) {
 			if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 			{
 				set_error_code(loc->second.redirect.first);
+				// std::cout << "\t3 - REDIRECT: '" << loc->second.redirect.second << "'" << std::endl;
 				if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
 					this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
 				return ;

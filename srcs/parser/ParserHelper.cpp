@@ -211,7 +211,7 @@ std::pair<size_t, std::string>	ParserHelper::get_return( void )
 		throw ParserHelper::InvalidValues("return", this->_tokens[1]);
 	struct stat buf;
 	if (stat(this->_tokens[2].c_str(), &buf) == -1 || !S_ISDIR(buf.st_mode | S_IRUSR))
-		throw ParserHelper::SystemError("return", this->_tokens[1]);
+		throw ParserHelper::SystemError("return", this->_tokens[2]);
 	return (std::make_pair(ft_atoi(this->_tokens[1].c_str()), this->_tokens[2]));
 }
 

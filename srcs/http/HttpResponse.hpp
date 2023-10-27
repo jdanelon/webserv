@@ -11,6 +11,7 @@
 
 # include "HttpRequest.hpp"
 # include "HttpStatusCodes.hpp"
+# include "HttpContentTypes.hpp"
 # include "../utils.hpp"
 # include "../cgi.hpp"
 
