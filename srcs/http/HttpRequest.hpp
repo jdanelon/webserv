@@ -26,6 +26,8 @@ struct CaseInsensitive {
 class HttpRequest {
 
 	public:
+		static bool debugEnabled;
+		static const std::string className; 
 
 		std::string											method;
 		std::string											uri;
@@ -57,8 +59,10 @@ class HttpRequest {
 		int			get_error_code( void ) const;
 		void		set_error_code( int const &code );
 
+
 		//Debug
 		void	print( int client_fd );
+		static void debug(LogLevel level, const std::string& message);
 	
 	private:
 		int	_error_code;

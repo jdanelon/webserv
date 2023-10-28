@@ -1,5 +1,8 @@
 #include "HttpRequest.hpp"
 
+bool HttpRequest::debugEnabled = true;
+const std::string HttpRequest::className = "HttpRequest";
+
 HttpRequest::HttpRequest( void ) : autoindex(false), query_string(""), is_valid(true), _error_code(0) {
 	// Create a new body parser
 	std::cout << "Creating new HttpRequest" << std::endl;
@@ -155,6 +158,7 @@ void	HttpRequest::parse_header_line( std::string line ) {
 }
 
 void	HttpRequest::parse_body( std::string partial_body ) {
+	debug(INFO, "Parsing body");
 	// We parse differently depending on whether the body is chunked or not
 	if (this->headers.find("Transfer-Encoding") != this->headers.end() &&
 		this->headers["Transfer-Encoding"] == "chunked")
@@ -423,4 +427,29 @@ void	HttpRequest::print( int client_fd ) {
 	std::cout << "body: " << this->body << std::endl;
 	std::cout << "error_code: " << this->_error_code << std::endl;
 	std::cout << "------------------" << std::endl;
+}
+
+void HttpRequest::debug(LogLevel level, const std::string& message) {
+    if (!debugEnabled) {
+        return;
+    }
+
+    std::string prefix;
+    std::string colorCode;
+    switch (level) {
+    case INFO:
+        prefix = "[INFO] ";
+        colorCode = "\033[1;34m";  // Blue
+        break;
+    case WARNING:
+        prefix = "[WARNING] ";
+        colorCode = "\033[1;33m";  // Yellow
+        break;
+    case ERROR:
+        prefix = "[ERROR] ";
+        colorCode = "\033[1;31m";  // Red
+        break;
+    }
+
+    std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl;  // \033[0m resets the color
 }

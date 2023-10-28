@@ -19,6 +19,8 @@ class WebServ
 {
 
 	public:
+		static bool debugEnabled;
+		static const std::string className; 
 
 		Parser								parser;
 		std::map<int, Server *>				servers;
@@ -44,6 +46,7 @@ class WebServ
 
 		// Debug
 		void	print( void );
+		static void debug(LogLevel level, const std::string& message);
 	private:
 
 		unsigned int	_backlog;

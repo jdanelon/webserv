@@ -5,7 +5,7 @@ bgnet
 miniwebserver
 nnn*
 template.sh
-tmp*
+tmp/*
 
 # tests folders
 local_tests
