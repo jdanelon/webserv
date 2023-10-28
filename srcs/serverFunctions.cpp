@@ -57,6 +57,7 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 	bool	is_input_ready = webserv.pollfds[i].revents & POLLIN;
 	bool	is_output_ready = webserv.pollfds[i].revents & POLLOUT;
 
+	std::cout << "process_client_event: " << std::endl;
 	if (is_error) {
 		webserv.end_client_connection(i);
 	}
@@ -77,7 +78,6 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 		// If request has body, read and parse it little by little 
 		if (webserv.client_connections[client_fd].is_header_received 
 			&& webserv.client_connections[client_fd].request_has_body) {
-			std::cout << "read_client_request_body" << std::endl;
 			if (!webserv.client_connections[client_fd].is_request_body_parsed)
 				read_client_request_body(webserv, i);
 			webserv.parse_request_body(i);

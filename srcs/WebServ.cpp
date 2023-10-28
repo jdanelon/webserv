@@ -1,5 +1,8 @@
 #include "WebServ.hpp"
 
+bool WebServ::debugEnabled = true;
+const std::string WebServ::className = "Webserv";
+
 WebServ::WebServ( void ) : has_closed_connections(false)
 {
 	this->_error_codes_map[100] = "Continue";
@@ -305,4 +308,29 @@ void	WebServ::print(void) {
 	}
 	std::cout << "Client connections size: " << this->client_connections.size() << std::endl;
 	std::cout << "------------------" << std::endl;
+}
+
+void WebServ::debug(LogLevel level, const std::string& message) {
+    if (!debugEnabled) {
+        return;
+    }
+
+    std::string prefix;
+    std::string colorCode;
+    switch (level) {
+    case INFO:
+        prefix = "[INFO] ";
+        colorCode = "\033[1;34m";  // Blue
+        break;
+    case WARNING:
+        prefix = "[WARNING] ";
+        colorCode = "\033[1;33m";  // Yellow
+        break;
+    case ERROR:
+        prefix = "[ERROR] ";
+        colorCode = "\033[1;31m";  // Red
+        break;
+    }
+
+    std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl;  // \033[0m resets the color
 }

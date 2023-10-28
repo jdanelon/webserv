@@ -6,6 +6,12 @@
 #include <string>
 #include <iostream>
 
+enum LogLevel {
+    INFO,
+    WARNING,
+    ERROR
+};
+
 class HttpRequestBody {
 
 private:
@@ -18,6 +24,9 @@ private:
 	bool			isProcessingComplete;
 
 public:
+	static bool debugEnabled;
+	static const std::string className; 
+
 	HttpRequestBody(const std::string& boundary);
 
 	HttpRequestBody();
@@ -37,7 +46,8 @@ public:
     bool getIsProcessingComplete();
 
 	void setBoundary(const std::string& boundary);
-};
 
+	static void debug(LogLevel level, const std::string& message);
+};
 
 # endif
