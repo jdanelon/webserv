@@ -3,6 +3,7 @@
 
 # include <stdlib.h>
 # include <sys/time.h>
+# include <sstream>
 
 # include "../includes/main.hpp"
 
@@ -15,7 +16,6 @@ bool		ft_empty( char const *str );
 long long	timestamp( void );
 std::string ft_itoa( int n );
 std::string get_time_string( void );
-
-std::string constructPath(const std::string &rootPath, const std::string &uri);
+std::string	generateUniqueFilename( void );
 
 #endif

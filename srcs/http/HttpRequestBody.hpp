@@ -1,10 +1,13 @@
-
 #ifndef HTTPREQUESTBODY_HPP
 #define HTTPREQUESTBODY_HPP
 
 #include <fstream>
 #include <string>
 #include <iostream>
+#include <sstream>
+#include <ctime>
+
+#include "../utils.hpp"
 
 enum LogLevel {
     INFO,

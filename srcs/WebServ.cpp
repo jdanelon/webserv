@@ -210,12 +210,16 @@ void	WebServ::create_response( int idx )
 
 void	WebServ::_clear_connection(int const client_fd) {
 	this->client_connections[client_fd].buffer = "";
+	this->client_connections[client_fd].body_buffer = "";
 	this->client_connections[client_fd].request = HttpRequest();
 	this->client_connections[client_fd].response = HttpResponse(this->client_connections[client_fd].host_server);
 	this->client_connections[client_fd].is_line_request_received = false;
 	this->client_connections[client_fd].is_header_received = false;
 	this->client_connections[client_fd].is_request_parsed = false;
-	this->client_connections[client_fd].is_request_completed = false;	
+	this->client_connections[client_fd].is_request_completed = false;
+	this->client_connections[client_fd].is_request_body_parsing = false;
+	this->client_connections[client_fd].is_request_body_parsed = false;
+	this->client_connections[client_fd].request_has_body = false;
 }
 
 void	WebServ::send_response( int idx )
@@ -225,7 +229,7 @@ void	WebServ::send_response( int idx )
 	// 1) If request is not valid, send error response
 	if (!this->client_connections[client_fd].response.is_request_valid) {
 		HttpResponse http_response = this->client_connections[client_fd].response;
-		http_response.prepareErrorResponse(this->client_connections[client_fd].request);
+		http_response.prepareErrorResponse();
 		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
 	}
 	// 2) If the response is not too big, send the full response
@@ -237,7 +241,7 @@ void	WebServ::send_response( int idx )
 		}
 		catch(const std::exception& e) {
 			std::cerr << e.what() << '\n';
-			http_response.prepareErrorResponse(this->client_connections[client_fd].request);
+			http_response.prepareErrorResponse();
 			send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
 		}
 		this->pollfds[idx].events = POLLIN;
@@ -261,13 +265,15 @@ void	WebServ::send_response( int idx )
 		catch (const std::exception& e) {
 			std::cerr << e.what() << '\n';
 			HttpResponse http_response = this->client_connections[client_fd].response;
-			http_response.prepareErrorResponse(this->client_connections[client_fd].request);
+			http_response.prepareErrorResponse();
 			send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
 			this->client_connections[client_fd].response.fileOffset = this->client_connections[client_fd].response.fileSize;
 		}
 
 		// Check if we have sent the full file, If not we go back to the poll loop
-		if (this->client_connections[client_fd].response.fileOffset < this->client_connections[client_fd].response.fileSize) {
+		unsigned int file_offset = this->client_connections[client_fd].response.fileOffset;
+		if (file_offset != 0 && file_offset < this->client_connections[client_fd].response.fileSize) {
+			this->client_connections[client_fd].timestamp = timestamp();
 			this->pollfds[idx].events = POLLOUT;  // Set to send more data
 			return ;
 		} else {
@@ -276,7 +282,11 @@ void	WebServ::send_response( int idx )
 	}
 
 	size_t	last_bar = this->client_connections[client_fd].response.resourceFullPath.find_last_of("/");
-	if (last_bar != std::string::npos && this->client_connections[client_fd].response.resourceFullPath.substr(last_bar) == DFL_TMP_FILE)
+	size_t	extension_idx = this->client_connections[client_fd].response.resourceFullPath.find_last_of(".");
+	if (extension_idx == std::string::npos)
+		extension_idx = 0;
+	std::string	extension = this->client_connections[client_fd].response.resourceFullPath.substr(extension_idx);
+	if (last_bar != std::string::npos && extension == ".tmp")
 		std::remove(this->client_connections[client_fd].response.resourceFullPath.c_str());
 
 	this->client_connections[client_fd].timestamp = timestamp();

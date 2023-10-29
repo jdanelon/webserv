@@ -264,37 +264,22 @@ void	HttpRequest::validate( Server *srv ) {
 	std::cout << "Validating request:" << std::endl;
 
 	if (this->method.empty() || this->uri.empty() || this->version.empty())
-	{
 		set_error_code(400);
-		return ;
-	}
 
 	std::map<std::string, Location> locations = srv->location;
 	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(this->uri, locations));
 	if (loc != locations.end() && is_method_forbidden(this->method, loc->second.limit_except))
-	{
 		set_error_code(405);
-		return ;
-	}
 
 	if (this->method == "PUT" || this->method == "CONNECT" || this->method == "OPTIONS" ||
 			this->method == "TRACE" || this->method == "PATCH")
-	{
 		set_error_code(405);
-		return ;
-	}
 
 	if (this->method != "HEAD" && this->method != "GET" && this->method != "POST" && this->method != "DELETE")
-	{
 		set_error_code(501);
-		return ;
-	}
 
 	if (this->uri.length() > 8000)
-	{
 		set_error_code(414);
-		return ;
-	}
 
 	// Return directive on server block
 	if (srv->redirect.first != 0 && !srv->redirect.second.empty())
@@ -303,7 +288,6 @@ void	HttpRequest::validate( Server *srv ) {
 		// std::cout << "\t1 - REDIRECT: '" << srv->redirect.second << "'" << std::endl;
 		if (srv->redirect.first >= 300 && srv->redirect.first < 400)
 			this->headers.insert(std::make_pair("Location", "/" + srv->redirect.second));
-		return ;
 	}
 
 	size_t	query_idx = this->uri.find("?");
@@ -346,7 +330,6 @@ void	HttpRequest::validate( Server *srv ) {
 			// std::cout << "\t2 - REDIRECT: '" << loc->second.redirect.second << "'" << std::endl;
 			if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
 				this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
-			return ;
 		}
 		if (loc != locations.end() && !loc->second.alias.empty())
 			final_root = find_final_root(new_uri, loc->second.alias, loc->first);
@@ -354,10 +337,7 @@ void	HttpRequest::validate( Server *srv ) {
 			final_root = srv->root + new_uri;
 		full_path = std::getenv("PWD") + std::string("/") + final_root;
 		if ((stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode))
-		{
 			set_error_code(404);
-			return ;
-		}
 	}
 	// If request is for folder: search for index files with possible multiple redirections
 	else
@@ -398,32 +378,27 @@ void	HttpRequest::validate( Server *srv ) {
 				full_path = full_path.substr(0, full_path.find_last_of("/") + 1);
 				struct stat buf;
 				if (stat(full_path.c_str(), &buf) != 0 || !S_ISDIR(buf.st_mode))
-				{
 					set_error_code(404);
-					return ;
-				}
 				this->autoindex = true;
 			}
 			else
-			{
 				set_error_code(403);
-				return ;
-			}
 		}
 	}
 
 	if (this->version != "HTTP/1.1")
-	{
 		set_error_code(505);
-		return ;
-	}
 
 	// ATTENTION: NEED TO CHANGE /ETC/HOSTS FILE TO INCLUDE OTHER SERVER_NAMES
 	if (is_server_name_forbidden(this->host, srv->ip, srv->server_name))
-	{
 		set_error_code(404);
-		return ;
-	}
+
+	size_t	headers_end = this->raw.find("\r\n\r\n") + 4;
+	this->body = this->raw.length() != headers_end ? this->raw.substr(headers_end) : "";
+	if ((srv->client_max_body_size != -1 && (int)this->body.length() > srv->client_max_body_size) ||
+			(loc != locations.end() && loc->second.client_max_body_size != -1 &&
+			(int)this->body.length() > loc->second.client_max_body_size))
+		set_error_code(413);
 
 	int	code = this->get_error_code();
 	std::map<int, std::string>::iterator it;
@@ -432,18 +407,9 @@ void	HttpRequest::validate( Server *srv ) {
 		if (it->first == code)
 		{
 			full_path = std::getenv("PWD") + std::string("/") + srv->root + it->second;
-			break ;
+			this->full_resource_path = full_path;
+			return ;
 		}
-	}
-
-	size_t	headers_end = this->raw.find("\r\n\r\n") + 4;
-	this->body = this->raw.length() != headers_end ? this->raw.substr(headers_end) : "";
-	if ((srv->client_max_body_size != -1 && (int)this->body.length() > srv->client_max_body_size) ||
-			(loc != locations.end() && loc->second.client_max_body_size != -1 &&
-			(int)this->body.length() > loc->second.client_max_body_size))
-	{
-		set_error_code(413);
-		return ;
 	}
 
 	this->full_resource_path = full_path;
@@ -480,31 +446,6 @@ void	HttpRequest::print( int client_fd ) {
 	std::cout << "body: " << this->body << std::endl;
 	std::cout << "error_code: " << this->_error_code << std::endl;
 	std::cout << "------------------" << std::endl;
-}
-
-void HttpRequest::debug(LogLevel level, const std::string& message) {
-    if (!debugEnabled) {
-        return;
-    }
-
-    std::string prefix;
-    std::string colorCode;
-    switch (level) {
-    case INFO:
-        prefix = "[INFO] ";
-        colorCode = "\033[1;34m";  // Blue
-        break;
-    case WARNING:
-        prefix = "[WARNING] ";
-        colorCode = "\033[1;33m";  // Yellow
-        break;
-    case ERROR:
-        prefix = "[ERROR] ";
-        colorCode = "\033[1;31m";  // Red
-        break;
-    }
-
-    std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl;  // \033[0m resets the color
 }
 
 void HttpRequest::debug(LogLevel level, const std::string& message) {

@@ -59,6 +59,8 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 
 	std::cout << "process_client_event: " << std::endl;
 	if (is_error) {
+		int client_fd = webserv.pollfds[i].fd;
+		std::cout << "\tFULL_PATH: " << webserv.client_connections[client_fd].response.resourceFullPath << std::endl;
 		webserv.end_client_connection(i);
 	}
 	else if (is_input_ready) {

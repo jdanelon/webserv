@@ -15,8 +15,6 @@
 # include "../utils.hpp"
 # include "../cgi.hpp"
 
-# define DFL_TMP_FILE "/__tmp_file.txt"
-
 class HttpResponse {
 
 	public:
@@ -37,7 +35,7 @@ class HttpResponse {
 		void 		configureResponse(HttpRequest &request);
 		void 		handlePost(HttpRequest &request);
 		void 		handleGet(HttpRequest &request); // CGI
-		void		handleDelete(HttpRequest &request);
+		void		handleDelete( void );
 
 		void		prepareResponseHeaders();
 		void		openFile(const std::string &fullPath);
@@ -46,7 +44,7 @@ class HttpResponse {
 		std::string	getResponse( void );
 		void		setStatusCode( int const &code );
 
-		void prepareErrorResponse( HttpRequest &request );
+		void prepareErrorResponse( void );
 		void prepareFullResponse( HttpRequest &request );
 
 		// Debug

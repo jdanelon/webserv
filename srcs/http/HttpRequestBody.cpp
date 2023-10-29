@@ -1,22 +1,7 @@
 #include "HttpRequestBody.hpp"
 
-#include <chrono>
-#include <sstream>
-
-#include <ctime>
-#include <sstream>
-
 bool HttpRequestBody::debugEnabled = true;
 const std::string HttpRequestBody::className = "HttpRequestBody";
-
-std::string generateUniqueFilename() {
-    std::stringstream ss;
-    ss << "tempfile_";
-    time_t now = time(NULL);
-    ss << now;
-    ss << ".tmp";
-    return ss.str();
-}
 
 HttpRequestBody::HttpRequestBody(const std::string& boundary) : 
 	boundary(boundary), 

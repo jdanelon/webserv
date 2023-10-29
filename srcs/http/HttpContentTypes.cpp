@@ -12,7 +12,7 @@ HttpContentTypes::HttpContentTypes( void )
 	contentTypesMap[".zip"] = "application/zip";
 	contentTypesMap[".gzip"] = "application/gzip";
 	contentTypesMap[".tar"] = "application/x-tar";
-	contentTypesMap[".png"] = "immage/png";
+	contentTypesMap[".png"] = "image/png";
 	contentTypesMap[".jpg"] = "image/jpeg";
 	contentTypesMap[".jpeg"] = "image/jpeg";
 	contentTypesMap[".gif"] = "image/gif";
