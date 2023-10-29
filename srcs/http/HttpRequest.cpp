@@ -3,15 +3,36 @@
 bool HttpRequest::debugEnabled = true;
 const std::string HttpRequest::className = "HttpRequest";
 
+static std::string	get_matched_location( std::string request_uri, std::map<std::string, Location> locations )
+{
+	size_t										idx = request_uri.length();
+	std::string									path(request_uri + std::string("/"));
+	std::map<std::string, Location>::iterator	loc = locations.end();
+
+	while (idx != std::string::npos)
+	{
+		idx = path.find_last_of("/", idx);
+		if (idx == 0)
+			idx = 1;
+		path = path.substr(0, idx);
+		loc = locations.find(path);
+		if (idx == 1 || loc != locations.end())
+			break ;
+	}
+	return (path);
+}
+
+
 HttpRequest::HttpRequest( void ) : autoindex(false), query_string(""), is_valid(true), _error_code(0) {
 	// Create a new body parser
 	std::cout << "Creating new HttpRequest" << std::endl;
 	this->body_parser = HttpRequestBody();
+	this->has_body = false;
+	this->is_body_parsed = false;
 }
 
 HttpRequest::HttpRequest( HttpRequest const &obj ) {
-	(void) obj;
-	// *this = obj;
+	*this = obj;
 }
 
 HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
@@ -157,8 +178,8 @@ void	HttpRequest::parse_header_line( std::string line ) {
 	}
 }
 
-void	HttpRequest::parse_body( std::string partial_body ) {
-	debug(INFO, "Parsing body");
+void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
+	debug(INFO, "Partial body: " + partial_body);
 	// We parse differently depending on whether the body is chunked or not
 	if (this->headers.find("Transfer-Encoding") != this->headers.end() &&
 		this->headers["Transfer-Encoding"] == "chunked")
@@ -170,7 +191,31 @@ void	HttpRequest::parse_body( std::string partial_body ) {
 	else if (this->headers.find("Content-Type") != this->headers.end() &&
 			this->headers["Content-Type"].find("multipart/form-data") != std::string::npos)
 	{
+		// Check if the request uri is found in the locations map
+		std::map<std::string, Location>::iterator loc = srv->location.find(get_matched_location(this->uri, srv->location));
+		if (loc == srv->location.end())
+		{
+			set_error_code(httpStatusCodes.BadRequest.code);
+			this->is_body_parsed = true;
+			return ;
+		}
+		// Check if the location has an upload directive
+		if (loc->second.upload == 0)
+		{
+			set_error_code(httpStatusCodes.BadRequest.code);
+			this->is_body_parsed = true;
+			return ;
+		}
+		// Check if the location has an upload_store directive
+		if (loc->second.upload_store.empty())
+		{
+			set_error_code(httpStatusCodes.BadRequest.code);
+			this->is_body_parsed = true;
+			return ;
+		}
+
 		// If the body is a file upload, we need to parse the multipart body
+		this->body_parser.setUploadStore(loc->second.upload_store);
 		this->body_parser.parseMultipartBody(partial_body);
 	}
 	else {
@@ -198,25 +243,6 @@ void	HttpRequest::parse_body( std::string partial_body ) {
 			this->is_body_parsed = false;
 		}
 	}
-}
-
-static std::string	get_matched_location( std::string request_uri, std::map<std::string, Location> locations )
-{
-	size_t										idx = request_uri.length();
-	std::string									path(request_uri + std::string("/"));
-	std::map<std::string, Location>::iterator	loc = locations.end();
-
-	while (idx != std::string::npos)
-	{
-		idx = path.find_last_of("/", idx);
-		if (idx == 0)
-			idx = 1;
-		path = path.substr(0, idx);
-		loc = locations.find(path);
-		if (idx == 1 || loc != locations.end())
-			break ;
-	}
-	return (path);
 }
 
 static bool	is_method_forbidden( std::string method, std::vector<std::string> allowed )

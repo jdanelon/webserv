@@ -166,16 +166,23 @@ void	WebServ::parse_request_headers( int idx )
 		// Todo: why is not doing this internally in the request?
 		std::string resource_path = request.validate(this->client_connections[client_fd].host_server);
 
+		if (request.get_error_code() != 0) {
+			request.has_body = false;
+		}
+
 		request.print(client_fd);
 		request.resource = resource_path;
 		this->client_connections[client_fd].request = request;
 
 		// If request has body, we inform the connection so he can start parsing it
 		if (request.has_body) {
+			int npos = this->client_connections[client_fd].buffer.find("\r\n\r\n");
+			this->client_connections[client_fd].body_buffer = this->client_connections[client_fd].buffer.substr(npos + 4);
 			this->client_connections[client_fd].request_has_body = true;
 			this->client_connections[client_fd].is_request_body_parsing = true;
 		}
 		else {
+			std::cout << "Request has no body" << std::endl;
 			this->client_connections[client_fd].is_request_completed = true;
 		}
 	}
@@ -185,7 +192,10 @@ void	WebServ::parse_request_body( int idx ) {
 	int client_fd = this->pollfds[idx].fd;
 
 	// We call the parser function of the request
-	this->client_connections[client_fd].request.parse_body(this->client_connections[client_fd].body_buffer);
+	this->client_connections[client_fd].request.parse_body(
+			this->client_connections[client_fd].body_buffer, 
+			this->client_connections[client_fd].host_server
+		);
 
 	// If the request is completed, we inform the connection
 	if (client_connections[client_fd].request.is_body_parsed) {
@@ -214,12 +224,17 @@ void	WebServ::create_response( int idx )
 
 void	WebServ::_clear_connection(int const client_fd) {
 	this->client_connections[client_fd].buffer = "";
+	this->client_connections[client_fd].body_buffer = "";
 	this->client_connections[client_fd].request = HttpRequest();
 	this->client_connections[client_fd].response = HttpResponse(this->client_connections[client_fd].host_server);
 	this->client_connections[client_fd].is_line_request_received = false;
 	this->client_connections[client_fd].is_header_received = false;
 	this->client_connections[client_fd].is_request_parsed = false;
-	this->client_connections[client_fd].is_request_completed = false;	
+	this->client_connections[client_fd].is_request_completed = false;
+	this->client_connections[client_fd].is_request_body_parsing = false;
+	this->client_connections[client_fd].is_request_body_parsed = false;
+	this->client_connections[client_fd].request_has_body = false;
+	this->client_connections[client_fd].tail_appended_body = false;	
 }
 
 void	WebServ::send_response( int idx )
@@ -230,6 +245,7 @@ void	WebServ::send_response( int idx )
 	if (!this->client_connections[client_fd].response.is_request_valid) {
 		HttpResponse http_response = this->client_connections[client_fd].response;
 		http_response.prepareErrorResponse(this->client_connections[client_fd].request);
+		std::cout << "Sending Error Response..." << std::endl << http_response.getResponse() << std::endl;
 		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
 	}
 	// 2) If the response is not too big, send the full response

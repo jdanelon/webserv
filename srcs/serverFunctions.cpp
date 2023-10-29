@@ -2,9 +2,11 @@
 #include "WebServ.hpp"
 
 bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
-	char	buf[16];
+	char	buf[256];
 	int		client_fd = webserv.pollfds[i].fd;
 	int		nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
+	std::cout << "read_client_request_headers" << std::endl;
+	std::cout << buf << std::endl;
 
 	if (nbytes <= 0) {
 		if (nbytes == 0) // TO-DO It is supposed that nbytes == 0 means that the client has hung up?
@@ -29,9 +31,11 @@ bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 }
 
 bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
-	char	buf[16];
+	char	buf[256];
 	int		client_fd = webserv.pollfds[i].fd;
 	int		nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
+	std::cout << "read_client_request_body" << std::endl;
+	std::cout << buf << std::endl;
 
 	if (nbytes <= 0) {
 		if (nbytes == 0)
@@ -43,7 +47,14 @@ bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
 		return (false);
 	}
 	buf[nbytes] = '\0';
-	webserv.client_connections[client_fd].body_buffer = buf;
+	std::cout << "Body received: " << buf << std::endl;
+	if (webserv.client_connections[client_fd].tail_appended_body) {
+		webserv.client_connections[client_fd].body_buffer = buf;
+	}
+	else {
+		webserv.client_connections[client_fd].body_buffer.append(buf);
+		webserv.client_connections[client_fd].tail_appended_body = true;
+	}
 
 	return (true); // Return true if successful, false if connection should be closed
 }
@@ -71,7 +82,8 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 		// If header was received, but request was not parsed yet, parse it
 		// Parse check if there if request has body
 		if (webserv.client_connections[client_fd].is_header_received 
-			&& !webserv.client_connections[client_fd].is_request_body_parsing) {
+			&& !webserv.client_connections[client_fd].is_request_body_parsing
+			&& !webserv.client_connections[client_fd].is_request_completed) {
 			std::cout << "parse_request" << std::endl;
 			webserv.parse_request_headers(i);
 		}
@@ -88,6 +100,7 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 		}
 	}
 	else if (is_output_ready) {
+		std::cout << "send_response" << std::endl;
 		webserv.send_response(i);
 	}
 }

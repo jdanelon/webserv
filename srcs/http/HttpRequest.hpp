@@ -11,6 +11,7 @@
 # include "../parser/Location.hpp"
 # include "../utils.hpp"
 # include "HttpRequestBody.hpp"
+# include "HttpStatusCodes.hpp"
 
 struct CaseInsensitive {
 	bool	operator () ( std:: string const &s1, std::string const &s2 ) const {
@@ -54,7 +55,7 @@ class HttpRequest {
 		void		parse( std::string raw );
 		void		parse_request_line( std::string line );
 		void		parse_header_line( std::string line );
-		void		parse_body( std::string partial_body );
+		void		parse_body( std::string partial_body, Server *srv );
 		std::string	validate( Server *srv );
 		int			get_error_code( void ) const;
 		void		set_error_code( int const &code );
