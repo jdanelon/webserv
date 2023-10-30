@@ -17,7 +17,8 @@ SRCS = main.cpp \
 		http/HttpRequest.cpp \
 		http/HttpResponse.cpp \
 		http/HttpStatusCodes.cpp \
-		cgi.cpp
+		cgi.cpp \
+		http/HttpRequestBody.cpp 
 
 OBJS = $(addprefix $(OBJS_PATH)/, $(SRCS:.cpp=.o))
 
@@ -37,6 +38,9 @@ $(OBJ_DIRS):
 
 $(OBJS_PATH)/%.o: $(SRCS_PATH)/%.cpp
 	$(CC) -g $(FLAGS) -c $< -o $@
+
+testing:
+	bash test/test-server.sh
 
 clean:
 	@$(RM) -r $(OBJS_PATH)

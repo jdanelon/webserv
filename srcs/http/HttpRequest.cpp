@@ -1,6 +1,35 @@
 #include "HttpRequest.hpp"
 
-HttpRequest::HttpRequest( void ) : autoindex(false), query_string(""), is_valid(true), _error_code(0) {}
+bool HttpRequest::debugEnabled = true;
+const std::string HttpRequest::className = "HttpRequest";
+
+static std::string	get_matched_location( std::string request_uri, std::map<std::string, Location> locations )
+{
+	size_t										idx = request_uri.length();
+	std::string									path(request_uri + std::string("/"));
+	std::map<std::string, Location>::iterator	loc = locations.end();
+
+	while (idx != std::string::npos)
+	{
+		idx = path.find_last_of("/", idx);
+		if (idx == 0)
+			idx = 1;
+		path = path.substr(0, idx);
+		loc = locations.find(path);
+		if (idx == 1 || loc != locations.end())
+			break ;
+	}
+	return (path);
+}
+
+
+HttpRequest::HttpRequest( void ) : autoindex(false), query_string(""), is_valid(true), _error_code(0) {
+	// Create a new body parser
+	std::cout << "Creating new HttpRequest" << std::endl;
+	this->body_parser = HttpRequestBody();
+	this->has_body = false;
+	this->is_body_parsed = false;
+}
 
 HttpRequest::HttpRequest( HttpRequest const &obj ) {
 	*this = obj;
@@ -20,6 +49,9 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->query_string = obj.query_string;
 		this->is_valid = obj.is_valid;
 		this->_error_code = obj._error_code;
+		this->has_body = obj.has_body;
+		this->is_body_parsed = obj.is_body_parsed;
+		this->body_parser = obj.body_parser;
 	}
 	return (*this);
 }
@@ -51,6 +83,26 @@ void	HttpRequest::parse( std::string raw ) {
 	else {
 		set_error_code(400);
 	}
+
+    // Check if the body is chunked
+    std::map<std::string, std::string>::iterator transfer_encoding_header = this->headers.find("Transfer-Encoding");
+    if (transfer_encoding_header != this->headers.end() && transfer_encoding_header->second == "chunked") {
+        this->has_body = true;
+    }
+
+	// Check if the body is a file upload
+	std::map<std::string, std::string>::iterator content_type_header = this->headers.find("Content-Type");
+	if (content_type_header != this->headers.end() && content_type_header->second.find("multipart/form-data") != std::string::npos) {
+		this->has_body = true;
+	}
+
+    // Check if there is a body and it's not a GET request
+    if (this->method != "GET") {
+        std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
+        if (content_length_header != this->headers.end()) {
+            this->has_body = true;
+        }
+    }
 }
 
 void	HttpRequest::parse_request_line( std::string line ) {
@@ -107,25 +159,88 @@ void	HttpRequest::parse_header_line( std::string line ) {
 		set_error_code(400);
 		return ;
 	}
+
+	// If header is multipart/form-data, and boundary is not present, set Bad Request error
+	if (key == "Content-Type" && value.find("multipart/form-data") != std::string::npos)
+	{
+		size_t pos = value.find("boundary=");
+		if (pos == std::string::npos)
+		{
+			set_error_code(400);
+			return ;
+		}
+		// set boundary string as value of a new header 'boundary'
+		std::string boundary = value.substr(pos + 9);
+		this->headers.insert(std::make_pair("boundary", boundary));
+		// set the value of Content-Type header to 'multipart/form-data'
+		this->headers["Content-Type"] = "multipart/form-data";
+		this->body_parser.setBoundary(boundary);
+	}
 }
 
-static std::string	get_matched_location( std::string request_uri, std::map<std::string, Location> locations )
-{
-	size_t										idx = request_uri.length();
-	std::string									path(request_uri + std::string("/"));
-	std::map<std::string, Location>::iterator	loc = locations.end();
-
-	while (idx != std::string::npos)
+void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
+	debug(INFO, "Partial body: " + partial_body);
+	// We parse differently depending on whether the body is chunked or not
+	if (this->headers.find("Transfer-Encoding") != this->headers.end() &&
+		this->headers["Transfer-Encoding"] == "chunked")
 	{
-		idx = path.find_last_of("/", idx);
-		if (idx == 0)
-			idx = 1;
-		path = path.substr(0, idx);
-		loc = locations.find(path);
-		if (idx == 1 || loc != locations.end())
-			break ;
+		// If the body is chunked, we need to parse the chunks
+		this->body_parser.parseChunkedBody(partial_body);
+
+		if (this->body_parser.getState() == COMPLETE) {
+			this->is_body_parsed = true;
+			this->body = this->body_parser.getFullChunkedBody();
+			debug(INFO, "Full body after Chunked Parsing: " + this->body);
+		}
 	}
-	return (path);
+	// Check if the body is a file upload
+	else if (this->headers.find("Content-Type") != this->headers.end() &&
+			this->headers["Content-Type"].find("multipart/form-data") != std::string::npos)
+	{
+		// Check if the request uri is found in the locations map
+		std::map<std::string, Location>::iterator loc = srv->location.find(get_matched_location(this->uri, srv->location));
+		if (loc == srv->location.end())
+			set_error_code(httpStatusCodes.BadRequest.code);
+		// Check if the location has an upload directive
+		if (loc->second.upload == 0)
+			set_error_code(httpStatusCodes.BadRequest.code);
+		// Check if the location has an upload_store directive
+		if (loc->second.upload_store.empty())
+			set_error_code(httpStatusCodes.BadRequest.code);
+
+		// If the body is a file upload, we need to parse the multipart body
+		this->body_parser.setUploadStore(loc->second.upload_store);
+		this->body_parser.parseMultipartBody(partial_body);
+	}
+	else {
+		// If the body is not chunked, we just append the partial body to the body
+		// We need to check if we finish reading the body, so we check the Content-Length header
+		std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
+		if (content_length_header == this->headers.end())
+		{
+			set_error_code(400);
+			this->is_body_parsed = true;
+			return ;
+		}
+		int content_length = atoi(content_length_header->second.c_str());
+		if ((int)this->body.length() + (int)partial_body.length() > content_length)
+		{
+			set_error_code(400);
+			this->is_body_parsed = true;
+			return ;
+		}
+		this->body.append(partial_body);
+		// We set the body as parsed if we have read the whole body
+		if ((int)this->body.length() == content_length)
+			this->is_body_parsed = true;
+		else {
+			this->is_body_parsed = false;
+		}
+	}
+
+	if (this->body_parser.getState() == COMPLETE) {
+		this->is_body_parsed = true;
+	}
 }
 
 static bool	is_method_forbidden( std::string method, std::vector<std::string> allowed )
@@ -336,4 +451,29 @@ void	HttpRequest::print( int client_fd ) {
 	std::cout << "body: " << this->body << std::endl;
 	std::cout << "error_code: " << this->_error_code << std::endl;
 	std::cout << "------------------" << std::endl;
+}
+
+void HttpRequest::debug(LogLevel level, const std::string& message) {
+    if (!debugEnabled) {
+        return;
+    }
+
+    std::string prefix;
+    std::string colorCode;
+    switch (level) {
+    case INFO:
+        prefix = "[INFO] ";
+        colorCode = "\033[1;34m";  // Blue
+        break;
+    case WARNING:
+        prefix = "[WARNING] ";
+        colorCode = "\033[1;33m";  // Yellow
+        break;
+    case ERROR:
+        prefix = "[ERROR] ";
+        colorCode = "\033[1;31m";  // Red
+        break;
+    }
+
+    std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl;  // \033[0m resets the color
 }
