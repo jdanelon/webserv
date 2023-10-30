@@ -242,6 +242,8 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
                 remaining_data = std::stoi(sizeLine, nullptr, 16); // Convert hex to int
                 partialBuffer = partialBuffer.substr(pos + 2);
 
+                debug(INFO, "Remaining data: " + std::to_string(remaining_data));
+
                 if (remaining_data == 0) {
                     state = TAIL; // Last chunk, switch to reading trailers
                 } else {
@@ -255,7 +257,7 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
         if (state == PART) {
             if (static_cast<int>(partialBuffer.size()) >= remaining_data + 2) {  // +2 for the trailing \r\n
                 std::string dataChunk = partialBuffer.substr(0, remaining_data);
-                std::cout << "Received data chunk: " << dataChunk << std::endl;
+                debug(INFO, "Received data chunk: " + dataChunk);
                 fullChunkedBody = fullChunkedBody + dataChunk;
 
                 partialBuffer = partialBuffer.substr(remaining_data + 2);  // +2 to skip the trailing \r\n
@@ -266,12 +268,12 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
         }
 
         if (state == TAIL) {
-            size_t pos = partialBuffer.find("\r\n\r\n");
+            size_t pos = partialBuffer.find("\r\n");
             if (pos != std::string::npos) {
                 std::string trailers = partialBuffer.substr(0, pos);
                 std::cout << "Received trailers: " << trailers << std::endl;
 
-                partialBuffer = partialBuffer.substr(pos + 4); // +4 to skip the trailing \r\n\r\n
+                partialBuffer = partialBuffer.substr(pos + 2);
                 state = COMPLETE;
                 break;
             } else {

@@ -12,7 +12,7 @@ bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 		if (nbytes == 0) // TO-DO It is supposed that nbytes == 0 means that the client has hung up?
 			std::cout << "socket: '" << client_fd << "' hung up" << std::endl;
 		else
-			std::cout << "recv error" << std::endl;
+			std::cout << "" << std::endl;
 		webserv.end_client_connection(i);
 		webserv.client_connections.erase(client_fd);
 		return (false);
@@ -38,8 +38,13 @@ bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
 	if (nbytes <= 0) {
 		if (nbytes == 0)
 			std::cout << "socket: '" << client_fd << "' hung up" << std::endl;
-		else
-			std::cout << "recv error" << std::endl;
+		else {
+			std::cout << "Recv error: " <<  nbytes<< std::endl;
+			// Possibly, socket is in blocking mode and there is no data to read
+			// In this case, we should not close the connection
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
+				return (true);
+		}
 		webserv.end_client_connection(i);
 		webserv.client_connections.erase(client_fd);
 		return (false);
