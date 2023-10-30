@@ -45,7 +45,7 @@ class HttpResponse {
 		void		setStatusCode( int const &code );
 
 		void prepareErrorResponse( void );
-		void prepareFullResponse( HttpRequest &request );
+		void prepareFullResponse( void );
 
 		// Debug
 		void prepareDummyResponse( void );

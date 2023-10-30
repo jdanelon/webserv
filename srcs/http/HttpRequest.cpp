@@ -260,7 +260,7 @@ static std::string	find_final_root( std::string uri, std::string alias, std::str
 	return (final_root);
 }
 
-void	HttpRequest::validate( Server *srv ) {
+void	HttpRequest::validate_headers( Server *srv ) {
 	std::cout << "Validating request:" << std::endl;
 
 	if (this->method.empty() || this->uri.empty() || this->version.empty())
@@ -393,13 +393,6 @@ void	HttpRequest::validate( Server *srv ) {
 	if (is_server_name_forbidden(this->host, srv->ip, srv->server_name))
 		set_error_code(404);
 
-	size_t	headers_end = this->raw.find("\r\n\r\n") + 4;
-	this->body = this->raw.length() != headers_end ? this->raw.substr(headers_end) : "";
-	if ((srv->client_max_body_size != -1 && (int)this->body.length() > srv->client_max_body_size) ||
-			(loc != locations.end() && loc->second.client_max_body_size != -1 &&
-			(int)this->body.length() > loc->second.client_max_body_size))
-		set_error_code(413);
-
 	int	code = this->get_error_code();
 	std::map<int, std::string>::iterator it;
 	for (it = srv->error_page.begin(); it != srv->error_page.end(); it++)
@@ -413,6 +406,27 @@ void	HttpRequest::validate( Server *srv ) {
 	}
 
 	this->full_resource_path = full_path;
+}
+
+void	HttpRequest::validate_body( Server *srv, std::string body_buffer ) {
+	int		max_body_size = srv->client_max_body_size;
+	bool	upload = srv->upload;
+	std::string	upload_store = srv->upload_store;
+
+	std::map<std::string, Location> locations = srv->location;
+	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(this->uri, locations));
+	if (loc != locations.end())
+	{
+		max_body_size = loc->second.client_max_body_size;
+		upload = loc->second.upload;
+		upload_store = loc->second.upload_store;
+	}
+	if (max_body_size != -1 && (int)body_buffer.length() > max_body_size)
+		set_error_code(413);
+	(void)upload;
+	(void)upload_store;
+
+	// TO-DO: VALIDATION FOR UPLOAD AND UPLOAD_STORE (HERE?)
 }
 
 int	HttpRequest::get_error_code( void ) const

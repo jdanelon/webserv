@@ -8,6 +8,7 @@ HttpResponse::HttpResponse( void ) : response(""),
 	this->status_code = 0;
 	this->fileSize = 0;
 	this->fileOffset = 0;
+	this->resourceFullPath = "";
 	this->is_request_valid = true;
 }
 
@@ -19,6 +20,7 @@ HttpResponse::HttpResponse( Server *server ) : response(""),
 	this->status_code = 0;
 	this->fileSize = 0;
 	this->fileOffset = 0;
+	this->resourceFullPath = "";
 	this->is_request_valid = true;
 }
 
@@ -50,7 +52,7 @@ HttpResponse &HttpResponse::operator = ( HttpResponse const &obj )
 		this->is_request_valid = obj.is_request_valid;
 
 		if (!obj.resourceFullPath.empty())
-			this->fileHandle.open(obj.resourceFullPath.c_str(), std::ios::binary);
+			this->openFile(obj.resourceFullPath);
 	}
 	return (*this);
 }
@@ -153,7 +155,7 @@ void HttpResponse::handleGet(HttpRequest &request)
 			output_file << content;
 			output_file.close();
 			this->openFile(this->resourceFullPath);
-			this->fileHandle.seekg(0, std::ios::end);  
+			this->fileHandle.seekg(0, std::ios::end);
 			this->fileSize = this->fileHandle.tellg();
 			this->fileHandle.seekg(0, std::ios::beg);
 			this->setStatusCode(httpStatusCodes.OK.code);
@@ -262,38 +264,6 @@ void HttpResponse::setStatusCode( int const &code )
 	this->status_code = code;
 }
 
-// Check if there is a location block that matches the request URI
-// If there is, update the root path and index files
-void updatePathAndIndexBasedOnLocation(HttpRequest &request, Server *host, std::string &rootPath, std::vector<std::string> &indexFiles) {
-	std::map<std::string, Location>::const_iterator it;
-	for (it = host->location.begin(); it != host->location.end(); ++it) {
-		if (request.uri.find(it->first) == 0) {
-			Location loc = it->second;
-			rootPath = loc.alias.empty() ? rootPath : loc.alias;
-			indexFiles = loc.index.empty() ? indexFiles : loc.index;
-			break;
-		}
-	}
-}
-
-// To-Do: Check if any of the index files exist in the root path
-bool handleIndexFiles(const std::string &fullPath, std::vector<std::string> &indexFiles, std::string &content, HttpResponse *response) {
-	std::vector<std::string>::const_iterator it;
-	for (it = indexFiles.begin(); it != indexFiles.end(); ++it) {
-		std::string tmpPath = fullPath + *it;
-		std::ifstream file(tmpPath.c_str());
-
-		if (file.is_open()) {
-			std::stringstream buffer;
-			buffer << file.rdbuf();
-			content = buffer.str();
-			response->setStatusCode(httpStatusCodes.OK.code);
-			return true;
-		}
-	}
-	return false;
-}
-
 void HttpResponse::openFile(const std::string &fullPath) {
 	if (fileHandle.is_open()) {
 		fileHandle.close();
@@ -363,17 +333,13 @@ std::string HttpResponse::readChunkAndUpdateResponse(size_t chunkSize) {
 	return (chunkedResponse);
 }
 
-void HttpResponse::prepareFullResponse(HttpRequest &request) {
-
-	std::string rootPath = this->host->root;
-	std::vector<std::string> indexFiles = this->host->index;
-	updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
+void HttpResponse::prepareFullResponse( void ) {
 
 	std::string fileContent;
 	if (fileHandle.is_open()) {
 		fileContent.assign((std::istreambuf_iterator<char>(fileHandle)),
 						(std::istreambuf_iterator<char>()));
-		fileHandle.close();	
+		fileHandle.close();
 	}
 	else {
 		setStatusCode(httpStatusCodes.InternalServerError.code);
@@ -402,7 +368,7 @@ void HttpResponse::prepareErrorResponse( void )
 	std::ifstream	errorFile(errorRoute.c_str(), std::ios::in);
 	std::string		fileContent;
 
-	errorFile.seekg(0, std::ios::end);  
+	errorFile.seekg(0, std::ios::end);
 	this->fileSize = errorFile.tellg();
 	errorFile.seekg(0, std::ios::beg);
 

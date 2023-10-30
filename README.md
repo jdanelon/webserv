@@ -74,8 +74,8 @@ make
 - [x] **Error Pages**
   - [x] Ability to set up default error pages for the server.
 
-- [ ] **Client Body Size**
-  - [ ] Define a limit for client body size.
+- [x] **Client Body Size**
+  - [x] Define a limit for client body size.
 
 ## **Route-specific Configuration**
 

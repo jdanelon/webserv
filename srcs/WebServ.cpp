@@ -164,7 +164,7 @@ void	WebServ::parse_request_headers( int idx )
 		this->client_connections[client_fd].is_request_parsed = true;
 
 		// Saved resource full_path to facilitate response
-		request.validate(this->client_connections[client_fd].host_server);
+		request.validate_headers(this->client_connections[client_fd].host_server);
 
 		request.print(client_fd);
 		this->client_connections[client_fd].request = request;
@@ -190,6 +190,10 @@ void	WebServ::parse_request_body( int idx ) {
 	if (client_connections[client_fd].request.is_body_parsed) {
 		this->client_connections[client_fd].is_request_body_parsed = true;
 		this->client_connections[client_fd].is_request_completed = true;
+
+		Server *srv = this->client_connections[client_fd].host_server;
+		std::string bodyBuffer = this->client_connections[client_fd].body_buffer;
+		this->client_connections[client_fd].request.validate_body(srv, bodyBuffer);
 	}
 }
 
@@ -236,7 +240,7 @@ void	WebServ::send_response( int idx )
 	else if (this->client_connections[client_fd].response.fileSize < RESPONSE_CHUNK_SIZE) {
 		HttpResponse http_response = this->client_connections[client_fd].response;
 		try {
-			http_response.prepareFullResponse(this->client_connections[client_fd].request);
+			http_response.prepareFullResponse();
 			send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
 		}
 		catch(const std::exception& e) {
