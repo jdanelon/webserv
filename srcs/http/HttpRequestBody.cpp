@@ -71,6 +71,7 @@ HttpRequestBody::HttpRequestBody(const std::string &boundary) : boundary(boundar
     debug(WARNING, "Default constructor called - with boundary ");
     tempFileName = "./tmp/" + generateUniqueFilename();
     state = START;
+    fullChunkedBody = "";
 }
 
 HttpRequestBody::HttpRequestBody() : processingInProgress(false)
@@ -78,6 +79,7 @@ HttpRequestBody::HttpRequestBody() : processingInProgress(false)
     debug(WARNING, "Default constructor called - No boundary set");
     tempFileName = "./tmp/" + generateUniqueFilename();
     state = START;
+    fullChunkedBody = "";
 }
 
 HttpRequestBody::~HttpRequestBody()
@@ -96,6 +98,11 @@ HttpRequestBody &HttpRequestBody::operator=(const HttpRequestBody &other)
         this->processingInProgress = other.processingInProgress;
         this->partialBuffer = other.partialBuffer;
         this->state = other.state;
+        this->fileName = other.fileName;
+        this->fieldName = other.fieldName;
+        this->upload_store = other.upload_store;
+        this->remaining_data = other.remaining_data;
+        this->fullChunkedBody = other.fullChunkedBody;
     }
     return *this;
 }
@@ -225,7 +232,53 @@ void HttpRequestBody::processCompletePart(const std::string &partial_body)
 
 void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
 {
-    std::cout << partial_body << std::endl;
+    partialBuffer += partial_body;
+
+    while (!partialBuffer.empty()) {
+        if (state == START) {
+            size_t pos = partialBuffer.find("\r\n");
+            if (pos != std::string::npos) {
+                std::string sizeLine = partialBuffer.substr(0, pos);
+                remaining_data = std::stoi(sizeLine, nullptr, 16); // Convert hex to int
+                partialBuffer = partialBuffer.substr(pos + 2);
+
+                if (remaining_data == 0) {
+                    state = TAIL; // Last chunk, switch to reading trailers
+                } else {
+                    state = PART; // Read data
+                }
+            } else {
+                break;
+            }
+        }
+
+        if (state == PART) {
+            if (static_cast<int>(partialBuffer.size()) >= remaining_data + 2) {  // +2 for the trailing \r\n
+                std::string dataChunk = partialBuffer.substr(0, remaining_data);
+                std::cout << "Received data chunk: " << dataChunk << std::endl;
+                fullChunkedBody = fullChunkedBody + dataChunk;
+
+                partialBuffer = partialBuffer.substr(remaining_data + 2);  // +2 to skip the trailing \r\n
+                state = START;
+            } else {
+                break;
+            }
+        }
+
+        if (state == TAIL) {
+            size_t pos = partialBuffer.find("\r\n\r\n");
+            if (pos != std::string::npos) {
+                std::string trailers = partialBuffer.substr(0, pos);
+                std::cout << "Received trailers: " << trailers << std::endl;
+
+                partialBuffer = partialBuffer.substr(pos + 4); // +4 to skip the trailing \r\n\r\n
+                state = COMPLETE;
+                break;
+            } else {
+                break;
+            }
+        }
+    }
 }
 
 bool HttpRequestBody::getIsProcessingComplete()
@@ -236,6 +289,16 @@ bool HttpRequestBody::getIsProcessingComplete()
 void HttpRequestBody::setUploadStore(const std::string &upload_store)
 {
     this->upload_store = upload_store;
+}
+
+State HttpRequestBody::getState()
+{
+    return state;
+}
+
+std::string HttpRequestBody::getFullChunkedBody()
+{
+    return fullChunkedBody;
 }
 
 void HttpRequestBody::debug(LogLevel level, const std::string &message)

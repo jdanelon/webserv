@@ -34,6 +34,8 @@ private:
 	std::string		fileName;
 	std::string		fieldName;
 	std::string		upload_store;
+	int 			remaining_data;
+	std::string		fullChunkedBody;
 
 public:
 	static bool debugEnabled;
@@ -66,6 +68,10 @@ public:
 	void parseContentDisposition(const std::string& content_disposition);
 
 	void parseHeaders(const std::string& header);
+
+	State getState();
+
+	std::string getFullChunkedBody();
 };
 
 # endif

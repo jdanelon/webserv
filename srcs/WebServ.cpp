@@ -166,10 +166,6 @@ void	WebServ::parse_request_headers( int idx )
 		// Todo: why is not doing this internally in the request?
 		std::string resource_path = request.validate(this->client_connections[client_fd].host_server);
 
-		if (request.get_error_code() != 0) {
-			request.has_body = false;
-		}
-
 		request.print(client_fd);
 		request.resource = resource_path;
 		this->client_connections[client_fd].request = request;

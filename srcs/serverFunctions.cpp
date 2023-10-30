@@ -34,8 +34,6 @@ bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
 	char	buf[256];
 	int		client_fd = webserv.pollfds[i].fd;
 	int		nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
-	std::cout << "read_client_request_body" << std::endl;
-	std::cout << buf << std::endl;
 
 	if (nbytes <= 0) {
 		if (nbytes == 0)

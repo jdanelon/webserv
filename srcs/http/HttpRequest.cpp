@@ -186,6 +186,12 @@ void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
 	{
 		// If the body is chunked, we need to parse the chunks
 		this->body_parser.parseChunkedBody(partial_body);
+
+		if (this->body_parser.getState() == COMPLETE) {
+			this->is_body_parsed = true;
+			this->body = this->body_parser.getFullChunkedBody();
+			debug(INFO, "Full body after Chunked Parsing: " + this->body);
+		}
 	}
 	// Check if the body is a file upload
 	else if (this->headers.find("Content-Type") != this->headers.end() &&
@@ -194,25 +200,13 @@ void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
 		// Check if the request uri is found in the locations map
 		std::map<std::string, Location>::iterator loc = srv->location.find(get_matched_location(this->uri, srv->location));
 		if (loc == srv->location.end())
-		{
 			set_error_code(httpStatusCodes.BadRequest.code);
-			this->is_body_parsed = true;
-			return ;
-		}
 		// Check if the location has an upload directive
 		if (loc->second.upload == 0)
-		{
 			set_error_code(httpStatusCodes.BadRequest.code);
-			this->is_body_parsed = true;
-			return ;
-		}
 		// Check if the location has an upload_store directive
 		if (loc->second.upload_store.empty())
-		{
 			set_error_code(httpStatusCodes.BadRequest.code);
-			this->is_body_parsed = true;
-			return ;
-		}
 
 		// If the body is a file upload, we need to parse the multipart body
 		this->body_parser.setUploadStore(loc->second.upload_store);
@@ -242,6 +236,10 @@ void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
 		else {
 			this->is_body_parsed = false;
 		}
+	}
+
+	if (this->body_parser.getState() == COMPLETE) {
+		this->is_body_parsed = true;
 	}
 }
 
