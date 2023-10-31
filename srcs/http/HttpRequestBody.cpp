@@ -199,7 +199,6 @@ void HttpRequestBody::processCompletePart(const std::string &partial_body)
     // Check for end boundary in tailBuffer
     if (tailBuffer.find(end_boundary) != std::string::npos)
     {
-        debug(INFO, "Found end boundary");
         // Finish up
         processingInProgress = false;
         isProcessingComplete = true;
