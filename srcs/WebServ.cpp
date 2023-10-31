@@ -240,7 +240,7 @@ void	WebServ::send_response( int idx )
 	// 1) If request is not valid, send error response
 	if (!this->client_connections[client_fd].response.is_request_valid) {
 		HttpResponse http_response = this->client_connections[client_fd].response;
-		http_response.prepareErrorResponse();
+		http_response.prepareErrorResponse(this->client_connections[client_fd].request);
 		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
 	}
 	// 2) If the response is not too big, send the full response

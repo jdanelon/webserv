@@ -202,6 +202,7 @@ void HttpResponse::handleGet(HttpRequest &request)
 		if (contentType.empty())
 		{
 			this->is_request_valid = false;
+			this->resourceFullPath = generateUniqueFilename();
 			this->setStatusCode(httpStatusCodes.UnsupportedMediaType.code);
 		}
 		else

@@ -223,10 +223,11 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
             size_t pos = partialBuffer.find("\r\n");
             if (pos != std::string::npos) {
                 std::string sizeLine = partialBuffer.substr(0, pos);
-                remaining_data = std::stoi(sizeLine, nullptr, 16); // Convert hex to int
+                remaining_data = 0;
+                // remaining_data = std::stoi(sizeLine, nullptr, 16); // Convert hex to int
                 partialBuffer = partialBuffer.substr(pos + 2);
 
-                debug(INFO, "Remaining data: " + std::to_string(remaining_data));
+                // debug(INFO, "Remaining data: " + std::to_string(remaining_data));
 
                 if (remaining_data == 0) {
                     state = TAIL; // Last chunk, switch to reading trailers
@@ -267,54 +268,11 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
     }
 }
 
-
 bool HttpRequestBody::getIsProcessingComplete()
 {
     return isProcessingComplete;
 }
 
-void HttpRequestBody::setUploadStore(const std::string &upload_store)
-{
-    this->upload_store = upload_store;
-}
-
-State HttpRequestBody::getState()
-{
-    return state;
-}
-
-std::string HttpRequestBody::getFullChunkedBody()
-{
-    return fullChunkedBody;
-}
-
-void HttpRequestBody::debug(LogLevel level, const std::string &message)
-{
-    if (!debugEnabled)
-    {
-        return;
-    }
-
-    std::string prefix;
-    std::string colorCode;
-    switch (level)
-    {
-    case INFO:
-        prefix = "[INFO] ";
-        colorCode = "\033[1;34m"; // Blue
-        break;
-    case WARNING:
-        prefix = "[WARNING] ";
-        colorCode = "\033[1;33m"; // Yellow
-        break;
-    case ERROR:
-        prefix = "[ERROR] ";
-        colorCode = "\033[1;31m"; // Red
-        break;
-    }
-
-    std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl; // \033[0m resets the color
-}
 void HttpRequestBody::setUploadStore(const std::string &upload_store)
 {
     this->upload_store = upload_store;
