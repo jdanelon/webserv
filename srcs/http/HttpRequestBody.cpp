@@ -199,6 +199,8 @@ void HttpRequestBody::processCompletePart(const std::string &partial_body)
     // Check for end boundary in tailBuffer
     if (tailBuffer.find(end_boundary) != std::string::npos)
     {
+        debug(INFO, "Found end boundary");
+
         // Finish up
         processingInProgress = false;
         isProcessingComplete = true;
@@ -265,11 +267,54 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
     }
 }
 
+
 bool HttpRequestBody::getIsProcessingComplete()
 {
     return isProcessingComplete;
 }
 
+void HttpRequestBody::setUploadStore(const std::string &upload_store)
+{
+    this->upload_store = upload_store;
+}
+
+State HttpRequestBody::getState()
+{
+    return state;
+}
+
+std::string HttpRequestBody::getFullChunkedBody()
+{
+    return fullChunkedBody;
+}
+
+void HttpRequestBody::debug(LogLevel level, const std::string &message)
+{
+    if (!debugEnabled)
+    {
+        return;
+    }
+
+    std::string prefix;
+    std::string colorCode;
+    switch (level)
+    {
+    case INFO:
+        prefix = "[INFO] ";
+        colorCode = "\033[1;34m"; // Blue
+        break;
+    case WARNING:
+        prefix = "[WARNING] ";
+        colorCode = "\033[1;33m"; // Yellow
+        break;
+    case ERROR:
+        prefix = "[ERROR] ";
+        colorCode = "\033[1;31m"; // Red
+        break;
+    }
+
+    std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl; // \033[0m resets the color
+}
 void HttpRequestBody::setUploadStore(const std::string &upload_store)
 {
     this->upload_store = upload_store;
