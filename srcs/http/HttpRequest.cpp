@@ -285,9 +285,9 @@ void	HttpRequest::validate_headers( Server *srv ) {
 	if (srv->redirect.first != 0 && !srv->redirect.second.empty())
 	{
 		set_error_code(srv->redirect.first);
-		// std::cout << "\t1 - REDIRECT: '" << srv->redirect.second << "'" << std::endl;
 		if (srv->redirect.first >= 300 && srv->redirect.first < 400)
 			this->headers.insert(std::make_pair("Location", "/" + srv->redirect.second));
+		return ;
 	}
 
 	size_t	query_idx = this->uri.find("?");
@@ -327,9 +327,9 @@ void	HttpRequest::validate_headers( Server *srv ) {
 		if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 		{
 			set_error_code(loc->second.redirect.first);
-			// std::cout << "\t2 - REDIRECT: '" << loc->second.redirect.second << "'" << std::endl;
 			if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
 				this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
+			return ;
 		}
 		if (loc != locations.end() && !loc->second.alias.empty())
 			final_root = find_final_root(new_uri, loc->second.alias, loc->first);
@@ -353,7 +353,6 @@ void	HttpRequest::validate_headers( Server *srv ) {
 			if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 			{
 				set_error_code(loc->second.redirect.first);
-				// std::cout << "\t3 - REDIRECT: '" << loc->second.redirect.second << "'" << std::endl;
 				if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
 					this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
 				return ;
@@ -365,7 +364,7 @@ void	HttpRequest::validate_headers( Server *srv ) {
 			resource = new_uri.substr(new_uri.find_last_of("/") + 1);
 			full_path = std::getenv("PWD") + std::string("/") + final_root;
 			// Check if index file is found
-			if ((stat(full_path.c_str(), &buf) != -1) && !S_ISREG(buf.st_mode))
+			if ((stat(full_path.c_str(), &buf) != -1) && S_ISREG(buf.st_mode))
 				break ;
 		}
 		// No index files are found

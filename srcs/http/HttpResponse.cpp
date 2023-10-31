@@ -362,7 +362,7 @@ void HttpResponse::prepareFullResponse( void ) {
 	this->response += fileContent;
 }
 
-void HttpResponse::prepareErrorResponse( void )
+void HttpResponse::prepareErrorResponse( HttpRequest &request )
 {
 	std::string		errorRoute = this->resourceFullPath;
 	std::ifstream	errorFile(errorRoute.c_str(), std::ios::in);
@@ -386,6 +386,9 @@ void HttpResponse::prepareErrorResponse( void )
 	this->response = "";
 	this->generateResponseLine();
 	this->generateBasicHeaders();
+
+	if (request.headers.find("Location") != request.headers.end())
+		this->headers["Location"] = request.headers["Location"];
 
 	// Set content length
 	this->headers["Content-Length"] = ft_itoa(fileContent.length());

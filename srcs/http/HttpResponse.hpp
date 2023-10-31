@@ -44,7 +44,7 @@ class HttpResponse {
 		std::string	getResponse( void );
 		void		setStatusCode( int const &code );
 
-		void prepareErrorResponse( void );
+		void prepareErrorResponse( HttpRequest &request );
 		void prepareFullResponse( void );
 
 		// Debug
