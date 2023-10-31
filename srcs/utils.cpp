@@ -102,26 +102,12 @@ std::string	get_time_string( void )
 	return std::string(time_str);
 }
 
-std::string constructPath(const std::string &rootPath, const std::string &uri) {
-    std::string newRootPath = rootPath;
-    std::string newUri = uri;
+std::string	generateUniqueFilename( void ) {
+    std::stringstream	ss;
+    time_t				now = time(NULL);
 
-    // // Remove trailing slash from rootPath, if it exists
-    // if (!newRootPath.empty() && newRootPath.back() == '/') {
-    //     newRootPath.pop_back();
-    // }
-
-    // // Add leading slash to uri, if it doesn't exist
-    // if (newUri.empty() || newUri.front() != '/') {
-    //     newUri = "/" + newUri;
-    // }
-
-	std::string fullPath = newRootPath + newUri;
-
-    // Remove any leading slash from the final fullPath
-    // if (!fullPath.empty() && fullPath.front() == '/') {
-    //     fullPath.erase(0, 1);
-    // }
-
-    return fullPath;
+    ss << "tempfile_";
+    ss << now;
+    ss << ".tmp";
+    return ss.str();
 }

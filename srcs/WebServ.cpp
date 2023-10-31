@@ -110,7 +110,8 @@ bool	WebServ::client_timeout( int idx )
 
 	if (fd == -1)
 		return (false);
-	if (timestamp() - this->client_connections[fd].timestamp >= timeout)
+	long long	elapsed_time = timestamp() - this->client_connections[fd].timestamp;
+	if (elapsed_time >= timeout)
 		return (true);
 	return (false);
 }
@@ -163,11 +164,9 @@ void	WebServ::parse_request_headers( int idx )
 		this->client_connections[client_fd].is_request_parsed = true;
 
 		// Saved resource full_path to facilitate response
-		// Todo: why is not doing this internally in the request?
-		std::string resource_path = request.validate(this->client_connections[client_fd].host_server);
+		request.validate_headers(this->client_connections[client_fd].host_server);
 
 		request.print(client_fd);
-		request.resource = resource_path;
 		this->client_connections[client_fd].request = request;
 
 		// If request has body, we inform the connection so he can start parsing it
@@ -197,6 +196,10 @@ void	WebServ::parse_request_body( int idx ) {
 	if (client_connections[client_fd].request.is_body_parsed) {
 		this->client_connections[client_fd].is_request_body_parsed = true;
 		this->client_connections[client_fd].is_request_completed = true;
+
+		Server *srv = this->client_connections[client_fd].host_server;
+		std::string bodyBuffer = this->client_connections[client_fd].body_buffer;
+		this->client_connections[client_fd].request.validate_body(srv, bodyBuffer);
 	}
 }
 
@@ -211,9 +214,6 @@ void	WebServ::create_response( int idx )
 	http_response.configureResponse(request);
 
 	this->client_connections[client_fd].response = http_response;
-	size_t	last_bar = http_response.resourceFullPath.find_last_of("/");
-	if (last_bar != std::string::npos && http_response.resourceFullPath.substr(last_bar) == DFL_TMP_FILE)
-		std::remove(http_response.resourceFullPath.c_str());
 
 	this->pollfds[idx].events = POLLOUT;
 }
@@ -230,7 +230,7 @@ void	WebServ::_clear_connection(int const client_fd) {
 	this->client_connections[client_fd].is_request_body_parsing = false;
 	this->client_connections[client_fd].is_request_body_parsed = false;
 	this->client_connections[client_fd].request_has_body = false;
-	this->client_connections[client_fd].tail_appended_body = false;	
+	this->client_connections[client_fd].tail_appended_body = false;
 }
 
 void	WebServ::send_response( int idx )
@@ -241,14 +241,13 @@ void	WebServ::send_response( int idx )
 	if (!this->client_connections[client_fd].response.is_request_valid) {
 		HttpResponse http_response = this->client_connections[client_fd].response;
 		http_response.prepareErrorResponse(this->client_connections[client_fd].request);
-		std::cout << "Sending Error Response..." << std::endl << http_response.getResponse() << std::endl;
 		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
 	}
 	// 2) If the response is not too big, send the full response
 	else if (this->client_connections[client_fd].response.fileSize < RESPONSE_CHUNK_SIZE) {
 		HttpResponse http_response = this->client_connections[client_fd].response;
 		try {
-			http_response.prepareFullResponse(this->client_connections[client_fd].request);
+			http_response.prepareFullResponse();
 			send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
 		}
 		catch(const std::exception& e) {
@@ -283,13 +282,23 @@ void	WebServ::send_response( int idx )
 		}
 
 		// Check if we have sent the full file, If not we go back to the poll loop
-		if (this->client_connections[client_fd].response.fileOffset < this->client_connections[client_fd].response.fileSize) {
+		unsigned int file_offset = this->client_connections[client_fd].response.fileOffset;
+		if (file_offset != 0 && file_offset < this->client_connections[client_fd].response.fileSize) {
+			this->client_connections[client_fd].timestamp = timestamp();
 			this->pollfds[idx].events = POLLOUT;  // Set to send more data
 			return ;
 		} else {
 			this->client_connections[client_fd].response.fileHandle.close();
 		}
 	}
+
+	size_t	last_bar = this->client_connections[client_fd].response.resourceFullPath.find_last_of("/");
+	size_t	extension_idx = this->client_connections[client_fd].response.resourceFullPath.find_last_of(".");
+	if (extension_idx == std::string::npos)
+		extension_idx = 0;
+	std::string	extension = this->client_connections[client_fd].response.resourceFullPath.substr(extension_idx);
+	if (last_bar != std::string::npos && extension == ".tmp")
+		std::remove(this->client_connections[client_fd].response.resourceFullPath.c_str());
 
 	this->client_connections[client_fd].timestamp = timestamp();
 	this->pollfds[idx].events = POLLIN;

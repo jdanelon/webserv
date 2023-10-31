@@ -5,11 +5,14 @@ bgnet
 miniwebserver
 nnn*
 template.sh
-tmp/*
+tmp*
+to_do_list.md
 
 # tests folders
+bin
 local_tests
 server_root
+wrk
 
 # Object files
 objs/*

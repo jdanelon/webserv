@@ -3,32 +3,13 @@
 bool HttpRequest::debugEnabled = true;
 const std::string HttpRequest::className = "HttpRequest";
 
-static std::string	get_matched_location( std::string request_uri, std::map<std::string, Location> locations )
-{
-	size_t										idx = request_uri.length();
-	std::string									path(request_uri + std::string("/"));
-	std::map<std::string, Location>::iterator	loc = locations.end();
-
-	while (idx != std::string::npos)
-	{
-		idx = path.find_last_of("/", idx);
-		if (idx == 0)
-			idx = 1;
-		path = path.substr(0, idx);
-		loc = locations.find(path);
-		if (idx == 1 || loc != locations.end())
-			break ;
-	}
-	return (path);
-}
-
-
-HttpRequest::HttpRequest( void ) : autoindex(false), query_string(""), is_valid(true), _error_code(0) {
+HttpRequest::HttpRequest( void ) : autoindex(false), path_info(""), query_string(""), is_valid(true), _error_code(0) {
 	// Create a new body parser
 	std::cout << "Creating new HttpRequest" << std::endl;
-	this->body_parser = HttpRequestBody();
+	this->full_resource_path = "";
 	this->has_body = false;
 	this->is_body_parsed = false;
+	this->body_parser = HttpRequestBody();
 }
 
 HttpRequest::HttpRequest( HttpRequest const &obj ) {
@@ -45,7 +26,8 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->body = obj.body;
 		this->raw = obj.raw;
 		this->autoindex = obj.autoindex;
-		this->resource = obj.resource;
+		this->full_resource_path = obj.full_resource_path;
+		this->path_info = obj.path_info;
 		this->query_string = obj.query_string;
 		this->is_valid = obj.is_valid;
 		this->_error_code = obj._error_code;
@@ -178,6 +160,25 @@ void	HttpRequest::parse_header_line( std::string line ) {
 	}
 }
 
+static std::string	get_matched_location( std::string request_uri, std::map<std::string, Location> locations )
+{
+	size_t										idx = request_uri.length();
+	std::string									path(request_uri + std::string("/"));
+	std::map<std::string, Location>::iterator	loc = locations.end();
+
+	while (idx != std::string::npos)
+	{
+		idx = path.find_last_of("/", idx);
+		if (idx == 0)
+			idx = 1;
+		path = path.substr(0, idx);
+		loc = locations.find(path);
+		if (idx == 1 || loc != locations.end())
+			break ;
+	}
+	return (path);
+}
+
 void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
 	debug(INFO, "Partial body: " + partial_body);
 	// We parse differently depending on whether the body is chunked or not
@@ -282,7 +283,7 @@ static std::string	find_final_root( std::string uri, std::string alias, std::str
 	return (final_root);
 }
 
-std::string	HttpRequest::validate( Server *srv ) {
+void	HttpRequest::validate_headers( Server *srv ) {
 	std::cout << "Validating request:" << std::endl;
 
 	if (this->method.empty() || this->uri.empty() || this->version.empty())
@@ -309,31 +310,49 @@ std::string	HttpRequest::validate( Server *srv ) {
 		set_error_code(srv->redirect.first);
 		if (srv->redirect.first >= 300 && srv->redirect.first < 400)
 			this->headers.insert(std::make_pair("Location", "/" + srv->redirect.second));
-		return ("");
+		return ;
 	}
 
 	size_t	query_idx = this->uri.find("?");
-	size_t	resource_idx = this->uri.find_last_of("/") + 1;
+	size_t	resource_idx = this->uri.find_last_of("/", this->uri.find(".")) + 1;
+	size_t	path_info_idx = this->uri.find("/", this->uri.find("."));
 	std::string	resource;
 	if (query_idx != std::string::npos) {
 		this->query_string = this->uri.substr(query_idx);
-		resource = this->uri.substr(resource_idx, query_idx - resource_idx);
+		if (path_info_idx != std::string::npos)
+		{
+			this->path_info = this->uri.substr(path_info_idx, query_idx - path_info_idx);
+			resource = this->uri.substr(resource_idx, path_info_idx - resource_idx);
+		}
+		else
+		{
+			resource = this->uri.substr(resource_idx, query_idx - resource_idx);
+			path_info_idx = query_idx;
+		}
 	}
 	else
-		resource = this->uri.substr(resource_idx);
+	{
+		if (path_info_idx != std::string::npos)
+		{
+			this->path_info = this->uri.substr(path_info_idx);
+			resource = this->uri.substr(resource_idx, path_info_idx - resource_idx);
+		}
+		else
+			resource = this->uri.substr(resource_idx);
+	}
 	std::string	final_root, new_uri, full_path;
 	struct stat	buf;
 	// If request is for file: set root from redirection, full_path and set 404 if not found
 	if (resource.length() != 0)
 	{
-		new_uri = this->uri.substr(0, query_idx);
+		new_uri = this->uri.substr(0, path_info_idx);
 		// Return directive on matched location for file request
 		if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 		{
 			set_error_code(loc->second.redirect.first);
 			if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
 				this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
-			return ("");
+			return ;
 		}
 		if (loc != locations.end() && !loc->second.alias.empty())
 			final_root = find_final_root(new_uri, loc->second.alias, loc->first);
@@ -350,7 +369,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 		std::vector<std::string> index_files = (loc != locations.end()) ? loc->second.index : srv->index;
 		for (; i < index_files.size(); i++)
 		{
-			new_uri = this->uri.substr(0, query_idx);
+			new_uri = this->uri.substr(0, path_info_idx);
 			new_uri += (index_files[i][0] == '/') ? index_files[i].substr(1) : index_files[i];
 			loc = locations.find(get_matched_location(new_uri, locations));
 			// Return directive on matched location for folder request
@@ -359,7 +378,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 				set_error_code(loc->second.redirect.first);
 				if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
 					this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
-				return ("");
+				return ;
 			}
 			if (loc != locations.end() && !loc->second.alias.empty())
 				final_root = find_final_root(new_uri, loc->second.alias, loc->first);
@@ -368,7 +387,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 			resource = new_uri.substr(new_uri.find_last_of("/") + 1);
 			full_path = std::getenv("PWD") + std::string("/") + final_root;
 			// Check if index file is found
-			if ((stat(full_path.c_str(), &buf) != -1) && !S_ISREG(buf.st_mode))
+			if ((stat(full_path.c_str(), &buf) != -1) && S_ISREG(buf.st_mode))
 				break ;
 		}
 		// No index files are found
@@ -381,10 +400,7 @@ std::string	HttpRequest::validate( Server *srv ) {
 				full_path = full_path.substr(0, full_path.find_last_of("/") + 1);
 				struct stat buf;
 				if (stat(full_path.c_str(), &buf) != 0 || !S_ISDIR(buf.st_mode))
-				{
 					set_error_code(404);
-					return (full_path);
-				}
 				this->autoindex = true;
 			}
 			else
@@ -406,18 +422,33 @@ std::string	HttpRequest::validate( Server *srv ) {
 		if (it->first == code)
 		{
 			full_path = std::getenv("PWD") + std::string("/") + srv->root + it->second;
-			break ;
+			this->full_resource_path = full_path;
+			return ;
 		}
 	}
 
-	size_t	headers_end = this->raw.find("\r\n\r\n") + 4;
-	this->body = this->raw.length() != headers_end ? this->raw.substr(headers_end) : "";
-	if ((srv->client_max_body_size != -1 && (int)this->body.length() > srv->client_max_body_size) ||
-			(loc != locations.end() && loc->second.client_max_body_size != -1 &&
-			(int)this->body.length() > loc->second.client_max_body_size))
-		set_error_code(413);
+	this->full_resource_path = full_path;
+}
 
-	return (full_path);
+void	HttpRequest::validate_body( Server *srv, std::string body_buffer ) {
+	int		max_body_size = srv->client_max_body_size;
+	bool	upload = srv->upload;
+	std::string	upload_store = srv->upload_store;
+
+	std::map<std::string, Location> locations = srv->location;
+	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(this->uri, locations));
+	if (loc != locations.end())
+	{
+		max_body_size = loc->second.client_max_body_size;
+		upload = loc->second.upload;
+		upload_store = loc->second.upload_store;
+	}
+	if (max_body_size != -1 && (int)body_buffer.length() > max_body_size)
+		set_error_code(413);
+	(void)upload;
+	(void)upload_store;
+
+	// TO-DO: VALIDATION FOR UPLOAD AND UPLOAD_STORE (HERE?)
 }
 
 int	HttpRequest::get_error_code( void ) const

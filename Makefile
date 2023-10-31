@@ -15,10 +15,11 @@ SRCS = main.cpp \
 		parser/Location.cpp \
 		connection/ClientConnection.cpp \
 		http/HttpRequest.cpp \
+		http/HttpRequestBody.cpp \
 		http/HttpResponse.cpp \
 		http/HttpStatusCodes.cpp \
-		cgi.cpp \
-		http/HttpRequestBody.cpp 
+		http/HttpContentTypes.cpp \
+		cgi.cpp
 
 OBJS = $(addprefix $(OBJS_PATH)/, $(SRCS:.cpp=.o))
 

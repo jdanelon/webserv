@@ -39,14 +39,14 @@ make
   - [ ] Take NGINX as HTTP 1.1 compliant for comparisons related to headers and answer behaviors.
   - [ ] HTTP response status codes should be accurate.
 
-- [ ] **Error Pages**
-  - [ ] Server must have default error pages if none are provided by the user.
+- [x] **Error Pages**
+  - [x] Server must have default error pages if none are provided by the user.
 
 - [x] **Restrictions**
   - [x] You can’t use `fork` for anything other than CGI.
 
 - [ ] **Functionality**
-  - [ ] Must be able to serve a fully static website.
+  - [x] Must be able to serve a fully static website.
   - [ ] Clients should be able to upload files to the server.
   - [ ] Support at least the `GET`, `POST`, and `DELETE` HTTP methods.
 
@@ -66,7 +66,7 @@ make
 
 - [x] **Port and Host**
   - [x] Ability to specify the port and host for each server.
-  
+
 - [x] **Server Names**
   - [x] Option to set up server names.
   - [x] Define default server behavior (first server specified for a host:port is default).
@@ -74,8 +74,8 @@ make
 - [x] **Error Pages**
   - [x] Ability to set up default error pages for the server.
 
-- [ ] **Client Body Size**
-  - [ ] Define a limit for client body size.
+- [x] **Client Body Size**
+  - [x] Define a limit for client body size.
 
 ## **Route-specific Configuration**
 

@@ -170,7 +170,10 @@ Server	Parser::_parse_servers( std::istringstream *istr )
 		else if (directive == "server_name")
 			srv.server_name = helper.get_server_name();
 		else if (directive == "root")
-			srv.root = helper.get_root();
+		{
+			std::string root = helper.get_root();
+			srv.root = root[root.length() - 1] == '/' ? root.substr(0, root.length() - 1) : root;
+		}
 		else if (directive == "index")
 			srv.index = helper.get_index();
 		else if (directive == "error_page")

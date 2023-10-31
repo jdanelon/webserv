@@ -6,7 +6,9 @@ HttpResponse::HttpResponse( void ) : response(""),
 	this->http_version = "HTTP/1.1";
 	this->host = NULL;
 	this->status_code = 0;
+	this->fileSize = 0;
 	this->fileOffset = 0;
+	this->resourceFullPath = "";
 	this->is_request_valid = true;
 }
 
@@ -16,7 +18,9 @@ HttpResponse::HttpResponse( Server *server ) : response(""),
 	this->http_version = "HTTP/1.1";
 	this->host = server;
 	this->status_code = 0;
+	this->fileSize = 0;
 	this->fileOffset = 0;
+	this->resourceFullPath = "";
 	this->is_request_valid = true;
 }
 
@@ -48,7 +52,7 @@ HttpResponse &HttpResponse::operator = ( HttpResponse const &obj )
 		this->is_request_valid = obj.is_request_valid;
 
 		if (!obj.resourceFullPath.empty())
-			this->fileHandle.open(obj.resourceFullPath.c_str(), std::ios::binary);
+			this->openFile(obj.resourceFullPath);
 	}
 	return (*this);
 }
@@ -56,6 +60,7 @@ HttpResponse &HttpResponse::operator = ( HttpResponse const &obj )
 // Called after Parsing the request
 void HttpResponse::configureResponse(HttpRequest &request)
 {
+	this->resourceFullPath = request.full_resource_path;
 	if (!request.is_valid) {
 		std::cout << "Invalid Request" << std::endl;
 		this->is_request_valid = false;
@@ -68,9 +73,10 @@ void HttpResponse::configureResponse(HttpRequest &request)
 	else if (request.method == "POST")
 		this->handlePost(request);
 	else if (request.method == "DELETE")
-		this->handleDelete(request);
+		this->handleDelete();
 	else
-		this->handleGet(request);
+		std::cout << "\tMETHOD_ERROR" << std::endl;
+		// this->handleGet(request);
 }
 
 // Called for generating the response Line and Headers
@@ -84,99 +90,6 @@ void HttpResponse::prepareResponseHeaders() {
 	for (it = this->headers.begin(); it != this->headers.end(); ++it)
 		this->response += it->first + ": " + it->second + "\r\n";
 	this->response += "\r\n";
-}
-
-void HttpResponse::handlePost(HttpRequest &request)
-{
-	(void)request;
-	// 1. Read Request Object
-	// 2. Generate Response line (ie: HTTP/1.1 200 OK)
-	// 3. Generate Headers
-	// 4. Generate Body
-}
-
-void HttpResponse::handleGet(HttpRequest &request)
-{
-	// Request.validate already brings 400
-	// TODO, I think it was validated before
-	std::string uri = request.uri;
-	if (uri.empty()) {
-		this->setStatusCode(httpStatusCodes.BadRequest.code);
-		return;
-	}
-
-	// Read the corresponding file
-	std::string content = this->configureContent(request);
-
-	// Store the content as the response body
-	this->body = content;
-}
-
-void HttpResponse::handleDelete(HttpRequest &request)
-{
-	this->resourceFullPath = request.resource;
-
-	struct stat buf;
-	stat(this->resourceFullPath.c_str(), &buf);
-	if (S_ISDIR(buf.st_mode))
-	{
-		setStatusCode(httpStatusCodes.Forbidden.code);
-		return ;
-	}
-	std::remove(this->resourceFullPath.c_str());
-
-	this->setStatusCode(httpStatusCodes.OK.code);
-	this->headers["Content-Type"] = "text/txt";
-	this->body = "Deleted Successfully!\n";
-}
-
-std::string HttpResponse::getResponse( void )
-{
-	return (this->response);
-}
-
-void HttpResponse::setStatusCode( int const &code )
-{
-	this->status_code = code;
-}
-
-// Check if there is a location block that matches the request URI
-// If there is, update the root path and index files
-void updatePathAndIndexBasedOnLocation(HttpRequest &request, Server *host, std::string &rootPath, std::vector<std::string> &indexFiles) {
-	std::map<std::string, Location>::const_iterator it;
-	for (it = host->location.begin(); it != host->location.end(); ++it) {
-		if (request.uri.find(it->first) == 0) {
-			Location loc = it->second;
-			rootPath = loc.alias.empty() ? rootPath : loc.alias;
-			indexFiles = loc.index.empty() ? indexFiles : loc.index;
-			break;
-		}
-	}
-}
-
-// To-Do: Check if any of the index files exist in the root path
-bool handleIndexFiles(const std::string &fullPath, std::vector<std::string> &indexFiles, std::string &content, HttpResponse *response) {
-	std::vector<std::string>::const_iterator it;
-	for (it = indexFiles.begin(); it != indexFiles.end(); ++it) {
-		std::string tmpPath = fullPath + *it;
-		std::ifstream file(tmpPath.c_str());
-
-		if (file.is_open()) {
-			std::stringstream buffer;
-			buffer << file.rdbuf();
-			content = buffer.str();
-			response->setStatusCode(httpStatusCodes.OK.code);
-			return true;
-		}
-	}
-	return false;
-}
-
-void HttpResponse::openFile(const std::string &fullPath) {
-	if (fileHandle.is_open()) {
-		fileHandle.close();
-	}
-	fileHandle.open(fullPath.c_str(), std::ios::binary);
 }
 
 static std::string	autoindex_content( std::string path, std::string root, std::string port )
@@ -222,52 +135,40 @@ static std::string	autoindex_content( std::string path, std::string root, std::s
 	return (index_page);
 }
 
-std::string HttpResponse::configureContent(HttpRequest &request)
+void HttpResponse::handleGet(HttpRequest &request)
 {
-	std::cout << "Generating Content...." << std::endl;
 	std::string content;
 
-	this->resourceFullPath = request.resource;
-	size_t	extension_idx = this->resourceFullPath.find_last_of(".");
+	size_t extension_idx = this->resourceFullPath.find_last_of(".");
 	if (extension_idx == std::string::npos)
 		extension_idx = 0;
-	std::string	extension = this->resourceFullPath.substr(extension_idx);
+	std::string extension = this->resourceFullPath.substr(extension_idx);
 
+	// AUTOINDEX
 	if (request.autoindex) {
-		// AUTOINDEX
 		content = autoindex_content(this->resourceFullPath, this->host->root, this->host->port);
 		if (content.empty())
 			this->setStatusCode(httpStatusCodes.InternalServerError.code);
 		else
 		{
-			this->resourceFullPath += DFL_TMP_FILE;
+			this->resourceFullPath += generateUniqueFilename();
 			std::ofstream output_file(this->resourceFullPath.c_str());
 			output_file << content;
 			output_file.close();
 			this->openFile(this->resourceFullPath);
-			this->fileHandle.seekg(0, std::ios::end);  
+			this->fileHandle.seekg(0, std::ios::end);
 			this->fileSize = this->fileHandle.tellg();
 			this->fileHandle.seekg(0, std::ios::beg);
 			this->setStatusCode(httpStatusCodes.OK.code);
 			this->headers["Content-Type"] = "text/html";
 		}
 	}
-	// Check if URI is a html file
-	else if (extension == ".htm" || extension == ".html") {
-		std::cout << "HTML file" << std::endl;
-		this->openFile(this->resourceFullPath);
-		this->fileHandle.seekg(0, std::ios::end);
-		this->fileSize = this->fileHandle.tellg();
-		this->fileHandle.seekg(0, std::ios::beg);
-		this->setStatusCode(httpStatusCodes.OK.code);
-
-		this->headers["Content-Type"] = "text/html";
-	}
+	// CGI
 	else if (this->host->cgi.find(extension) != this->host->cgi.end()) {
-		// CGI
 		std::string	exe = this->host->cgi[extension];
 		try {
 			content = handle_cgi(exe, this->resourceFullPath, request);
+			this->headers["Content-Type"] = "text/html";
 			if (content.empty())
 			{
 				content = "<!DOCTYPE html>\n";
@@ -277,19 +178,16 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 				content += "CGI has timed out!\n";
 				content += "</body>\n</html>\n";
 				this->setStatusCode(httpStatusCodes.InternalServerError.code);
-				this->headers["Content-Type"] = "text/html";
 			}
 			else
-			{
 				this->setStatusCode(httpStatusCodes.OK.code);
-				this->headers["Content-Type"] = "text/html";
-			}
 		}
 		catch (const std::exception& e)
 		{
 			this->setStatusCode(httpStatusCodes.InternalServerError.code);
 		}
-		this->resourceFullPath = this->resourceFullPath.substr(0, this->resourceFullPath.find_last_of("/")) + DFL_TMP_FILE;
+		std::string tmp_file_path = this->resourceFullPath.substr(0, this->resourceFullPath.find_last_of("/") + 1);
+		this->resourceFullPath = tmp_file_path + generateUniqueFilename();
 		std::ofstream output_file(this->resourceFullPath.c_str());
 		output_file << content;
 		output_file.close();
@@ -298,14 +196,81 @@ std::string HttpResponse::configureContent(HttpRequest &request)
 		this->fileSize = this->fileHandle.tellg();
 		this->fileHandle.seekg(0, std::ios::beg);
 	}
-	// Does this happen?
-	// On request validation, we already check if there is a file (folder for autoindex) to respond
-	// If not, error is set and response catches it before this function
+	// File exists, but is not handled by cgi
 	else {
-		content = httpStatusCodes.NotFound.description;
-		this->setStatusCode(httpStatusCodes.NotFound.code);
+		std::string contentType = httpContentTypes.getDescription(extension);
+		if (contentType.empty())
+		{
+			this->is_request_valid = false;
+			this->resourceFullPath = generateUniqueFilename();
+			this->setStatusCode(httpStatusCodes.UnsupportedMediaType.code);
+		}
+		else
+		{
+			this->headers["Content-Type"] = contentType;
+
+			this->openFile(this->resourceFullPath);
+			this->fileHandle.seekg(0, std::ios::end);
+			this->fileSize = this->fileHandle.tellg();
+			this->fileHandle.seekg(0, std::ios::beg);
+			if (this->fileSize == 0)
+				this->setStatusCode(httpStatusCodes.NoContent.code);
+			else
+				this->setStatusCode(httpStatusCodes.OK.code);
+		}
 	}
-	return (content);
+}
+
+void HttpResponse::handlePost(HttpRequest &request)
+{
+	(void)request;
+	// 1. Read Request Object
+	// 2. Generate Response line (ie: HTTP/1.1 200 OK)
+	// 3. Generate Headers
+	// 4. Generate Body
+}
+
+void HttpResponse::handleDelete( void )
+{
+	struct stat buf;
+	stat(this->resourceFullPath.c_str(), &buf);
+	if (S_ISDIR(buf.st_mode))
+	{
+		this->is_request_valid = false;
+		setStatusCode(httpStatusCodes.Forbidden.code);
+		return ;
+	}
+	std::remove(this->resourceFullPath.c_str());
+
+	std::string tmp_file_path = this->resourceFullPath.substr(0, this->resourceFullPath.find_last_of("/") + 1);
+	this->resourceFullPath = tmp_file_path + generateUniqueFilename();
+	std::ofstream output_file(this->resourceFullPath.c_str());
+	output_file << "Deleted Successfully!\n";
+	output_file.close();
+	this->openFile(this->resourceFullPath);
+	this->fileHandle.seekg(0, std::ios::end);
+	this->fileSize = this->fileHandle.tellg();
+	this->fileHandle.seekg(0, std::ios::beg);
+
+	this->setStatusCode(httpStatusCodes.OK.code);
+	this->headers["Content-Type"] = "text/plain";
+}
+
+std::string HttpResponse::getResponse( void )
+{
+	return (this->response);
+}
+
+void HttpResponse::setStatusCode( int const &code )
+{
+	this->status_code = code;
+}
+
+void HttpResponse::openFile(const std::string &fullPath) {
+	if (fileHandle.is_open()) {
+		fileHandle.close();
+	}
+	fileHandle.open(fullPath.c_str(), std::ios::binary);
 }
 
 void HttpResponse::generateResponseLine( void )
@@ -370,17 +335,13 @@ std::string HttpResponse::readChunkAndUpdateResponse(size_t chunkSize) {
 	return (chunkedResponse);
 }
 
-void HttpResponse::prepareFullResponse(HttpRequest &request) {
-
-	std::string rootPath = this->host->root;
-	std::vector<std::string> indexFiles = this->host->index;
-	updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
+void HttpResponse::prepareFullResponse( void ) {
 
 	std::string fileContent;
 	if (fileHandle.is_open()) {
 		fileContent.assign((std::istreambuf_iterator<char>(fileHandle)),
 						(std::istreambuf_iterator<char>()));
-		fileHandle.close();	
+		fileHandle.close();
 	}
 	else {
 		setStatusCode(httpStatusCodes.InternalServerError.code);
@@ -403,30 +364,33 @@ void HttpResponse::prepareFullResponse(HttpRequest &request) {
 	this->response += fileContent;
 }
 
-void HttpResponse::prepareErrorResponse(HttpRequest &request) {
-	std::string rootPath = this->host->root;
-	std::vector<std::string> indexFiles = this->host->index;
-	updatePathAndIndexBasedOnLocation(request, this->host, rootPath, indexFiles);
-	std::string errorPage = host->error_page[this->status_code];
-	std::string errorRoute = constructPath(rootPath, errorPage);
+void HttpResponse::prepareErrorResponse( HttpRequest &request )
+{
+	std::string		errorRoute = this->resourceFullPath;
+	std::ifstream	errorFile(errorRoute.c_str(), std::ios::in);
+	std::string		fileContent;
 
-	std::ifstream errorFile(errorRoute.c_str(), std::ios::in);
-	std::string fileContent;
+	errorFile.seekg(0, std::ios::end);
+	this->fileSize = errorFile.tellg();
+	errorFile.seekg(0, std::ios::beg);
 
-	if (errorFile.is_open()) {
+	if (this->fileSize && errorFile.is_open()) {
 		fileContent.assign((std::istreambuf_iterator<char>(errorFile)),
 						   (std::istreambuf_iterator<char>()));
 		errorFile.close();
 	} else {
-		fileContent = "<html><body><h1>\n" 
+		fileContent = "<html>\n<body>\n<h1>" 
 			+ httpStatusCodes.getDescription(this->status_code) 
-			+ "\n<p>This is a default error page.</p>"
-			+ "\n</h1></body></html>";
+			+ "</h1>\n<p>This is a default error page.</p>"
+			+ "\n</body>\n</html>";
 	}
 	// Generate Response String
 	this->response = "";
 	this->generateResponseLine();
 	this->generateBasicHeaders();
+
+	if (request.headers.find("Location") != request.headers.end())
+		this->headers["Location"] = request.headers["Location"];
 
 	// Set content length
 	this->headers["Content-Length"] = ft_itoa(fileContent.length());

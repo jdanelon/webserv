@@ -28,7 +28,7 @@ class HttpRequest {
 
 	public:
 		static bool debugEnabled;
-		static const std::string className; 
+		static const std::string className;
 
 		std::string											method;
 		std::string											uri;
@@ -39,7 +39,8 @@ class HttpRequest {
 		std::string											body;
 		std::string											raw;
 		bool												autoindex;
-		std::string											resource;
+		std::string											full_resource_path;
+		std::string											path_info;
 		std::string											query_string;
 		bool												is_valid;
 		bool												has_body;
@@ -52,19 +53,19 @@ class HttpRequest {
 		HttpRequest &operator = ( HttpRequest const &obj );
 		virtual ~HttpRequest( void );
 
-		void		parse( std::string raw );
-		void		parse_request_line( std::string line );
-		void		parse_header_line( std::string line );
-		void		parse_body( std::string partial_body, Server *srv );
-		std::string	validate( Server *srv );
-		int			get_error_code( void ) const;
-		void		set_error_code( int const &code );
-
+		void	parse( std::string raw );
+		void	parse_request_line( std::string line );
+		void	parse_header_line( std::string line );
+		void	parse_body( std::string partial_body, Server *srv );
+		void	validate_headers( Server *srv );
+		void	validate_body( Server *srv, std::string body_buffer );
+		int		get_error_code( void ) const;
+		void	set_error_code( int const &code );
 
 		//Debug
 		void	print( int client_fd );
 		static void debug(LogLevel level, const std::string& message);
-	
+
 	private:
 		int	_error_code;
 };

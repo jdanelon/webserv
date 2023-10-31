@@ -1,22 +1,23 @@
 #include "HttpRequestBody.hpp"
 
-#include <chrono>
-#include <sstream>
-
-#include <ctime>
-#include <sstream>
-
 bool HttpRequestBody::debugEnabled = true;
 const std::string HttpRequestBody::className = "HttpRequestBody";
 
-std::string generateUniqueFilename()
+HttpRequestBody::HttpRequestBody() : processingInProgress(false)
 {
-    std::stringstream ss;
-    ss << "tempfile_";
-    time_t now = time(NULL);
-    ss << now;
-    ss << ".tmp";
-    return ss.str();
+    debug(WARNING, "Default constructor called - No boundary set");
+    tempFileName = "./tmp/" + generateUniqueFilename();
+    state = START;
+    fullChunkedBody = "";
+}
+
+HttpRequestBody::HttpRequestBody(const std::string &boundary) : boundary(boundary),
+                                                                processingInProgress(false)
+{
+    debug(WARNING, "Default constructor called - with boundary ");
+    tempFileName = "./tmp/" + generateUniqueFilename();
+    state = START;
+    fullChunkedBody = "";
 }
 
 void HttpRequestBody::parseContentDisposition(const std::string &content_disposition)
@@ -63,23 +64,6 @@ void HttpRequestBody::parseHeaders(const std::string &headers)
             parseContentDisposition(line);
         }
     }
-}
-
-HttpRequestBody::HttpRequestBody(const std::string &boundary) : boundary(boundary),
-                                                                processingInProgress(false)
-{
-    debug(WARNING, "Default constructor called - with boundary ");
-    tempFileName = "./tmp/" + generateUniqueFilename();
-    state = START;
-    fullChunkedBody = "";
-}
-
-HttpRequestBody::HttpRequestBody() : processingInProgress(false)
-{
-    debug(WARNING, "Default constructor called - No boundary set");
-    tempFileName = "./tmp/" + generateUniqueFilename();
-    state = START;
-    fullChunkedBody = "";
 }
 
 HttpRequestBody::~HttpRequestBody()
@@ -239,10 +223,11 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
             size_t pos = partialBuffer.find("\r\n");
             if (pos != std::string::npos) {
                 std::string sizeLine = partialBuffer.substr(0, pos);
-                remaining_data = std::stoi(sizeLine, nullptr, 16); // Convert hex to int
+                remaining_data = 0;
+                // remaining_data = std::stoi(sizeLine, nullptr, 16); // Convert hex to int
                 partialBuffer = partialBuffer.substr(pos + 2);
 
-                debug(INFO, "Remaining data: " + std::to_string(remaining_data));
+                // debug(INFO, "Remaining data: " + std::to_string(remaining_data));
 
                 if (remaining_data == 0) {
                     state = TAIL; // Last chunk, switch to reading trailers
