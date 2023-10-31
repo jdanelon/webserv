@@ -12,7 +12,8 @@ ClientConnection::ClientConnection( void ) : host_server(NULL),
 												is_request_completed(false),
 												is_request_body_parsing(false),
 												is_request_body_parsed(false),
-												request_has_body(false)
+												request_has_body(false),
+												tail_appended_body(false)
 												{}
 
 ClientConnection::ClientConnection( Server *server, long long timestamp ) : host_server(server),
@@ -27,7 +28,8 @@ ClientConnection::ClientConnection( Server *server, long long timestamp ) : host
 																			is_request_completed(false),
 																			is_request_body_parsing(false),
 																			is_request_body_parsed(false),
-																			request_has_body(false) {
+																			request_has_body(false),
+																			tail_appended_body(false) {
 }
 
 ClientConnection::ClientConnection( ClientConnection const &obj )
@@ -58,6 +60,7 @@ ClientConnection &ClientConnection::operator = ( ClientConnection const &obj )
 		this->request_has_body = obj.request_has_body;
 		this->body_buffer = obj.body_buffer;
 		this->is_request_body_parsed = obj.is_request_body_parsed;
+		this->tail_appended_body = obj.tail_appended_body;
 	}
 	return (*this);
 }

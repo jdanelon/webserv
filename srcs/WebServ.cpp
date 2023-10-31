@@ -171,10 +171,13 @@ void	WebServ::parse_request_headers( int idx )
 
 		// If request has body, we inform the connection so he can start parsing it
 		if (request.has_body) {
+			int npos = this->client_connections[client_fd].buffer.find("\r\n\r\n");
+			this->client_connections[client_fd].body_buffer = this->client_connections[client_fd].buffer.substr(npos + 4);
 			this->client_connections[client_fd].request_has_body = true;
 			this->client_connections[client_fd].is_request_body_parsing = true;
 		}
 		else {
+			std::cout << "Request has no body" << std::endl;
 			this->client_connections[client_fd].is_request_completed = true;
 		}
 	}
@@ -184,7 +187,10 @@ void	WebServ::parse_request_body( int idx ) {
 	int client_fd = this->pollfds[idx].fd;
 
 	// We call the parser function of the request
-	this->client_connections[client_fd].request.parse_body(this->client_connections[client_fd].body_buffer);
+	this->client_connections[client_fd].request.parse_body(
+			this->client_connections[client_fd].body_buffer, 
+			this->client_connections[client_fd].host_server
+		);
 
 	// If the request is completed, we inform the connection
 	if (client_connections[client_fd].request.is_body_parsed) {
@@ -220,6 +226,7 @@ void	WebServ::_clear_connection(int const client_fd) {
 	this->client_connections[client_fd].is_request_body_parsing = false;
 	this->client_connections[client_fd].is_request_body_parsed = false;
 	this->client_connections[client_fd].request_has_body = false;
+	this->client_connections[client_fd].tail_appended_body = false;
 }
 
 void	WebServ::send_response( int idx )
