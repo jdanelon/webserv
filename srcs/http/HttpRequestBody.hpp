@@ -15,12 +15,6 @@ enum LogLevel {
     ERROR
 };
 
-enum LogLevel {
-    INFO,
-    WARNING,
-    ERROR
-};
-
 enum State {
 	START, // Start boundary not found
 	FILE_INFO, // Start boundary found, file info not complete
