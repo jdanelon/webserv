@@ -15,6 +15,20 @@ enum LogLevel {
     ERROR
 };
 
+enum LogLevel {
+    INFO,
+    WARNING,
+    ERROR
+};
+
+enum State {
+	START, // Start boundary not found
+	FILE_INFO, // Start boundary found, file info not complete
+	PART, // File info complete, part not complete
+	TAIL, // Part is complete, but tail is not complete
+	COMPLETE // Part and tail are 
+};
+
 class HttpRequestBody {
 
 private:
@@ -25,6 +39,12 @@ private:
 	std::string 	tempFileName;
 	bool 			processingInProgress;
 	bool			isProcessingComplete;
+	State			state;
+	std::string		fileName;
+	std::string		fieldName;
+	std::string		upload_store;
+	int 			remaining_data;
+	std::string		fullChunkedBody;
 
 public:
 	static bool debugEnabled;
@@ -50,7 +70,17 @@ public:
 
 	void setBoundary(const std::string& boundary);
 
+	void setUploadStore(const std::string& upload_store);
+
 	static void debug(LogLevel level, const std::string& message);
+
+	void parseContentDisposition(const std::string& content_disposition);
+
+	void parseHeaders(const std::string& header);
+
+	State getState();
+
+	std::string getFullChunkedBody();
 };
 
 # endif

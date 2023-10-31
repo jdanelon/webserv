@@ -25,6 +25,8 @@ class ClientConnection
 		bool			is_request_body_parsing;
 		bool			is_request_body_parsed;
 		bool			request_has_body;
+		bool			tail_appended_body;
+		bool			request_validation_error;
 
 		ClientConnection( void );
 		ClientConnection( Server *server, long long timestamp );

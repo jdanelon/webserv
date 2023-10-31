@@ -65,6 +65,7 @@ void HttpResponse::configureResponse(HttpRequest &request)
 		std::cout << "Invalid Request" << std::endl;
 		this->is_request_valid = false;
 		this->setStatusCode(request.get_error_code());
+		std::cout << "Error Code: " << this->status_code << std::endl;
 		return ;
 	}
 	if (request.method == "GET")
