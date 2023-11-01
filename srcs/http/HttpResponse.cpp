@@ -223,11 +223,79 @@ void HttpResponse::handleGet(HttpRequest &request)
 
 void HttpResponse::handlePost(HttpRequest &request)
 {
-	(void)request;
-	// 1. Read Request Object
-	// 2. Generate Response line (ie: HTTP/1.1 200 OK)
-	// 3. Generate Headers
-	// 4. Generate Body
+	// WORK WITH HTML FILES?
+	std::string content;
+
+	size_t extension_idx = this->resourceFullPath.find_last_of(".");
+	if (extension_idx == std::string::npos)
+		extension_idx = 0;
+	std::string extension = this->resourceFullPath.substr(extension_idx);
+
+	if (this->host->cgi.find(extension) != this->host->cgi.end()) {
+		std::string	exe = this->host->cgi[extension];
+		try {
+			content = handle_cgi(exe, this->resourceFullPath, request, this->host->root);
+			std::cout << "\tCONTENT: '" << content << "'" << std::endl;
+			this->headers["Content-Type"] = "text/html";
+			if (content.empty())
+			{
+				content = "<!DOCTYPE html>\n";
+				content += "<html>\n<head>\n";
+				content += "<title>Internal Server Error</title>\n";
+				content += "</head>\n<body>\n";
+				content += "CGI has timed out!\n";
+				content += "</body>\n</html>\n";
+				this->setStatusCode(httpStatusCodes.InternalServerError.code);
+			}
+			else
+				this->setStatusCode(httpStatusCodes.OK.code);
+		}
+		catch (const std::exception& e)
+		{
+			this->setStatusCode(httpStatusCodes.InternalServerError.code);
+		}
+		std::string tmp_file_path = this->resourceFullPath.substr(0, this->resourceFullPath.find_last_of("/") + 1);
+		this->resourceFullPath = tmp_file_path + generateUniqueFilename();
+		std::ofstream output_file(this->resourceFullPath.c_str());
+		output_file << content;
+		output_file.close();
+		this->openFile(this->resourceFullPath);
+		this->fileHandle.seekg(0, std::ios::end);
+		this->fileSize = this->fileHandle.tellg();
+		this->fileHandle.seekg(0, std::ios::beg);
+		return ;
+	}
+
+	std::ofstream	new_file;
+	std::string		request_body;
+
+	new_file.open(this->resourceFullPath.c_str(), std::ios::binary);
+	if (new_file.fail())
+	{
+		this->is_request_valid = false;
+		this->setStatusCode(httpStatusCodes.InternalServerError.code);
+		return ;
+	}
+
+	new_file.write(request_body.c_str(), request_body.length());
+	new_file.close();
+
+	size_t		location_idx = this->resourceFullPath.find(this->host->root) + this->host->root.length();
+	std::string	location = this->resourceFullPath.substr(location_idx);
+	this->headers["Location"] = location;
+
+	std::string tmp_file_path = this->resourceFullPath.substr(0, this->resourceFullPath.find_last_of("/") + 1);
+	this->resourceFullPath = tmp_file_path + generateUniqueFilename();
+	std::ofstream output_file(this->resourceFullPath.c_str());
+	output_file << "Created Successfully!\n";
+	output_file.close();
+	this->openFile(this->resourceFullPath);
+	this->fileHandle.seekg(0, std::ios::end);
+	this->fileSize = this->fileHandle.tellg();
+	this->fileHandle.seekg(0, std::ios::beg);
+
+	this->headers["Content-Type"] = "text/plain";
+	this->setStatusCode(httpStatusCodes.Created.code);
 }
 
 void HttpResponse::handleDelete( void )

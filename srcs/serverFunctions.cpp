@@ -2,9 +2,12 @@
 #include "WebServ.hpp"
 
 bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
+	int	client_fd = webserv.pollfds[i].fd;
+
 	char	buf[256];
-	int		client_fd = webserv.pollfds[i].fd;
-	int		nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
+	std::memset(buf, '\0', 256);
+
+	int	nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
 	std::cout << "read_client_request_headers" << std::endl;
 	std::cout << buf << std::endl;
 
@@ -31,9 +34,12 @@ bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 }
 
 bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
+	int	client_fd = webserv.pollfds[i].fd;
+
 	char	buf[256];
-	int		client_fd = webserv.pollfds[i].fd;
-	int		nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
+	std::memset(buf, '\0', 256);
+
+	int	nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
 
 	if (nbytes <= 0) {
 		if (nbytes == 0)
