@@ -103,11 +103,11 @@ std::string	get_time_string( void )
 }
 
 std::string	generateUniqueFilename( void ) {
-    std::stringstream	ss;
-    time_t				now = time(NULL);
+	std::stringstream	ss;
+	time_t				now = time(NULL);
 
-    ss << "tempfile_";
-    ss << now;
-    ss << ".tmp";
-    return ss.str();
+	ss << "tempfile_";
+	ss << now;
+	ss << ".tmp";
+	return ss.str();
 }

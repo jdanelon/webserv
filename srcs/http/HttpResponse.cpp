@@ -167,7 +167,7 @@ void HttpResponse::handleGet(HttpRequest &request)
 	else if (this->host->cgi.find(extension) != this->host->cgi.end()) {
 		std::string	exe = this->host->cgi[extension];
 		try {
-			content = handle_cgi(exe, this->resourceFullPath, request);
+			content = handle_cgi(exe, this->resourceFullPath, request, this->host->root);
 			this->headers["Content-Type"] = "text/html";
 			if (content.empty())
 			{
@@ -382,7 +382,7 @@ void HttpResponse::prepareErrorResponse( HttpRequest &request )
 		fileContent = "<html>\n<body>\n<h1>" 
 			+ httpStatusCodes.getDescription(this->status_code) 
 			+ "</h1>\n<p>This is a default error page.</p>"
-			+ "\n</body>\n</html>";
+			+ "\n</body>\n<a href=\"http://localhost:3490\">Home</a>\n</html>";
 	}
 	// Generate Response String
 	this->response = "";
