@@ -218,6 +218,7 @@ void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
 	else {
 		// If the body is not chunked, we just append the partial body to the body
 		// We need to check if we finish reading the body, so we check the Content-Length header
+		debug(INFO, "Default Body Parsing: " + partial_body);
 		std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
 		if (content_length_header == this->headers.end())
 		{

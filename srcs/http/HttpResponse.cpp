@@ -1,5 +1,8 @@
 #include "HttpResponse.hpp"
 
+bool HttpResponse::debugEnabled = true;
+const std::string HttpResponse::className = "HttpResponse";
+
 HttpResponse::HttpResponse( void ) : response(""),
 									 response_line(""),
 									 headers(std::map<std::string, std::string>()) {
@@ -235,7 +238,7 @@ void HttpResponse::handlePost(HttpRequest &request)
 		std::string	exe = this->host->cgi[extension];
 		try {
 			content = handle_cgi(exe, this->resourceFullPath, request, this->host->root);
-			std::cout << "\tCONTENT: '" << content << "'" << std::endl;
+			debug(INFO, "CGI CONTENT: '" + content + "'");
 			this->headers["Content-Type"] = "text/html";
 			if (content.empty())
 			{
@@ -510,3 +513,32 @@ void HttpResponse::print(int client_fd) {
 	std::cout << "File offset: " << this->fileOffset << std::endl;
 	std::cout << "------------------" << std::endl;
 }
+
+void HttpResponse::debug(LogLevel level, const std::string &message)
+{
+	if (!debugEnabled)
+	{
+		return;
+	}
+
+	std::string prefix;
+	std::string colorCode;
+	switch (level)
+	{
+	case INFO:
+		prefix = "[INFO] ";
+		colorCode = "\033[1;34m"; // Blue
+		break;
+	case WARNING:
+		prefix = "[WARNING] ";
+		colorCode = "\033[1;33m"; // Yellow
+		break;
+	case ERROR:
+		prefix = "[ERROR] ";
+		colorCode = "\033[1;31m"; // Red
+		break;
+	}
+
+	std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl; // \033[0m resets the color
+}
+
