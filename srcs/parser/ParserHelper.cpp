@@ -203,15 +203,23 @@ std::string	ParserHelper::get_cgi( void )
 	return (cgi_binary);
 }
 
+static bool	is_code_valid( int code )
+{
+	int	arr[] = { 301, 302, 303, 307, 308 };
+	int	n = sizeof(arr) / sizeof(arr[0]);
+	std::vector<int>	valid_codes(arr, arr + n);
+
+	if (std::find(valid_codes.begin(), valid_codes.end(), code) != valid_codes.end())
+		return (true);
+	return (false);
+}
+
 std::pair<size_t, std::string>	ParserHelper::get_return( void )
 {
 	if (this->_tokens.size() != 3)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	if (ft_atoi(this->_tokens[1].c_str()) < 100 || ft_atoi(this->_tokens[1].c_str()) > 507)
+	if (!is_code_valid(ft_atoi(this->_tokens[1].c_str())))
 		throw ParserHelper::InvalidValues("return", this->_tokens[1]);
-	// struct stat buf;
-	// if (stat(this->_tokens[2].c_str(), &buf) == -1 || !S_ISDIR(buf.st_mode | S_IRUSR))
-	// 	throw ParserHelper::SystemError("return", this->_tokens[2]);
 	return (std::make_pair(ft_atoi(this->_tokens[1].c_str()), this->_tokens[2]));
 }
 

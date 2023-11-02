@@ -270,7 +270,7 @@ void HttpResponse::handlePost(HttpRequest &request)
 	}
 
 	std::ofstream	new_file;
-	std::string		request_body;
+	std::string		request_body = request.body;
 
 	new_file.open(this->resourceFullPath.c_str(), std::ios::binary);
 	if (new_file.fail())
@@ -453,7 +453,7 @@ void HttpResponse::prepareErrorResponse( HttpRequest &request )
 		fileContent = "<html>\n<body>\n<h1>" 
 			+ httpStatusCodes.getDescription(this->status_code) 
 			+ "</h1>\n<p>This is a default error page.</p>"
-			+ "\n</body>\n<a href=\"http://localhost:3490\">Home</a>\n</html>";
+			+ "\n</body>\n<a href=\"http://localhost:3490\">Home</a>\n</html>\n";
 	}
 	// Generate Response String
 	this->response = "";
