@@ -19,7 +19,7 @@ make
   - [x] Cannot use `execve` to run another web server.
 
 - [ ] **Blocking and Client Handling**
-  - [ ] Server must be non-blocking.
+  - [ ] Server must be non-blocking. (Problem with the remain of the request after parsing header)
   - [x] Ensure clients can be disconnected properly if necessary.
   - [x] A request to the server should never hang indefinitely.
 

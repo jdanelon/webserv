@@ -175,6 +175,20 @@ void	WebServ::parse_request_headers( int idx )
 			this->client_connections[client_fd].body_buffer = this->client_connections[client_fd].buffer.substr(npos + 4);
 			this->client_connections[client_fd].request_has_body = true;
 			this->client_connections[client_fd].is_request_body_parsing = true;
+
+
+			bool continue_reading_body = true;
+			std::map<std::string, std::string>::iterator it;
+			it = request.headers.find("content-length");
+			int content_length = 0;
+			
+			if (it != request.headers.end()) {
+				content_length = atoi(it->second.c_str());
+				if (content_length == this->client_connections[client_fd].body_buffer.length()) {
+					continue_reading_body = false;
+				}
+			}
+			this->client_connections[client_fd].continue_reading_body = continue_reading_body;
 		}
 		else {
 			std::cout << "Request has no body" << std::endl;
