@@ -7,8 +7,6 @@ Server::Server( void )
 	this->root = "";
 	this->timeout = 0;
 	this->client_max_body_size = -1;
-	// this->access_log = "";
-	// this->error_log = "";
 	this->autoindex = -1;
 	this->redirect = std::make_pair(0, "");
 	this->upload = -1;
@@ -34,8 +32,6 @@ Server &Server::operator = ( Server const &obj )
 		this->error_page = obj.error_page;
 		this->timeout = obj.timeout;
 		this->client_max_body_size = obj.client_max_body_size;
-		// this->access_log = obj.access_log;
-		// this->error_log = obj.error_log;
 		this->autoindex = obj.autoindex;
 		this->cgi = obj.cgi;
 		this->redirect = obj.redirect;

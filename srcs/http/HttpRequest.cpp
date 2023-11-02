@@ -311,8 +311,7 @@ void	HttpRequest::validate_headers( Server *srv ) {
 	if (srv->redirect.first != 0 && !srv->redirect.second.empty())
 	{
 		set_error_code(srv->redirect.first);
-		if (srv->redirect.first >= 300 && srv->redirect.first < 400)
-			this->headers.insert(std::make_pair("Location", "/" + srv->redirect.second));
+		this->headers.insert(std::make_pair("Location", srv->redirect.second));
 		return ;
 	}
 
@@ -353,8 +352,7 @@ void	HttpRequest::validate_headers( Server *srv ) {
 		if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 		{
 			set_error_code(loc->second.redirect.first);
-			if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
-				this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
+			this->headers.insert(std::make_pair("Location", loc->second.redirect.second));
 			return ;
 		}
 		if (loc != locations.end() && !loc->second.alias.empty())
@@ -379,8 +377,7 @@ void	HttpRequest::validate_headers( Server *srv ) {
 			if (loc != locations.end() && loc->second.redirect.first != 0 && !loc->second.redirect.second.empty())
 			{
 				set_error_code(loc->second.redirect.first);
-				if (loc->second.redirect.first >= 300 && loc->second.redirect.first < 400)
-					this->headers.insert(std::make_pair("Location", "/" + loc->second.redirect.second));
+				this->headers.insert(std::make_pair("Location", loc->second.redirect.second));
 				return ;
 			}
 			if (loc != locations.end() && !loc->second.alias.empty())

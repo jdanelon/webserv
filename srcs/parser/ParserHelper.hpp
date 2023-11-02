@@ -35,8 +35,6 @@ class ParserHelper
 		std::string							get_error_page( void );
 		size_t								get_timeout( void );
 		int									get_client_max_body_size( void );
-		// std::string							get_access_log( void );
-		// std::string							get_error_log( void );
 		bool								get_autoindex( void );
 		std::string							get_cgi( void );
 		std::pair<size_t, std::string>		get_return( void );
