@@ -235,7 +235,6 @@ void HttpResponse::handlePost(HttpRequest &request)
 		std::string	exe = this->host->cgi[extension];
 		try {
 			content = handle_cgi(exe, this->resourceFullPath, request, this->host->root);
-			std::cout << "\tCONTENT: '" << content << "'" << std::endl;
 			this->headers["Content-Type"] = "text/html";
 			if (content.empty())
 			{
