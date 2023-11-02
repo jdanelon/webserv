@@ -180,7 +180,7 @@ void	WebServ::parse_request_headers( int idx )
 			bool continue_reading_body = true;
 			std::map<std::string, std::string>::iterator it;
 			it = request.headers.find("content-length");
-			int content_length = 0;
+			size_t content_length = 0;
 			
 			if (it != request.headers.end()) {
 				content_length = atoi(it->second.c_str());
