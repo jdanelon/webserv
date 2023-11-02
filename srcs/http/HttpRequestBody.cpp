@@ -223,11 +223,12 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
 			size_t pos = partialBuffer.find("\r\n");
 			if (pos != std::string::npos) {
 				std::string sizeLine = partialBuffer.substr(0, pos);
-				remaining_data = 0;
-				// remaining_data = std::stoi(sizeLine, nullptr, 16); // Convert hex to int
-				partialBuffer = partialBuffer.substr(pos + 2);
+				std::stringstream ss;
+				int remaining_data;
 
-				// debug(INFO, "Remaining data: " + std::to_string(remaining_data));
+				ss << std::hex << sizeLine;
+				ss >> remaining_data;
+				partialBuffer = partialBuffer.substr(pos + 2);
 
 				if (remaining_data == 0) {
 					state = TAIL; // Last chunk, switch to reading trailers

@@ -27,6 +27,7 @@ class ClientConnection
 		bool			request_has_body;
 		bool			tail_appended_body;
 		bool			request_validation_error;
+		bool			continue_reading_body;
 
 		ClientConnection( void );
 		ClientConnection( Server *server, long long timestamp );

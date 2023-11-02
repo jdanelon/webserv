@@ -1,6 +1,6 @@
 #include "HttpRequest.hpp"
 
-bool HttpRequest::debugEnabled = true;
+bool HttpRequest::debugEnabled = false;
 const std::string HttpRequest::className = "HttpRequest";
 
 HttpRequest::HttpRequest( void ) : autoindex(false), path_info(""), query_string(""), is_valid(true), _error_code(0) {

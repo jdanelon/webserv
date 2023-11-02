@@ -5,8 +5,8 @@ bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 	int	client_fd = webserv.pollfds[i].fd;
 
 	// Why 256 does not work? - joao
-	char	buf[8];
-	std::memset(buf, '\0', 8);
+	char	buf[256];
+	std::memset(buf, '\0', 256);
 
 	int	nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
 	std::cout << "read_client_request_headers" << std::endl;
@@ -99,10 +99,12 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 			std::cout << "parse_request" << std::endl;
 			webserv.parse_request_headers(i);
 		}
+
 		// If request has body, read and parse it little by little 
 		if (webserv.client_connections[client_fd].is_header_received 
 			&& webserv.client_connections[client_fd].request_has_body) {
-			if (!webserv.client_connections[client_fd].is_request_body_parsed)
+			if (!webserv.client_connections[client_fd].is_request_body_parsed
+				&& webserv.client_connections[client_fd].continue_reading_body)
 				read_client_request_body(webserv, i);
 			webserv.parse_request_body(i);
 		}
