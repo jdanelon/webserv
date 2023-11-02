@@ -2,9 +2,13 @@
 #include "WebServ.hpp"
 
 bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
-	char	buf[256];
-	int		client_fd = webserv.pollfds[i].fd;
-	int		nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
+	int	client_fd = webserv.pollfds[i].fd;
+
+	// Why 256 does not work? - joao
+	char	buf[8];
+	std::memset(buf, '\0', 8);
+
+	int	nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
 	std::cout << "read_client_request_headers" << std::endl;
 	std::cout << buf << std::endl;
 
@@ -31,9 +35,12 @@ bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 }
 
 bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
+	int	client_fd = webserv.pollfds[i].fd;
+
 	char	buf[256];
-	int		client_fd = webserv.pollfds[i].fd;
-	int		nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
+	std::memset(buf, '\0', 256);
+
+	int	nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
 
 	if (nbytes <= 0) {
 		if (nbytes == 0)
@@ -74,7 +81,7 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 	std::cout << "process_client_event: " << std::endl;
 	if (is_error) {
 		int client_fd = webserv.pollfds[i].fd;
-		std::cout << "\tFULL_PATH: " << webserv.client_connections[client_fd].response.resourceFullPath << std::endl;
+		std::cout << "Error: " << client_fd << std::endl;
 		webserv.end_client_connection(i);
 	}
 	else if (is_input_ready) {

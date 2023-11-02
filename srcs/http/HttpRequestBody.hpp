@@ -10,9 +10,9 @@
 #include "../utils.hpp"
 
 enum LogLevel {
-    INFO,
-    WARNING,
-    ERROR
+	INFO,
+	WARNING,
+	ERROR
 };
 
 enum State {
@@ -48,7 +48,7 @@ public:
 
 	HttpRequestBody();
 
-    ~HttpRequestBody();
+	~HttpRequestBody();
 
 	HttpRequestBody& operator=(const HttpRequestBody& other);
 
@@ -56,11 +56,11 @@ public:
 
 	void parseChunkedBody(const std::string& partial_body);
 
-    void appendPartialBody(const std::string& partial_body);
+	void appendPartialBody(const std::string& partial_body);
 
-    void processCompletePart(const std::string& complete_part);
+	void processCompletePart(const std::string& complete_part);
 
-    bool getIsProcessingComplete();
+	bool getIsProcessingComplete();
 
 	void setBoundary(const std::string& boundary);
 

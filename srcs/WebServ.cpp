@@ -332,26 +332,26 @@ void	WebServ::print(void) {
 }
 
 void WebServ::debug(LogLevel level, const std::string& message) {
-    if (!debugEnabled) {
-        return;
-    }
+	if (!debugEnabled) {
+		return;
+	}
 
-    std::string prefix;
-    std::string colorCode;
-    switch (level) {
-    case INFO:
-        prefix = "[INFO] ";
-        colorCode = "\033[1;34m";  // Blue
-        break;
-    case WARNING:
-        prefix = "[WARNING] ";
-        colorCode = "\033[1;33m";  // Yellow
-        break;
-    case ERROR:
-        prefix = "[ERROR] ";
-        colorCode = "\033[1;31m";  // Red
-        break;
-    }
+	std::string prefix;
+	std::string colorCode;
+	switch (level) {
+	case INFO:
+		prefix = "[INFO] ";
+		colorCode = "\033[1;34m";  // Blue
+		break;
+	case WARNING:
+		prefix = "[WARNING] ";
+		colorCode = "\033[1;33m";  // Yellow
+		break;
+	case ERROR:
+		prefix = "[ERROR] ";
+		colorCode = "\033[1;31m";  // Red
+		break;
+	}
 
-    std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl;  // \033[0m resets the color
+	std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl;  // \033[0m resets the color
 }

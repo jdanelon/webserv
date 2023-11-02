@@ -18,6 +18,8 @@
 class HttpResponse {
 
 	public:
+		static bool debugEnabled;
+		static const std::string className; 
 
 		// Content/Body configuration settings
 		std::ifstream		fileHandle;
@@ -50,6 +52,7 @@ class HttpResponse {
 		// Debug
 		void prepareDummyResponse( void );
 		void print( int client_fd );
+		static void debug(LogLevel level, const std::string& message);
 
 	private:
 

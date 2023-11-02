@@ -66,11 +66,11 @@ void	HttpRequest::parse( std::string raw ) {
 		set_error_code(400);
 	}
 
-    // Check if the body is chunked
-    std::map<std::string, std::string>::iterator transfer_encoding_header = this->headers.find("Transfer-Encoding");
-    if (transfer_encoding_header != this->headers.end() && transfer_encoding_header->second == "chunked") {
-        this->has_body = true;
-    }
+	// Check if the body is chunked
+	std::map<std::string, std::string>::iterator transfer_encoding_header = this->headers.find("Transfer-Encoding");
+	if (transfer_encoding_header != this->headers.end() && transfer_encoding_header->second == "chunked") {
+		this->has_body = true;
+	}
 
 	// Check if the body is a file upload
 	std::map<std::string, std::string>::iterator content_type_header = this->headers.find("Content-Type");
@@ -78,13 +78,13 @@ void	HttpRequest::parse( std::string raw ) {
 		this->has_body = true;
 	}
 
-    // Check if there is a body and it's not a GET request
-    if (this->method != "GET") {
-        std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
-        if (content_length_header != this->headers.end()) {
-            this->has_body = true;
-        }
-    }
+	// Check if there is a body and it's not a GET request
+	if (this->method != "GET") {
+		std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
+		if (content_length_header != this->headers.end()) {
+			this->has_body = true;
+		}
+	}
 }
 
 void	HttpRequest::parse_request_line( std::string line ) {
@@ -198,24 +198,27 @@ void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
 	else if (this->headers.find("Content-Type") != this->headers.end() &&
 			this->headers["Content-Type"].find("multipart/form-data") != std::string::npos)
 	{
+		int			upload = srv->upload;
+		std::string	upload_store = srv->upload_store;
 		// Check if the request uri is found in the locations map
 		std::map<std::string, Location>::iterator loc = srv->location.find(get_matched_location(this->uri, srv->location));
-		if (loc == srv->location.end())
-			set_error_code(httpStatusCodes.BadRequest.code);
-		// Check if the location has an upload directive
-		if (loc->second.upload == 0)
-			set_error_code(httpStatusCodes.BadRequest.code);
-		// Check if the location has an upload_store directive
-		if (loc->second.upload_store.empty())
+		if (loc != srv->location.end())
+		{
+			upload = loc->second.upload;
+			upload_store = loc->second.upload_store;
+		}
+		// Check if the location has an upload or upload_store directive
+		if (upload == 0 || upload_store.empty())
 			set_error_code(httpStatusCodes.BadRequest.code);
 
 		// If the body is a file upload, we need to parse the multipart body
-		this->body_parser.setUploadStore(loc->second.upload_store);
+		this->body_parser.setUploadStore(upload_store);
 		this->body_parser.parseMultipartBody(partial_body);
 	}
 	else {
 		// If the body is not chunked, we just append the partial body to the body
 		// We need to check if we finish reading the body, so we check the Content-Length header
+		debug(INFO, "Default Body Parsing: " + partial_body);
 		std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
 		if (content_length_header == this->headers.end())
 		{
@@ -432,23 +435,15 @@ void	HttpRequest::validate_headers( Server *srv ) {
 
 void	HttpRequest::validate_body( Server *srv, std::string body_buffer ) {
 	int		max_body_size = srv->client_max_body_size;
-	bool	upload = srv->upload;
-	std::string	upload_store = srv->upload_store;
 
 	std::map<std::string, Location> locations = srv->location;
 	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(this->uri, locations));
 	if (loc != locations.end())
-	{
 		max_body_size = loc->second.client_max_body_size;
-		upload = loc->second.upload;
-		upload_store = loc->second.upload_store;
-	}
 	if (max_body_size != -1 && (int)body_buffer.length() > max_body_size)
 		set_error_code(413);
-	(void)upload;
-	(void)upload_store;
 
-	// TO-DO: VALIDATION FOR UPLOAD AND UPLOAD_STORE (HERE?)
+	// TO-DO: SET FULL_PATH FOR FILE_UPLOAD
 }
 
 int	HttpRequest::get_error_code( void ) const
@@ -485,26 +480,26 @@ void	HttpRequest::print( int client_fd ) {
 }
 
 void HttpRequest::debug(LogLevel level, const std::string& message) {
-    if (!debugEnabled) {
-        return;
-    }
+	if (!debugEnabled) {
+		return;
+	}
 
-    std::string prefix;
-    std::string colorCode;
-    switch (level) {
-    case INFO:
-        prefix = "[INFO] ";
-        colorCode = "\033[1;34m";  // Blue
-        break;
-    case WARNING:
-        prefix = "[WARNING] ";
-        colorCode = "\033[1;33m";  // Yellow
-        break;
-    case ERROR:
-        prefix = "[ERROR] ";
-        colorCode = "\033[1;31m";  // Red
-        break;
-    }
+	std::string prefix;
+	std::string colorCode;
+	switch (level) {
+	case INFO:
+		prefix = "[INFO] ";
+		colorCode = "\033[1;34m";  // Blue
+		break;
+	case WARNING:
+		prefix = "[WARNING] ";
+		colorCode = "\033[1;33m";  // Yellow
+		break;
+	case ERROR:
+		prefix = "[ERROR] ";
+		colorCode = "\033[1;31m";  // Red
+		break;
+	}
 
-    std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl;  // \033[0m resets the color
+	std::cout << colorCode << className << " " << prefix << message << "\033[0m" << std::endl;  // \033[0m resets the color
 }

@@ -8,6 +8,6 @@
 # include "http/HttpRequest.hpp"
 # include "utils.hpp"
 
-std::string	handle_cgi( std::string bin, std::string script, HttpRequest request );
+std::string	handle_cgi( std::string bin, std::string script, HttpRequest request, std::string root );
 
 #endif

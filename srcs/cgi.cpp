@@ -1,9 +1,8 @@
 #include "cgi.hpp"
 
-static std::vector<std::string>	set_environment( std::string script, HttpRequest request )
+static std::vector<std::string>	set_environment( std::string script, HttpRequest request, std::string root )
 {
 	std::vector<std::string>	env;
-	std::string					root(std::getenv("PWD"));
 
 	env.resize(12);
 	env[0] = "REQUEST_METHOD=" + request.method;
@@ -14,9 +13,11 @@ static std::vector<std::string>	set_environment( std::string script, HttpRequest
 	env[3] = "QUERY_STRING=" + query_string;
 	env[4] = "CONTENT_TYPE=text/html";
 	env[5] = "CONTENT_LENGTH=" + ft_itoa(request.body.length());
-	env[6] = "DOCUMENT_ROOT=" + root;
-	env[7] = "SCRIPT_FILENAME=" + root + "/cgi/" + script;
-	env[8] = "SCRIPT_NAME=/cgi/" + script;
+	std::string	document_root = script.substr(0, script.find(root) + root.length());
+	env[6] = "DOCUMENT_ROOT=" + document_root;
+	env[7] = "SCRIPT_FILENAME=" + script;
+	std::string	script_name = script.substr(document_root.length());
+	env[8] = "SCRIPT_NAME=" + script_name;
 	env[9] = "REDIRECT_STATUS=200";
 	env[10] = "REQUEST_BODY=" + request.body;
 	env[11] = "DISPLAY=:0";
@@ -24,7 +25,7 @@ static std::vector<std::string>	set_environment( std::string script, HttpRequest
 }
 
 static void	handle_child( int const parent_fd, int const child_fd, std::string bin,
-						  std::string script, HttpRequest request )
+						  std::string script, HttpRequest request, std::string root )
 {
 	// child will:
 	// - link child fd to STDOUT
@@ -41,7 +42,7 @@ static void	handle_child( int const parent_fd, int const child_fd, std::string b
 	argv[2] = NULL;
 
 	// - set environ with CGI variables
-	std::vector<std::string>	env = set_environment(script, request);
+	std::vector<std::string>	env = set_environment(script, request, root);
 	const char	**envp = new const char *[13];
 	envp[0] = env[0].c_str();
 	envp[1] = env[1].c_str();
@@ -64,14 +65,14 @@ static void	handle_child( int const parent_fd, int const child_fd, std::string b
 static std::string	get_cgi_output( int fd )
 {
 	char		buf[1024];
-	int			nbytes = read(fd, buf, 1024);
+	int			nbytes = read(fd, buf, 1023);
 	std::string	cgi_output;
 
 	while (nbytes != 0)
 	{
 		buf[nbytes] = '\0';
 		cgi_output.append(buf);
-		nbytes = read(fd, buf, 1024);
+		nbytes = read(fd, buf, 1023);
 	}
 	return (cgi_output);
 }
@@ -107,7 +108,7 @@ static std::string	handle_parent( pid_t pid, int const parent_fd )
 	return (output);
 }
 
-std::string	handle_cgi( std::string bin, std::string script, HttpRequest request )
+std::string	handle_cgi( std::string bin, std::string script, HttpRequest request, std::string root )
 {
 	pid_t				pid;
 	int					fd[2];
@@ -128,7 +129,7 @@ std::string	handle_cgi( std::string bin, std::string script, HttpRequest request
 		throw std::exception();
 	}
 	else if (pid == 0)
-		handle_child(fd[parent], fd[child], bin, script, request);
+		handle_child(fd[parent], fd[child], bin, script, request, root);
 	else if (pid > 0)
 	{
 		close(fd[child]);
