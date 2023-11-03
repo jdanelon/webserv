@@ -176,12 +176,11 @@ void	WebServ::parse_request_headers( int idx )
 			this->client_connections[client_fd].request_has_body = true;
 			this->client_connections[client_fd].is_request_body_parsing = true;
 
-
 			bool continue_reading_body = true;
 			std::map<std::string, std::string>::iterator it;
-			it = request.headers.find("content-length");
+			it = request.headers.find("Content-Length");
 			size_t content_length = 0;
-			
+
 			if (it != request.headers.end()) {
 				content_length = atoi(it->second.c_str());
 				if (content_length == this->client_connections[client_fd].body_buffer.length()) {
