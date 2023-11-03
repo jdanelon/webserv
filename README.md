@@ -18,13 +18,8 @@ make
 - [x] **Execution Restrictions**
   - [x] Cannot use `execve` to run another web server.
 
-<<<<<<< Updated upstream
-- [ ] **Blocking and Client Handling**
-  - [ ] Server must be non-blocking. (Problem with the remain of the request after parsing header)
-=======
 - [x] **Blocking and Client Handling**
   - [x] Server must be non-blocking.
->>>>>>> Stashed changes
   - [x] Ensure clients can be disconnected properly if necessary.
   - [x] A request to the server should never hang indefinitely.
 
