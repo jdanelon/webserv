@@ -430,14 +430,14 @@ void	HttpRequest::validate_headers( Server *srv ) {
 	this->full_resource_path = full_path;
 }
 
-void	HttpRequest::validate_body( Server *srv, std::string body_buffer ) {
-	int		max_body_size = srv->client_max_body_size;
+void	HttpRequest::validate_body( Server *srv ) {
+	int	max_body_size = srv->client_max_body_size;
 
 	std::map<std::string, Location> locations = srv->location;
 	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(this->uri, locations));
 	if (loc != locations.end())
 		max_body_size = loc->second.client_max_body_size;
-	if (max_body_size != -1 && (int)body_buffer.length() > max_body_size)
+	if (max_body_size != -1 && (int)this->body.length() > max_body_size)
 		set_error_code(413);
 
 	// TO-DO: SET FULL_PATH FOR FILE_UPLOAD

@@ -30,8 +30,6 @@ static void	handle_child( int const parent_fd, int const child_fd, std::string b
 	// child will:
 	// - link child fd to STDOUT
 	// - what gets printed on child's STDOUT is sent to parent fd
-	std::cout.flush();
-	std::cerr.flush();
 	
 	dup2(parent_fd, STDIN_FILENO);
 	close(parent_fd);
@@ -118,8 +116,6 @@ std::string	handle_cgi( std::string bin, std::string script, HttpRequest request
 	static const int	parent = 0, child = 1;
 	std::string			cgi_output;
 
-	std::cout.flush();
-	std::cerr.flush();
 	if (pipe(fd) == -1)
 	{
 		perror("pipe");

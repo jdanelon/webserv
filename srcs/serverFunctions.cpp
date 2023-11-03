@@ -47,10 +47,6 @@ bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
 			std::cout << "socket: '" << client_fd << "' hung up" << std::endl;
 		else {
 			std::cout << "Recv error: " <<  nbytes<< std::endl;
-			// Possibly, socket is in blocking mode and there is no data to read
-			// In this case, we should not close the connection
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				return (true);
 		}
 		webserv.end_client_connection(i);
 		webserv.client_connections.erase(client_fd);
@@ -82,6 +78,8 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 	if (is_error) {
 		int client_fd = webserv.pollfds[i].fd;
 		std::cout << "Error: " << client_fd << std::endl;
+		std::cout << "POLERR: " << (webserv.pollfds[i].revents & POLLERR) << std::endl;
+		std::cout << "POLLHUP: " << (webserv.pollfds[i].revents & POLLHUP) << std::endl;
 		webserv.end_client_connection(i);
 	}
 	else if (is_input_ready) {

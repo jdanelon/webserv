@@ -213,7 +213,7 @@ void	WebServ::parse_request_body( int idx ) {
 
 		Server *srv = this->client_connections[client_fd].host_server;
 		std::string bodyBuffer = this->client_connections[client_fd].body_buffer;
-		this->client_connections[client_fd].request.validate_body(srv, bodyBuffer);
+		this->client_connections[client_fd].request.validate_body(srv);
 	}
 }
 
