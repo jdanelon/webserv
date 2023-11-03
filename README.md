@@ -18,8 +18,8 @@ make
 - [x] **Execution Restrictions**
   - [x] Cannot use `execve` to run another web server.
 
-- [ ] **Blocking and Client Handling**
-  - [ ] Server must be non-blocking. (Problem with the remain of the request after parsing header)
+- [x] **Blocking and Client Handling**
+  - [x] Server must be non-blocking.
   - [x] Ensure clients can be disconnected properly if necessary.
   - [x] A request to the server should never hang indefinitely.
 
@@ -82,8 +82,8 @@ make
 - [x] **HTTP Methods**
   - [x] Specify a list of accepted HTTP methods for a route.
 
-- [ ] **Redirection**
-  - [ ] Set up HTTP redirection for specific routes.
+- [x] **Redirection**
+  - [x] Set up HTTP redirection for specific routes.
 
 - [x] **Directory or File Definition**
   - [x] Define directory or file from where content should be fetched.
@@ -106,5 +106,19 @@ make
 ## **CGI Specific Considerations**
 
 - [x] Understand what a CGI is.
-- [ ] For chunked requests, the server must unchunk it; the CGI expects EOF as the end of the body.
+- [x] For chunked requests, the server must unchunk it; the CGI expects EOF as the end of the body.
 - [x] If the CGI output doesn't provide content_length, use EOF to mark the end of returned data.
+
+## Last Sprint:
+
+- [ ] Implement Content lenght required error
+- [ ] Implement Upload files
+
+- [ ] Adicionar Tests:
+  - [ ] Test do timeout con telnet
+  - [ ] Test do default error page
+  - [ ] Test custom error page
+  - [ ] Test para DELETE //curl -X DELETE localhost:3490/delete/ringo.txt , para pasta e 403
+  - [ ] Test server multiple ports
+  - [ ] Test Limit client body size.
+  - [ ] Define a list of accepted HTTP methods for the route.

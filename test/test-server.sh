@@ -109,3 +109,12 @@ BASE_URL="http://localhost:3490/qwer"
 test_upload 6 "POST" "$BASE_URL" 200 "test/upload/test1.txt" 
 
 
+### 007 - Redirect
+
+BASE_URL="http://localhost:3490/redirect"
+
+test_status_code 7 "GET" "$BASE_URL" 301
+
+### 08 - Redirect location
+
+### A request to your server should never hang forever.
