@@ -78,8 +78,8 @@ void	HttpRequest::parse( std::string raw ) {
 		this->has_body = true;
 	}
 
-	// Check if there is a body and it's not a GET request
-	if (this->method != "GET") {
+	// Check if there is a body and it's not a GET or DELETE request
+	if (this->method != "GET" && this->method != "DELETE") {
 		std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
 		if (content_length_header != this->headers.end()) {
 			this->has_body = true;
@@ -307,6 +307,15 @@ void	HttpRequest::validate_headers( Server *srv ) {
 	if (this->uri.length() > 8000)
 		set_error_code(414);
 
+	if (this->version != "HTTP/1.1")
+		set_error_code(505);
+
+	std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
+	if (content_length_header != this->headers.end() && ft_atoi(content_length_header->second.c_str()) == -1)
+		set_error_code(411);
+	else if (this->method == "POST" && !this->has_body)
+		set_error_code(411);
+
 	// Return directive on server block
 	if (srv->redirect.first != 0 && !srv->redirect.second.empty())
 	{
@@ -408,9 +417,6 @@ void	HttpRequest::validate_headers( Server *srv ) {
 		}
 	}
 
-	if (this->version != "HTTP/1.1")
-		set_error_code(505);
-
 	// ATTENTION: NEED TO CHANGE /ETC/HOSTS FILE TO INCLUDE OTHER SERVER_NAMES
 	if (is_server_name_forbidden(this->host, srv->ip, srv->server_name))
 		set_error_code(404);
@@ -427,7 +433,8 @@ void	HttpRequest::validate_headers( Server *srv ) {
 		}
 	}
 
-	this->full_resource_path = full_path;
+	if (this->get_error_code() == 0)
+		this->full_resource_path = full_path;
 }
 
 void	HttpRequest::validate_body( Server *srv ) {
@@ -439,8 +446,6 @@ void	HttpRequest::validate_body( Server *srv ) {
 		max_body_size = loc->second.client_max_body_size;
 	if (max_body_size != -1 && (int)this->body.length() > max_body_size)
 		set_error_code(413);
-
-	// TO-DO: SET FULL_PATH FOR FILE_UPLOAD
 }
 
 int	HttpRequest::get_error_code( void ) const

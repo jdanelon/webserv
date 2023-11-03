@@ -4,7 +4,6 @@
 bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 	int	client_fd = webserv.pollfds[i].fd;
 
-	// Why 256 does not work? - joao
 	char	buf[256];
 	std::memset(buf, '\0', 256);
 
@@ -76,10 +75,6 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 
 	std::cout << "process_client_event: " << std::endl;
 	if (is_error) {
-		int client_fd = webserv.pollfds[i].fd;
-		std::cout << "Error: " << client_fd << std::endl;
-		std::cout << "POLERR: " << (webserv.pollfds[i].revents & POLLERR) << std::endl;
-		std::cout << "POLLHUP: " << (webserv.pollfds[i].revents & POLLHUP) << std::endl;
 		webserv.end_client_connection(i);
 	}
 	else if (is_input_ready) {

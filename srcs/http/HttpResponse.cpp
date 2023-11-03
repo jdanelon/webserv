@@ -68,7 +68,6 @@ void HttpResponse::configureResponse(HttpRequest &request)
 		std::cout << "Invalid Request" << std::endl;
 		this->is_request_valid = false;
 		this->setStatusCode(request.get_error_code());
-		std::cout << "Error Code: " << this->status_code << std::endl;
 		return ;
 	}
 	if (request.method == "GET")
@@ -226,7 +225,6 @@ void HttpResponse::handleGet(HttpRequest &request)
 
 void HttpResponse::handlePost(HttpRequest &request)
 {
-	// WORK WITH HTML FILES?
 	std::string content;
 
 	size_t extension_idx = this->resourceFullPath.find_last_of(".");
@@ -311,13 +309,17 @@ void HttpResponse::handleDelete( void )
 		setStatusCode(httpStatusCodes.Forbidden.code);
 		return ;
 	}
-	std::remove(this->resourceFullPath.c_str());
+	int ret = std::remove(this->resourceFullPath.c_str());
 
 	std::string tmp_file_path = this->resourceFullPath.substr(0, this->resourceFullPath.find_last_of("/") + 1);
 	this->resourceFullPath = tmp_file_path + generateUniqueFilename();
 	std::ofstream output_file(this->resourceFullPath.c_str());
-	output_file << "Deleted Successfully!\n";
+	if (ret != 0)
+		output_file << "Could not delete the file!\n";
+	else
+		output_file << "Deleted Successfully!\n";
 	output_file.close();
+
 	this->openFile(this->resourceFullPath);
 	this->fileHandle.seekg(0, std::ios::end);
 	this->fileSize = this->fileHandle.tellg();
@@ -423,7 +425,8 @@ void HttpResponse::prepareFullResponse( void ) {
 	this->generateBasicHeaders();
 
 	// Set content length
-	this->headers["Content-Length"] = ft_itoa(fileContent.length());
+	if (this->status_code != httpStatusCodes.NoContent.code)
+		this->headers["Content-Length"] = ft_itoa(fileContent.length());
 
 	// Response line + headers
 	this->response = this->response_line + "\r\n";
@@ -464,7 +467,8 @@ void HttpResponse::prepareErrorResponse( HttpRequest &request )
 		this->headers["Location"] = request.headers["Location"];
 
 	// Set content length
-	this->headers["Content-Length"] = ft_itoa(fileContent.length());
+	if (this->status_code != httpStatusCodes.NoContent.code)
+		this->headers["Content-Length"] = ft_itoa(fileContent.length());
 
 	// Response line + headers
 	this->response = this->response_line + "\r\n";
