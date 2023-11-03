@@ -65,8 +65,6 @@ void	Server::fill_with_defaults( void )
 		this->index.push_back("index.html");
 		this->index.push_back("index.php");
 	}
-	if (this->error_page.empty())
-		this->error_page[404] = "/error_page_404.html";
 	if (this->timeout == 0)
 		this->timeout = 30000;
 	if (this->client_max_body_size == -1)
