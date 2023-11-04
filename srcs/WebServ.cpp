@@ -118,7 +118,6 @@ bool	WebServ::client_timeout( int idx )
 
 void	WebServ::end_client_connection( int idx )
 {
-	debug(INFO, "Closing connection for fd: " + std::to_string(this->pollfds[idx].fd));
 	close(this->pollfds[idx].fd);
 	// remove client and delete reserved client memory from this->clients (?)
 	// ...
@@ -179,10 +178,10 @@ void	WebServ::parse_request_headers( int idx )
 			// If its multipart or chunked, we assume the body is not complete
 			bool continue_reading_body = true;
 			std::map<std::string, std::string>::iterator it;
-			it = request.headers.find("content-length");
+			it = request.headers.find("Content-Length");
 			size_t content_length = 0;
-			
 			// If content-length is present, we check if the body is complete
+
 			if (it != request.headers.end()) {
 				content_length = atoi(it->second.c_str());
 				if (content_length == this->client_connections[client_fd].body_buffer.length()) {

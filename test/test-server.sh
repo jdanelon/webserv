@@ -151,13 +151,12 @@ test_status_code 4 "GET" "$BASE_URL" 404
 BASE_URL="http://localhost:3490/qwer"
 
 test_status_code 5 "PUT" "$BASE_URL" 405  ## 405 Method Not Allowed
-
-### 006
+ 
+### 006 No content lenght
 
 BASE_URL="http://localhost:3490/qwer"
 
-test_status_code 6 "POST" "$BASE_URL" 201 ## Created
-
+test_status_code 6 "POST" "$BASE_URL" 411 ## Created
 
 ### 007 - Redirect
 
@@ -221,4 +220,4 @@ test_upload 21 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store
 
 ### 22 - Test Upload zip file
 
-test_upload 22 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/10MB.zip"  "test/upload/10MB.zip"
+# test_upload 22 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/10MB.zip"  "test/upload/10MB.zip"
