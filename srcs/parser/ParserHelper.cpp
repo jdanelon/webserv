@@ -267,7 +267,7 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 		{
 			if (args[i] == cmp[j])
 				break ;
-			if (j == cmp.size())
+			if (j == cmp.size() - 1)
 				throw ParserHelper::InvalidValues("limit_except", args[i]);
 		}
 	}
@@ -278,9 +278,9 @@ std::string	ParserHelper::get_alias( void )
 {
 	if (this->_tokens.size() != 2)
 		throw ParserHelper::InvalidNumberArgs(this->_tokens[0]);
-	struct stat buf;
-	if (stat(this->_tokens[1].c_str(), &buf) == -1 || !S_ISDIR(buf.st_mode | S_IRUSR))
-		throw ParserHelper::SystemError("alias", this->_tokens[1]);
+	// struct stat buf;
+	// if (stat(this->_tokens[1].c_str(), &buf) == -1 || !S_ISDIR(buf.st_mode | S_IRUSR))
+	// 	throw ParserHelper::SystemError("alias", this->_tokens[1]);
 	return (this->_tokens[1]);
 }
 

@@ -274,6 +274,9 @@ void HttpResponse::handlePost(HttpRequest &request)
 	if (new_file.fail())
 	{
 		this->is_request_valid = false;
+		struct stat buf;
+		if (stat(this->resourceFullPath.c_str(), &buf) != 0 || S_ISDIR(buf.st_mode))
+			this->resourceFullPath = "";
 		this->setStatusCode(httpStatusCodes.InternalServerError.code);
 		return ;
 	}
@@ -456,7 +459,8 @@ void HttpResponse::prepareErrorResponse( HttpRequest &request )
 		fileContent = "<html>\n<body>\n<h1>" 
 			+ httpStatusCodes.getDescription(this->status_code) 
 			+ "</h1>\n<p>This is a default error page.</p>"
-			+ "\n</body>\n<a href=\"http://localhost:3490\">Home</a>\n</html>\n";
+			+ "\n</body>\n<a href=\"http://localhost:" + this->host->port
+			+ "\">Home</a>\n</html>\n";
 	}
 	// Generate Response String
 	this->response = "";

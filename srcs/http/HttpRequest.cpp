@@ -273,17 +273,39 @@ static bool	is_server_name_forbidden( std::string hostname, std::string ip, std:
 	return (true);
 }
 
-static std::string	find_final_root( std::string uri, std::string alias, std::string match )
+static std::string	find_full_path( std::string method, std::string new_uri, Server *srv )
 {
-	std::string	tmp, final_root;
+	int			upload(srv->upload);
+	std::string	alias(""), upload_store(srv->upload_store), full_path;
+	std::map<std::string, Location> locations = srv->location;
+	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(new_uri, locations));
 
-	tmp = uri;
-	if (match.length() == 1)
-		tmp = alias + uri;
-	else
-		tmp.replace(0, match.length(), alias);
-	final_root = tmp.substr(tmp.find_first_not_of("/"));
-	return (final_root);
+	full_path = std::getenv("PWD") + std::string("/") + srv->root;
+	// std::cout << "\tNEW_URI: '" << new_uri << "'" << std::endl;
+	if (loc != locations.end())
+	{
+		alias = loc->second.alias;
+		upload = loc->second.upload;
+		upload_store = loc->second.upload_store;
+		if (!alias.empty())
+			new_uri = new_uri.substr(new_uri.find(loc->first) + loc->first.length());
+	}
+	std::string	remaining_folders = new_uri.substr(0, new_uri.find_last_of('/') + 1);
+	std::string	resource = new_uri.substr(new_uri.find_last_of('/') + 1);
+
+	// if (new_uri != matched_location)
+
+	full_path += alias;
+	full_path += remaining_folders;
+	if (method == "POST" && upload)
+		full_path += upload_store;
+	// std::cout << "\tFULL_PATH: '" << full_path << "'" << std::endl;
+	struct stat buf;
+	if (stat(full_path.c_str(), &buf) != 0 || !S_ISDIR(buf.st_mode))
+		return ("");
+	full_path += resource;
+	// std::cout << "\tFULL_PATH: '" << full_path << "'" << std::endl;
+	return (full_path);
 }
 
 void	HttpRequest::validate_headers( Server *srv ) {
@@ -364,12 +386,10 @@ void	HttpRequest::validate_headers( Server *srv ) {
 			this->headers.insert(std::make_pair("Location", loc->second.redirect.second));
 			return ;
 		}
-		if (loc != locations.end() && !loc->second.alias.empty())
-			final_root = find_final_root(new_uri, loc->second.alias, loc->first);
-		else
-			final_root = srv->root + new_uri;
-		full_path = std::getenv("PWD") + std::string("/") + final_root;
-		if ((stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode))
+		full_path = find_full_path(this->method, new_uri, srv);
+		if (full_path.empty())
+			set_error_code(404);
+		if (this->method != "POST" && ((stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode)))
 			set_error_code(404);
 	}
 	// If request is for folder: search for index files with possible multiple redirections
@@ -389,14 +409,11 @@ void	HttpRequest::validate_headers( Server *srv ) {
 				this->headers.insert(std::make_pair("Location", loc->second.redirect.second));
 				return ;
 			}
-			if (loc != locations.end() && !loc->second.alias.empty())
-				final_root = find_final_root(new_uri, loc->second.alias, loc->first);
-			else
-				final_root = srv->root + new_uri;
-			resource = new_uri.substr(new_uri.find_last_of("/") + 1);
-			full_path = std::getenv("PWD") + std::string("/") + final_root;
+			full_path = find_full_path(this->method, new_uri, srv);
+			if (full_path.empty())
+				set_error_code(404);
 			// Check if index file is found
-			if ((stat(full_path.c_str(), &buf) != -1) && S_ISREG(buf.st_mode))
+			if (this->method == "POST" || ((stat(full_path.c_str(), &buf) != -1) && S_ISREG(buf.st_mode)))
 				break ;
 		}
 		// No index files are found
