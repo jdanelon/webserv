@@ -267,7 +267,7 @@ std::vector<std::string>	ParserHelper::get_limit_except( void )
 		{
 			if (args[i] == cmp[j])
 				break ;
-			if (j == cmp.size())
+			if (j == cmp.size() - 1)
 				throw ParserHelper::InvalidValues("limit_except", args[i]);
 		}
 	}

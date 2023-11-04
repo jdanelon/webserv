@@ -216,6 +216,7 @@ void HttpResponse::handleGet(HttpRequest &request)
 			this->fileHandle.seekg(0, std::ios::end);
 			this->fileSize = this->fileHandle.tellg();
 			this->fileHandle.seekg(0, std::ios::beg);
+			debug(INFO, "File size: " + ft_itoa(this->fileSize));
 			if (this->fileSize == 0)
 				this->setStatusCode(httpStatusCodes.NoContent.code);
 			else
@@ -272,16 +273,19 @@ void HttpResponse::handlePost(HttpRequest &request)
 	std::ofstream	new_file;
 	std::string		request_body = request.body;
 
-	new_file.open(this->resourceFullPath.c_str(), std::ios::binary);
-	if (new_file.fail())
-	{
-		this->is_request_valid = false;
-		this->setStatusCode(httpStatusCodes.InternalServerError.code);
-		return ;
+	std::map<std::string, std::string>::iterator content_type_header = request.headers.find("Content-Type");
+	if (!(content_type_header != request.headers.end() && content_type_header->second.find("multipart/form-data") != std::string::npos)) {
+		new_file.open(this->resourceFullPath.c_str(), std::ios::binary);
+		if (new_file.fail())
+		{
+			debug(ERROR, "Failed to open file: '" + this->resourceFullPath + "'");
+			this->is_request_valid = false;
+			this->setStatusCode(httpStatusCodes.InternalServerError.code);
+			return ;
+		}
+		new_file.write(request_body.c_str(), request_body.length());
+		new_file.close();
 	}
-
-	new_file.write(request_body.c_str(), request_body.length());
-	new_file.close();
 
 	size_t		location_idx = this->resourceFullPath.find(this->host->root) + this->host->root.length();
 	std::string	location = this->resourceFullPath.substr(location_idx);
@@ -400,7 +404,8 @@ std::string HttpResponse::readChunkAndUpdateResponse(size_t chunkSize) {
 	chunkedResponse += "\r\n";  // CRLF
 
 	// If we're at the end of the file, append the final zero-length chunk
-	if (bytesRead < static_cast<std::streamsize>(chunkSize)) {
+	if (bytesRead < static_cast<std::streamsize>(chunkSize) || this->fileOffset == this->fileSize ) {
+		debug(INFO, "Reached end of file");
 		chunkedResponse += "0\r\n\r\n";
 	}
 	return (chunkedResponse);
@@ -445,6 +450,7 @@ void HttpResponse::prepareErrorResponse( HttpRequest &request )
 	this->fileSize = errorFile.tellg();
 	errorFile.seekg(0, std::ios::beg);
 
+	debug(INFO, "Error route: " + errorRoute);
 	if (this->fileSize && errorFile.is_open()) {
 		fileContent.assign((std::istreambuf_iterator<char>(errorFile)),
 						   (std::istreambuf_iterator<char>()));

@@ -116,9 +116,14 @@ make
 
 - [ ] Adicionar Tests:
   - [ ] Test do timeout con telnet
-  - [ ] Test do default error page
-  - [ ] Test custom error page
-  - [ ] Test para DELETE //curl -X DELETE localhost:3490/delete/ringo.txt , para pasta e 403
-  - [ ] Test server multiple ports
-  - [ ] Test Limit client body size.
-  - [ ] Define a list of accepted HTTP methods for the route.
+  - [x] Test do default error page
+  - [x] Test custom error page
+  - [x] Test para DELETE //curl -X DELETE localhost:3490/delete/ringo.txt , para pasta e 403
+  - [x] Test server multiple ports
+  - [x] Test Limit client body size.
+  - [x] Define a list of accepted HTTP methods for the route.
+
+
+## Test files:
+
+http://xcal1.vodafone.co.uk/

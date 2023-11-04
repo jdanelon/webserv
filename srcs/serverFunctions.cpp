@@ -5,8 +5,8 @@ bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 	int	client_fd = webserv.pollfds[i].fd;
 
 	// Why 256 does not work? - joao
-	char	buf[256];
-	std::memset(buf, '\0', 256);
+	char	buf[16];
+	std::memset(buf, '\0', 16);
 
 	int	nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
 	std::cout << "read_client_request_headers" << std::endl;
@@ -53,7 +53,6 @@ bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
 		return (false);
 	}
 	buf[nbytes] = '\0';
-	std::cout << "Body received: " << buf << std::endl;
 	if (webserv.client_connections[client_fd].tail_appended_body) {
 		webserv.client_connections[client_fd].body_buffer = buf;
 	}
@@ -76,10 +75,6 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 
 	std::cout << "process_client_event: " << std::endl;
 	if (is_error) {
-		int client_fd = webserv.pollfds[i].fd;
-		std::cout << "Error: " << client_fd << std::endl;
-		std::cout << "POLERR: " << (webserv.pollfds[i].revents & POLLERR) << std::endl;
-		std::cout << "POLLHUP: " << (webserv.pollfds[i].revents & POLLHUP) << std::endl;
 		webserv.end_client_connection(i);
 	}
 	else if (is_input_ready) {
@@ -112,7 +107,7 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 		}
 	}
 	else if (is_output_ready) {
-		std::cout << "send_response" << std::endl;
+		std::cout << "Sending Response...." << std::endl;
 		webserv.send_response(i);
 	}
 }

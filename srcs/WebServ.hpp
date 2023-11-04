@@ -13,7 +13,7 @@
 
 extern int g_signal_code;
 
-#define RESPONSE_CHUNK_SIZE 64
+#define RESPONSE_CHUNK_SIZE 2048
 
 class WebServ
 {
