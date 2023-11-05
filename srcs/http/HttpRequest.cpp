@@ -314,6 +314,7 @@ std::string	HttpRequest::_find_full_path( std::string method, std::string new_ur
 	}
 	else
 		full_path += remaining_folders;
+  
 	struct stat buf;
 	if (stat(full_path.c_str(), &buf) != 0 || !S_ISDIR(buf.st_mode))
 		return ("");
@@ -402,7 +403,7 @@ void	HttpRequest::validate_headers( Server *srv ) {
 		full_path = this->_find_full_path(this->method, new_uri, srv);
 		if (full_path.empty())
 			set_error_code(404);
-		if (this->method != "POST" && (stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode))
+		if (this->method != "POST" && ((stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode)))
 			set_error_code(404);
 	}
 	// If request is for folder: search for index files with possible multiple redirections
@@ -423,6 +424,7 @@ void	HttpRequest::validate_headers( Server *srv ) {
 				return ;
 			}
 			full_path = this->_find_full_path(this->method, new_uri, srv);
+
 			if (full_path.empty())
 				set_error_code(404);
 			// Check if index file is found
