@@ -212,7 +212,7 @@ test_request_partial 19 "GET" "http://localhost:3492/calc.php" "Simple Calculato
 
 ### 20 - CGI PHP POST
 
-test_request_partial 20 "POST" "http://localhost:3492/calc.php" "42" "num1=13&num2=29&operation=add"
+test_request_partial 20 "POST" "http://localhost:3492/calc.php" "42" "num1=13&num2=29&operator=add"
 
 ### 21 - Test Upload
 
@@ -220,4 +220,4 @@ test_upload 21 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store
 
 ### 22 - Test Upload zip file
 
-# test_upload 22 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/10MB.zip"  "test/upload/10MB.zip"
+test_upload 22 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/1MB.zip"  "test/upload/1MB.zip"

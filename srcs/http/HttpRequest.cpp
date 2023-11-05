@@ -202,6 +202,7 @@ void	HttpRequest::parse_body( std::string partial_body ) {
 			this->headers["Content-Type"].find("multipart/form-data") != std::string::npos)
 	{
 		if (this->full_upload_path.empty()) {
+			debug(ERROR, "Full upload path is empty");
 			set_error_code(400);
 		}
 		// If the body is a file upload, we need to parse the multipart body
@@ -462,8 +463,6 @@ void	HttpRequest::validate_headers( Server *srv ) {
 			return ;
 		}
 	}
-
-	std::cout << "\tHERE" << std::endl;
 
 	if (this->get_error_code() == 0)
 		this->full_resource_path = full_path;
