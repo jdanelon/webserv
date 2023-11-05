@@ -310,7 +310,7 @@ std::string	HttpRequest::_find_full_path( std::string method, std::string new_ur
 	full_path += remaining_folders;
 	if (method == "POST" && upload)
 	{
-		this->full_upload_path = full_path + upload_store;
+		this->full_upload_path = remove_double_slash(full_path + upload_store);
 		full_path += std::string("/") + upload_store + std::string("/");
 	}
 
@@ -451,6 +451,15 @@ void	HttpRequest::validate_headers( Server *srv ) {
 	// ATTENTION: NEED TO CHANGE /ETC/HOSTS FILE TO INCLUDE OTHER SERVER_NAMES
 	if (is_server_name_forbidden(this->host, srv->ip, srv->server_name))
 		set_error_code(404);
+	
+	int	upload(srv->upload);
+	if (loc != locations.end())
+		upload = loc->second.upload;
+	if (!upload && this->method == "POST" && this->headers.find("Content-Type") != this->headers.end() &&
+			this->headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
+		debug(WARNING, "NO UPLOAD");
+		set_error_code(400);
+	}
 
 	int	code = this->get_error_code();
 	std::map<int, std::string>::iterator it;

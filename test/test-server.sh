@@ -180,7 +180,7 @@ test_upload 11 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store
 
 ### 12 - Test Delete
 
-# test_status_code 12 "DELETE" "http://localhost:3490/upload/store-folder/test16kb.txt" 200
+test_status_code 12 "DELETE" "http://localhost:3490/upload/store-folder/test16.txt" 200
 
 ### 13 - Test Multiple port
 
@@ -221,3 +221,7 @@ test_upload 21 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store
 ### 22 - Test Upload zip file
 
 test_upload 22 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/1MB.zip"  "test/upload/1MB.zip"
+
+## 23 - Autoindex
+
+test_request_partial 23 "GET" "http://localhost:3492/upload/" "<a href=\"http://localhost:3492/upload/index.html\">index.html</a>"
