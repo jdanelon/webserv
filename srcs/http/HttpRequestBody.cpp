@@ -1,6 +1,6 @@
 #include "HttpRequestBody.hpp"
 
-bool HttpRequestBody::debugEnabled = true;
+bool HttpRequestBody::debugEnabled = false;
 const std::string HttpRequestBody::className = "HttpRequestBody";
 
 HttpRequestBody::HttpRequestBody() : processingInProgress(false)

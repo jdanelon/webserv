@@ -1,18 +1,9 @@
-# Setup the servers to compare in the test-servers.sh
+# Test
 
-nginx_url="http://localhost:8080"
-other_url="http://google.com"
+1. Run the server with the test conf file
 
-# Build the container
+./webserv conf-files/oneServerTest.conf
 
-docker build -t nginxtest .
+2. Run make rule to test
 
-# Run the tests
-
-bash test-servers.sh
-
-# Other useful commands
-
-docker stop $(docker ps -q) 
-docker build -t nginxtest . 
-docker run -d -p 8080:80 nginxtest
+make testing

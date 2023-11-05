@@ -1,6 +1,6 @@
 #include "WebServ.hpp"
 
-bool WebServ::debugEnabled = true;
+bool WebServ::debugEnabled = false;
 const std::string WebServ::className = "Webserv";
 
 WebServ::WebServ( void ) : has_closed_connections(false)

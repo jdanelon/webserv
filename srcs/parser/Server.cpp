@@ -52,14 +52,14 @@ void	Server::fill_with_defaults( void )
 	if (this->ip.empty())
 		this->ip = "127.0.0.1";
 	if (this->port.empty())
-		this->port = "8080";
+		this->port = "3490";
 	if (this->server_name.empty())
 	{
 		this->server_name.push_back("localhost");
 		this->server_name.push_back("www.localhost");
 	}
 	if (this->root.empty())
-		this->root = "/root";
+		this->root = "test/www";
 	if (this->index.empty())
 	{
 		this->index.push_back("index.html");
