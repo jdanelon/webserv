@@ -169,6 +169,8 @@ void HttpRequestBody::processCompletePart(const std::string &partial_body)
 	// Add partial_body to tailBuffer
 	tailBuffer += partial_body;
 
+	// debug(INFO, "MARKER " + tailBuffer);
+
 	// Keep only the last N bytes in tailBuffer, where N is the boundary length plus 2
 	size_t tail_length = end_boundary.length();
 	if (tailBuffer.length() > tail_length)

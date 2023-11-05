@@ -463,8 +463,6 @@ void	HttpRequest::validate_headers( Server *srv ) {
 		}
 	}
 
-	std::cout << "\tHERE" << std::endl;
-
 	if (this->get_error_code() == 0)
 		this->full_resource_path = full_path;
 }

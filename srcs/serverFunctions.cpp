@@ -30,7 +30,7 @@ bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 		return (true);
 	}
 
-	// webserv.client_connections[client_fd].timestamp = timestamp();
+	webserv.client_connections[client_fd].timestamp = timestamp();
 
 	return (true); // Return true if successful, false if connection should be closed
 }
@@ -57,13 +57,15 @@ bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
 	buf[nbytes] = '\0';
 	if (webserv.client_connections[client_fd].tail_appended_body) {
 		webserv.client_connections[client_fd].body_buffer = buf;
+		// std::cout << "\tBODY_BUFFER LENGTH: " << webserv.client_connections[client_fd].body_buffer.length() << std::endl;
 	}
 	else {
 		webserv.client_connections[client_fd].body_buffer.append(buf);
+		// std::cout << "\tBODY_BUFFER LENGTH: " << webserv.client_connections[client_fd].body_buffer.length() << std::endl;
 		webserv.client_connections[client_fd].tail_appended_body = true;
 	}
 
-	// webserv.client_connections[client_fd].timestamp = timestamp();
+	webserv.client_connections[client_fd].timestamp = timestamp();
 
 	return (true); // Return true if successful, false if connection should be closed
 }
