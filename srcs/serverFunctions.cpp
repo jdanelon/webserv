@@ -4,8 +4,8 @@
 bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 	int	client_fd = webserv.pollfds[i].fd;
 
-	char	buf[256];
-	std::memset(buf, '\0', 256);
+	char	buf[16];
+	std::memset(buf, '\0', 16);
 
 	int	nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
 	std::cout << "read_client_request_headers" << std::endl;
@@ -52,7 +52,6 @@ bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
 		return (false);
 	}
 	buf[nbytes] = '\0';
-	std::cout << "Body received: " << buf << std::endl;
 	if (webserv.client_connections[client_fd].tail_appended_body) {
 		webserv.client_connections[client_fd].body_buffer = buf;
 	}
@@ -107,7 +106,7 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 		}
 	}
 	else if (is_output_ready) {
-		std::cout << "send_response" << std::endl;
+		std::cout << "Sending Response...." << std::endl;
 		webserv.send_response(i);
 	}
 }

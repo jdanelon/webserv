@@ -118,7 +118,6 @@ bool	WebServ::client_timeout( int idx )
 
 void	WebServ::end_client_connection( int idx )
 {
-	std::cout << "Closing connection for fd: " << this->pollfds[idx].fd << std::endl;
 	close(this->pollfds[idx].fd);
 	// remove client and delete reserved client memory from this->clients (?)
 	// ...
@@ -176,10 +175,12 @@ void	WebServ::parse_request_headers( int idx )
 			this->client_connections[client_fd].request_has_body = true;
 			this->client_connections[client_fd].is_request_body_parsing = true;
 
+			// If its multipart or chunked, we assume the body is not complete
 			bool continue_reading_body = true;
 			std::map<std::string, std::string>::iterator it;
 			it = request.headers.find("Content-Length");
 			size_t content_length = 0;
+			// If content-length is present, we check if the body is complete
 
 			if (it != request.headers.end()) {
 				content_length = atoi(it->second.c_str());
@@ -190,20 +191,21 @@ void	WebServ::parse_request_headers( int idx )
 			this->client_connections[client_fd].continue_reading_body = continue_reading_body;
 		}
 		else {
-			std::cout << "Request has no body" << std::endl;
+			debug(INFO, "Request has no body");
 			this->client_connections[client_fd].is_request_completed = true;
 		}
 	}
 }
 
 void	WebServ::parse_request_body( int idx ) {
+	debug(INFO, "Parsing request body");
 	int client_fd = this->pollfds[idx].fd;
 
 	// We call the parser function of the request
 	this->client_connections[client_fd].request.parse_body(
-			this->client_connections[client_fd].body_buffer, 
-			this->client_connections[client_fd].host_server
+			this->client_connections[client_fd].body_buffer
 		);
+	debug(INFO, "Request body parsed");
 
 	// If the request is completed, we inform the connection
 	if (client_connections[client_fd].request.is_body_parsed) {
@@ -252,6 +254,7 @@ void	WebServ::send_response( int idx )
 
 	// 1) If request is not valid, send error response
 	if (!this->client_connections[client_fd].response.is_request_valid) {
+		debug(INFO, "Sending error response...");
 		HttpResponse http_response = this->client_connections[client_fd].response;
 		http_response.prepareErrorResponse(this->client_connections[client_fd].request);
 		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
@@ -279,10 +282,10 @@ void	WebServ::send_response( int idx )
 			if (this->client_connections[client_fd].response.fileOffset <= RESPONSE_CHUNK_SIZE) {
 				std::string fullResponse = this->client_connections[client_fd].response.getResponse() + chunkData;
 				send(client_fd, fullResponse.c_str(), fullResponse.length(), 0);
-				std::cout << "Sending Response..." << std::endl << fullResponse << std::endl;
+				debug(INFO, "Sending first chunk response...");
 			} else {
 				// Otherwise, just send the chunk
-				std::cout << "Sending chunk: " << std::endl << chunkData << std::endl;
+				debug(INFO, "Sending chunk...");
 				send(client_fd, chunkData.c_str(), chunkData.length(), 0);
 			}
 		}

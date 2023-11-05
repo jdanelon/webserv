@@ -5,19 +5,25 @@ const std::string HttpRequestBody::className = "HttpRequestBody";
 
 HttpRequestBody::HttpRequestBody() : processingInProgress(false)
 {
-	debug(WARNING, "Default constructor called - No boundary set");
+	// debug(WARNING, "Default constructor called - No boundary set");
 	tempFileName = "./tmp/" + generateUniqueFilename();
 	state = START;
 	fullChunkedBody = "";
+	upload_store = "";
+	fileName = "";
+	isError = false;
 }
 
 HttpRequestBody::HttpRequestBody(const std::string &boundary) : boundary(boundary),
 																processingInProgress(false)
 {
-	debug(WARNING, "Default constructor called - with boundary ");
+	// debug(WARNING, "Default constructor called - with boundary ");
 	tempFileName = "./tmp/" + generateUniqueFilename();
 	state = START;
 	fullChunkedBody = "";
+	upload_store = "";
+	fileName = "";
+	isError = false;
 }
 
 void HttpRequestBody::parseContentDisposition(const std::string &content_disposition)
@@ -40,13 +46,13 @@ void HttpRequestBody::parseContentDisposition(const std::string &content_disposi
 
 		std::string value = content_disposition.substr(pos, end_pos - pos);
 
-		if (key.find("name") != std::string::npos)
+		if (key.find("filename") != std::string::npos)
 		{
-			fieldName = value;
+			this->fileName = value;
 		}
-		else if (key.find("filename") != std::string::npos)
+		else if (key.find("name") != std::string::npos)
 		{
-			fileName = value;
+			this->fieldName = value;
 		}
 
 		pos = end_pos + 1;
@@ -87,6 +93,7 @@ HttpRequestBody &HttpRequestBody::operator=(const HttpRequestBody &other)
 		this->upload_store = other.upload_store;
 		this->remaining_data = other.remaining_data;
 		this->fullChunkedBody = other.fullChunkedBody;
+		this->isError = other.isError;
 	}
 	return *this;
 }
@@ -103,8 +110,7 @@ void HttpRequestBody::setBoundary(const std::string &boundary)
 
 void HttpRequestBody::parseMultipartBody(const std::string &partial_body)
 {
-	debug(INFO, "parseMultipartBody");
-	debug(INFO, partial_body);
+	debug(INFO, "parseMultipartBody...");
 
 	partialBuffer += partial_body;
 
@@ -155,7 +161,7 @@ void HttpRequestBody::parseMultipartBody(const std::string &partial_body)
 
 void HttpRequestBody::processCompletePart(const std::string &partial_body)
 {
-	std::string end_boundary = "--" + boundary + "--";
+	std::string end_boundary = "\r\n--" + boundary + "--";
 
 	// Add partial_body to tailBuffer
 	tailBuffer += partial_body;
@@ -179,9 +185,15 @@ void HttpRequestBody::processCompletePart(const std::string &partial_body)
 
 		if (!tempFile.is_open())
 		{
-			debug(INFO, "Opening temp file");
-			debug(INFO, "Upload Store: " + upload_store);
-			tempFile.open(tempFileName.c_str(), std::ios::out | std::ios::app);
+			if (upload_store != "" && fileName != "") {
+				std::string upload_store_path = upload_store + "/" + fileName;
+				debug(INFO, "Writing to file: " + upload_store_path);
+				tempFile.open(upload_store_path.c_str(), std::ios::out);
+			}
+			else {
+				debug(INFO, "Writing to temp file: " + tempFileName);
+				tempFile.open(tempFileName.c_str(), std::ios::out);
+			}
 		}
 
 		if (tempFile.is_open() && tempFile.good())
@@ -191,8 +203,8 @@ void HttpRequestBody::processCompletePart(const std::string &partial_body)
 		}
 		else if (!tempFile.good())
 		{
-			std::cerr << "An error occurred while writing to the file." << std::endl;
-			std::cout << "Error state: " << tempFile.rdstate() << std::endl;
+			debug(ERROR, "Error writing to temp file");
+			this->isError = true;
 		}
 	}
 
@@ -224,11 +236,11 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
 			if (pos != std::string::npos) {
 				std::string sizeLine = partialBuffer.substr(0, pos);
 				std::stringstream ss;
-				int remaining_data;
 
 				ss << std::hex << sizeLine;
 				ss >> remaining_data;
 				partialBuffer = partialBuffer.substr(pos + 2);
+				debug(INFO, "Remaining data: " + std::to_string(remaining_data));
 
 				if (remaining_data == 0) {
 					state = TAIL; // Last chunk, switch to reading trailers
@@ -249,6 +261,7 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
 				partialBuffer = partialBuffer.substr(remaining_data + 2);  // +2 to skip the trailing \r\n
 				state = START;
 			} else {
+				debug(INFO, "Not enough data to read");
 				break;
 			}
 		}
@@ -287,6 +300,11 @@ State HttpRequestBody::getState()
 std::string HttpRequestBody::getFullChunkedBody()
 {
 	return fullChunkedBody;
+}
+
+bool HttpRequestBody::getIsError()
+{
+	return isError;
 }
 
 void HttpRequestBody::debug(LogLevel level, const std::string &message)

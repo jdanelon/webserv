@@ -20,7 +20,8 @@ enum State {
 	FILE_INFO, // Start boundary found, file info not complete
 	PART, // File info complete, part not complete
 	TAIL, // Part is complete, but tail is not complete
-	COMPLETE // Part and tail are 
+	COMPLETE, // Part and tail are
+	ERROR_STATE
 };
 
 class HttpRequestBody {
@@ -39,6 +40,7 @@ private:
 	std::string		upload_store;
 	int 			remaining_data;
 	std::string		fullChunkedBody;
+	bool			isError;
 
 public:
 	static bool debugEnabled;
@@ -73,6 +75,8 @@ public:
 	void parseHeaders(const std::string& header);
 
 	State getState();
+
+	bool getIsError();
 
 	std::string getFullChunkedBody();
 };

@@ -57,7 +57,7 @@ class HttpRequest {
 		void	parse( std::string raw );
 		void	parse_request_line( std::string line );
 		void	parse_header_line( std::string line );
-		void	parse_body( std::string partial_body, Server *srv );
+		void	parse_body( std::string partial_body);
 		void	validate_headers( Server *srv );
 		void	validate_body( Server *srv );
 		int		get_error_code( void ) const;
