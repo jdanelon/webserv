@@ -281,7 +281,6 @@ void HttpResponse::handlePost(HttpRequest &request)
 			struct stat buf;
 			if (stat(this->resourceFullPath.c_str(), &buf) != 0 || S_ISDIR(buf.st_mode))
 				this->resourceFullPath = "";
-
 			this->setStatusCode(httpStatusCodes.InternalServerError.code);
 			return ;
 		}

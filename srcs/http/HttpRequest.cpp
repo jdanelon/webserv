@@ -314,7 +314,7 @@ std::string	HttpRequest::_find_full_path( std::string method, std::string new_ur
 	}
 	else
 		full_path += remaining_folders;
-  
+
 	struct stat buf;
 	if (stat(full_path.c_str(), &buf) != 0 || !S_ISDIR(buf.st_mode))
 		return ("");
@@ -480,7 +480,6 @@ void	HttpRequest::validate_body( Server *srv ) {
 	if (max_body_size != -1 && (int)this->body.length() > max_body_size)
 		set_error_code(413);
 	debug(INFO, "Body validation: " + ft_itoa(this->get_error_code()));
-	// TO-DO: SET FULL_PATH FOR FILE_UPLOAD
 }
 
 int	HttpRequest::get_error_code( void ) const
