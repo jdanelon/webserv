@@ -62,7 +62,6 @@ class HttpRequest {
 		void	validate_body( Server *srv );
 		int		get_error_code( void ) const;
 		void	set_error_code( int const &code );
-		std::string find_full_path( std::string method, std::string new_uri, Server *srv );
 
 		//Debug
 		void	print( int client_fd );
@@ -70,6 +69,8 @@ class HttpRequest {
 
 	private:
 		int	_error_code;
+
+		std::string	_find_full_path( std::string method, std::string new_uri, Server *srv );
 };
 
 #endif

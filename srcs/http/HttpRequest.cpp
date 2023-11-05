@@ -7,6 +7,7 @@ HttpRequest::HttpRequest( void ) : autoindex(false), path_info(""), query_string
 	// Create a new body parser
 	std::cout << "Creating new HttpRequest" << std::endl;
 	this->full_resource_path = "";
+	this->full_upload_path = "";
 	this->has_body = false;
 	this->is_body_parsed = false;
 	this->body_parser = HttpRequestBody();
@@ -28,6 +29,7 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->raw = obj.raw;
 		this->autoindex = obj.autoindex;
 		this->full_resource_path = obj.full_resource_path;
+		this->full_upload_path = obj.full_upload_path;
 		this->path_info = obj.path_info;
 		this->query_string = obj.query_string;
 		this->is_valid = obj.is_valid;
@@ -181,7 +183,7 @@ static std::string	get_matched_location( std::string request_uri, std::map<std::
 	return (path);
 }
 
-void	HttpRequest::parse_body( std::string partial_body) {
+void	HttpRequest::parse_body( std::string partial_body ) {
 	// We parse differently depending on whether the body is chunked or not
 	if (this->headers.find("Transfer-Encoding") != this->headers.end() &&
 		this->headers["Transfer-Encoding"] == "chunked")
@@ -268,17 +270,32 @@ static bool	is_server_name_forbidden( std::string hostname, std::string ip, std:
 	return (true);
 }
 
-std::string	HttpRequest::find_full_path( std::string method, std::string new_uri, Server *srv )
+static std::string	remove_double_slash( std::string const &path )
+{
+	size_t		idx;
+	std::string	tmp(path);
+
+	idx = path.find("//");
+	while (idx != std::string::npos)
+	{
+		tmp.replace(idx, 2, "/");
+		idx = path.find("//");
+	}
+	return (tmp);
+}
+
+std::string	HttpRequest::_find_full_path( std::string method, std::string new_uri, Server *srv )
 {
 	int			upload(srv->upload);
 	std::string	alias(""), upload_store(srv->upload_store), full_path;
 	std::map<std::string, Location> locations = srv->location;
 	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(new_uri, locations));
 
-	full_path = std::getenv("PWD") + std::string("/") + srv->root;
-	// std::cout << "\tNEW_URI: '" << new_uri << "'" << std::endl;
+	full_path = std::getenv("PWD") + std::string("/") + srv->root + std::string("/");
 	if (loc != locations.end())
 	{
+		if (new_uri == loc->first)
+			new_uri += "/";
 		alias = loc->second.alias;
 		upload = loc->second.upload;
 		upload_store = loc->second.upload_store;
@@ -288,21 +305,20 @@ std::string	HttpRequest::find_full_path( std::string method, std::string new_uri
 	std::string	remaining_folders = new_uri.substr(0, new_uri.find_last_of('/') + 1);
 	std::string	resource = new_uri.substr(new_uri.find_last_of('/') + 1);
 
-	// if (new_uri != matched_location)
-
 	full_path += alias;
-	full_path += remaining_folders;
-	if (method == "POST" && upload) {
-		full_upload_path = full_path + upload_store;
-		full_path += upload_store;
+	if (method == "POST" && upload)
+	{
+		this->full_upload_path = full_path + upload_store;
+		full_path += std::string("/") + upload_store + std::string("/");
 	}
-	// std::cout << "\tFULL_PATH: '" << full_path << "'" << std::endl;
+	else
+		full_path += remaining_folders;
+
 	struct stat buf;
 	if (stat(full_path.c_str(), &buf) != 0 || !S_ISDIR(buf.st_mode))
 		return ("");
 	full_path += resource;
-	// std::cout << "\tFULL_PATH: '" << full_path << "'" << std::endl;
-	return (full_path);
+	return (remove_double_slash(full_path));
 }
 
 void	HttpRequest::validate_headers( Server *srv ) {
@@ -383,7 +399,7 @@ void	HttpRequest::validate_headers( Server *srv ) {
 			this->headers.insert(std::make_pair("Location", loc->second.redirect.second));
 			return ;
 		}
-		full_path = find_full_path(this->method, new_uri, srv);
+		full_path = this->_find_full_path(this->method, new_uri, srv);
 		if (full_path.empty())
 			set_error_code(404);
 		if (this->method != "POST" && ((stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode)))
@@ -406,7 +422,8 @@ void	HttpRequest::validate_headers( Server *srv ) {
 				this->headers.insert(std::make_pair("Location", loc->second.redirect.second));
 				return ;
 			}
-			full_path = find_full_path(this->method, new_uri, srv);
+			full_path = this->_find_full_path(this->method, new_uri, srv);
+
 			if (full_path.empty())
 				set_error_code(404);
 			// Check if index file is found
@@ -462,7 +479,6 @@ void	HttpRequest::validate_body( Server *srv ) {
 	if (max_body_size != -1 && (int)this->body.length() > max_body_size)
 		set_error_code(413);
 	debug(INFO, "Body validation: " + ft_itoa(this->get_error_code()));
-	// TO-DO: SET FULL_PATH FOR FILE_UPLOAD
 }
 
 int	HttpRequest::get_error_code( void ) const

@@ -4,7 +4,6 @@
 bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 	int	client_fd = webserv.pollfds[i].fd;
 
-	// Why 256 does not work? - joao
 	char	buf[16];
 	std::memset(buf, '\0', 16);
 
