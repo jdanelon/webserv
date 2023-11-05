@@ -41,6 +41,7 @@ bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
 	std::memset(buf, '\0', 256);
 
 	int	nbytes = recv(client_fd, buf, sizeof(buf) - 1, 0);
+	std::cout << "Bytes read: " << nbytes << std::endl;
 
 	if (nbytes <= 0) {
 		if (nbytes == 0)
@@ -93,6 +94,14 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 			webserv.parse_request_headers(i);
 		}
 
+		// If is 100 continue, and we have not sent 100 continue yet, send it
+		if (webserv.client_connections[client_fd].is_100_continue 
+			&& !webserv.client_connections[client_fd].is_100_continue_sent) {
+			std::cout << "Handle 100 Continue...." << std::endl;
+			webserv.handle_100_continue(i);
+			return;
+		}
+
 		// If request has body, read and parse it little by little 
 		if (webserv.client_connections[client_fd].is_header_received 
 			&& webserv.client_connections[client_fd].request_has_body) {
@@ -107,20 +116,34 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 		}
 	}
 	else if (is_output_ready) {
-		std::cout << "Sending Response...." << std::endl;
-		webserv.send_response(i);
+		int client_fd = webserv.pollfds[i].fd;
+
+		if (webserv.client_connections[client_fd].is_100_continue
+			&& !webserv.client_connections[client_fd].is_100_continue_sent) {
+			std::cout << "Sending 100 Continue Response..." << std::endl;
+			webserv.send_100_continue(i);
+		}
+		else {
+			std::cout << "Sending Response..." << std::endl;
+			webserv.send_response(i);
+		}
 	}
 }
 
 void	poll_events( WebServ &webserv ) {
 	while (g_signal_code == 0) {
+		std::cout << "poll_events" << std::endl;
 		int	num_revents = poll(&webserv.pollfds[0], webserv.pollfds.size(), -1);
-		if (num_revents < 0)
+		std::cout << "num_revents: " << num_revents << std::endl;
+		if (num_revents < 0) {
+			std::cout << "poll error" << std::endl;
 			break;
+		}
 		// webserv.print();
 		for (unsigned int i = 0; i < webserv.pollfds.size(); i++) {
 			bool is_server = webserv.servers.count(webserv.pollfds[i].fd);
 			if (!is_server && webserv.client_timeout(i)) {
+				std::cout << "Client timeout" << std::endl;
 				webserv.end_client_connection(i);
 				continue;
 			}

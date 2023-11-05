@@ -12,6 +12,7 @@ HttpRequestBody::HttpRequestBody() : processingInProgress(false)
 	upload_store = "";
 	fileName = "";
 	isError = false;
+	bytesWritten = 0;
 }
 
 HttpRequestBody::HttpRequestBody(const std::string &boundary) : boundary(boundary),
@@ -24,6 +25,7 @@ HttpRequestBody::HttpRequestBody(const std::string &boundary) : boundary(boundar
 	upload_store = "";
 	fileName = "";
 	isError = false;
+	bytesWritten = 0;
 }
 
 void HttpRequestBody::parseContentDisposition(const std::string &content_disposition)
@@ -94,6 +96,7 @@ HttpRequestBody &HttpRequestBody::operator=(const HttpRequestBody &other)
 		this->remaining_data = other.remaining_data;
 		this->fullChunkedBody = other.fullChunkedBody;
 		this->isError = other.isError;
+		this->bytesWritten = other.bytesWritten;
 	}
 	return *this;
 }
@@ -198,8 +201,9 @@ void HttpRequestBody::processCompletePart(const std::string &partial_body)
 
 		if (tempFile.is_open() && tempFile.good())
 		{
-			debug(INFO, "Writing to temp file");
+			bytesWritten += write_data.length();
 			tempFile << write_data;
+			debug(INFO, "Wrote " + ft_itoa(bytesWritten) + " bytes to temp file");
 		}
 		else if (!tempFile.good())
 		{

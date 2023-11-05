@@ -79,6 +79,9 @@ public:
 	bool getIsError();
 
 	std::string getFullChunkedBody();
+
+	// debug
+	int bytesWritten;
 };
 
 # endif

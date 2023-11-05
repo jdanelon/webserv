@@ -175,7 +175,7 @@ void	WebServ::parse_request_headers( int idx )
 			this->client_connections[client_fd].request_has_body = true;
 			this->client_connections[client_fd].is_request_body_parsing = true;
 
-			// If its multipart or chunked, we assume the body is not complete
+			// Check if we have the full body in the buffer
 			bool continue_reading_body = true;
 			std::map<std::string, std::string>::iterator it;
 			it = request.headers.find("Content-Length");
@@ -189,6 +189,12 @@ void	WebServ::parse_request_headers( int idx )
 				}
 			}
 			this->client_connections[client_fd].continue_reading_body = continue_reading_body;
+
+			// Check if we have to send 100 continue
+			it = request.headers.find("Expect");
+			if (it != request.headers.end() && it->second == "100-continue") {
+				this->client_connections[client_fd].is_100_continue = true;
+			}
 		}
 		else {
 			debug(INFO, "Request has no body");
@@ -246,6 +252,7 @@ void	WebServ::_clear_connection(int const client_fd) {
 	this->client_connections[client_fd].is_request_body_parsed = false;
 	this->client_connections[client_fd].request_has_body = false;
 	this->client_connections[client_fd].tail_appended_body = false;
+	this->client_connections[client_fd].is_100_continue_sent = false;
 }
 
 void	WebServ::send_response( int idx )
@@ -331,6 +338,45 @@ void	WebServ::purge_connections( void )
 		else
 			it++;
 	}
+}
+
+void	WebServ::_clear_100_continue(int const client_fd) {
+	this->client_connections[client_fd].response = HttpResponse(this->client_connections[client_fd].host_server);
+	this->client_connections[client_fd].is_100_continue = false;
+	this->client_connections[client_fd].is_100_continue_sent = true;
+}
+
+void	WebServ::handle_100_continue( int idx ) {
+	int client_fd = this->pollfds[idx].fd;
+
+	HttpResponse http_response(this->client_connections[client_fd].host_server);
+	http_response.prepare100ContinueResponse();
+
+	this->client_connections[client_fd].response = http_response;	
+	this->client_connections[client_fd].is_100_continue_sent = false;
+	this->pollfds[idx].events = POLLOUT;
+}
+
+void	WebServ::send_100_continue( int idx ) {
+	int client_fd = this->pollfds[idx].fd;
+
+	// 1) If request is not valid, send error response
+	if (!this->client_connections[client_fd].response.is_request_valid) {
+		HttpResponse http_response = this->client_connections[client_fd].response;
+		http_response.prepareErrorResponse(this->client_connections[client_fd].request);
+		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+		this->_clear_connection(client_fd);
+	}
+	// 2) We send the response already configured
+	else {
+		HttpResponse http_response = this->client_connections[client_fd].response;
+		http_response.prepare100ContinueResponse();
+		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+		this->_clear_100_continue(client_fd);
+	}
+
+	this->pollfds[idx].events = POLLIN;
+
 }
 
 // Debug

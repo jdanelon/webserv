@@ -51,7 +51,7 @@ test_request_partial() {
     echo -e "${GREEN}Test #$test_number: $method request to $url passed.${NC}"
   else
     echo -e "${RED}Test #$test_number: $method request to $url failed.${NC}"
-    echo -e "Expected content: $expected_content"
+    echo -e "Content should have included: $expected_content"
     echo -e "Received: $actual_output"
   fi
 }
@@ -176,7 +176,7 @@ test_request 10 "PUT" "http://localhost:3490/qwerqwr.notfound" "test/test_files/
 
 ### 11 - Test Upload
 
-test_upload 11 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/test16kb.txt"  "test/upload/test16kb.txt"
+test_upload 11 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/test16.txt"  "test/upload/test16.txt"
 
 ### 12 - Test Delete
 
@@ -216,7 +216,7 @@ test_request_partial 20 "POST" "http://localhost:3492/calc.php" "42" "num1=13&nu
 
 ### 21 - Test Upload
 
-test_upload 21 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/test500kb.txt"  "test/upload/test500kb.txt"
+test_upload 21 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/test500.txt"  "test/upload/test500.txt"
 
 ### 22 - Test Upload zip file
 

@@ -486,6 +486,12 @@ void HttpResponse::prepareErrorResponse( HttpRequest &request )
 	this->response += fileContent;
 }
 
+void 		HttpResponse::prepare100ContinueResponse(	void ) {
+	setStatusCode(httpStatusCodes.Continue.code);
+	this->response = "";
+	this->generateResponseLine();
+}
+
 // Debug
 
 void HttpResponse::prepareDummyResponse() {

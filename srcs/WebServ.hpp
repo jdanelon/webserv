@@ -42,7 +42,8 @@ class WebServ
 		void	create_response( int idx );
 		void	send_response( int idx );
 		void	purge_connections( void );
-		void 	clear_connection_after_response( int idx );
+		void	handle_100_continue( int idx );
+		void	send_100_continue( int idx );
 
 		// Debug
 		void	print( void );
@@ -55,6 +56,7 @@ class WebServ
 		static void	_signal_handler( int const code );
 		void		_init_servers( void );
 		void		_clear_connection( int const client_fd );
+		void		_clear_100_continue( int const client_fd );
 
 		std::map<int, std::string>	_error_codes_map;
 };
