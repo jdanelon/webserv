@@ -1,6 +1,6 @@
 #include "HttpResponse.hpp"
 
-bool HttpResponse::debugEnabled = true;
+bool HttpResponse::debugEnabled = false;
 const std::string HttpResponse::className = "HttpResponse";
 
 HttpResponse::HttpResponse( void ) : response(""),

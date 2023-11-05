@@ -5,9 +5,13 @@
 ```
 make
 
-./webserv conf-files/oneServer.conf
+./webserv conf-files/oneServerTest.conf
 ```
+## How to test?
 
+```
+make testing
+```
 
 # Web Server To-Do List
 
@@ -32,12 +36,12 @@ make
 - [x] **Macros and Defines**
   - [x] Allowed to use macros and defines like `FD_SET`, `FD_CLR`, `FD_ISSET`, `FD_ZERO`.
 
-- [ ] **Web Browser Compatibility**
-  - [ ] Ensure the server is compatible with the web browser of your choice.
+- [x] **Web Browser Compatibility**
+  - [x] Ensure the server is compatible with the web browser of your choice.
 
-- [ ] **Compliance and Comparisons**
-  - [ ] Take NGINX as HTTP 1.1 compliant for comparisons related to headers and answer behaviors.
-  - [ ] HTTP response status codes should be accurate.
+- [x] **Compliance and Comparisons**
+  - [x] Take NGINX as HTTP 1.1 compliant for comparisons related to headers and answer behaviors.
+  - [x] HTTP response status codes should be accurate.
 
 - [x] **Error Pages**
   - [x] Server must have default error pages if none are provided by the user.
@@ -47,11 +51,11 @@ make
 
 - [ ] **Functionality**
   - [x] Must be able to serve a fully static website.
-  - [ ] Clients should be able to upload files to the server.
-  - [ ] Support at least the `GET`, `POST`, and `DELETE` HTTP methods.
+  - [x] Clients should be able to upload files to the server.
+  - [x] Support at least the `GET`, `POST`, and `DELETE` HTTP methods.
 
-- [ ] **Stress Testing**
-  - [ ] Ensure the server remains available under heavy loads.
+- [x] **Stress Testing**
+  - [x] Ensure the server remains available under heavy loads.
 
 - [x] **Port Listening**
   - [x] The server should be able to listen on multiple ports as specified in the configuration file.
@@ -96,9 +100,9 @@ make
 
 - [ ] **CGI Execution**
   - [x] Enable CGI execution based on file extensions (e.g., .php).
-  - [ ] Ensure CGI compatibility with POST and GET methods.
-  - [ ] Ability for routes to accept uploaded files.
-  - [ ] Specify directory where uploaded files should be saved.
+  - [x] Ensure CGI compatibility with POST and GET methods.
+  - [x] Ability for routes to accept uploaded files.
+  - [x] Specify directory where uploaded files should be saved.
   - [x] Configure server to call CGI with the requested file as the first argument.
   - [x] Ensure CGI is executed in the correct directory for relative path file access.
   - [x] Server must be compatible with at least one CGI (php-CGI, Python, etc.)
@@ -111,19 +115,14 @@ make
 
 ## Last Sprint:
 
-- [ ] Implement Content lenght required error
-- [ ] Implement Upload files
+- [x] Implement Content lenght required error
+- [x] Implement Upload files
 
-- [ ] Adicionar Tests:
-  - [ ] Test do timeout con telnet
+- [x] Adicionar Tests:
+  - [x] Test do timeout con telnet
   - [x] Test do default error page
   - [x] Test custom error page
   - [x] Test para DELETE //curl -X DELETE localhost:3490/delete/ringo.txt , para pasta e 403
   - [x] Test server multiple ports
   - [x] Test Limit client body size.
   - [x] Define a list of accepted HTTP methods for the route.
-
-
-## Test files:
-
-http://xcal1.vodafone.co.uk/
