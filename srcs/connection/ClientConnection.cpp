@@ -68,6 +68,8 @@ ClientConnection &ClientConnection::operator = ( ClientConnection const &obj )
 		this->is_request_body_parsed = obj.is_request_body_parsed;
 		this->tail_appended_body = obj.tail_appended_body;
 		this->continue_reading_body = obj.continue_reading_body;
+		this->is_100_continue = obj.is_100_continue;
+		this->is_100_continue_sent = obj.is_100_continue_sent;
 	}
 	return (*this);
 }

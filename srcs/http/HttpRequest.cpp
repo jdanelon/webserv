@@ -279,7 +279,7 @@ static std::string	remove_double_slash( std::string const &path )
 	while (idx != std::string::npos)
 	{
 		tmp.replace(idx, 2, "/");
-		idx = path.find("//");
+		idx = tmp.find("//");
 	}
 	return (tmp);
 }
@@ -306,13 +306,12 @@ std::string	HttpRequest::_find_full_path( std::string method, std::string new_ur
 	std::string	resource = new_uri.substr(new_uri.find_last_of('/') + 1);
 
 	full_path += alias;
+	full_path += remaining_folders;
 	if (method == "POST" && upload)
 	{
 		this->full_upload_path = full_path + upload_store;
 		full_path += std::string("/") + upload_store + std::string("/");
 	}
-	else
-		full_path += remaining_folders;
 
 	struct stat buf;
 	if (stat(full_path.c_str(), &buf) != 0 || !S_ISDIR(buf.st_mode))
@@ -463,6 +462,8 @@ void	HttpRequest::validate_headers( Server *srv ) {
 			return ;
 		}
 	}
+
+	std::cout << "\tHERE" << std::endl;
 
 	if (this->get_error_code() == 0)
 		this->full_resource_path = full_path;
