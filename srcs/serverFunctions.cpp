@@ -30,6 +30,8 @@ bool	read_client_request_headers( WebServ &webserv, unsigned int i ) {
 		return (true);
 	}
 
+	// webserv.client_connections[client_fd].timestamp = timestamp();
+
 	return (true); // Return true if successful, false if connection should be closed
 }
 
@@ -60,6 +62,8 @@ bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
 		webserv.client_connections[client_fd].body_buffer.append(buf);
 		webserv.client_connections[client_fd].tail_appended_body = true;
 	}
+
+	// webserv.client_connections[client_fd].timestamp = timestamp();
 
 	return (true); // Return true if successful, false if connection should be closed
 }

@@ -244,7 +244,7 @@ void HttpRequestBody::parseChunkedBody(const std::string &partial_body)
 				ss << std::hex << sizeLine;
 				ss >> remaining_data;
 				partialBuffer = partialBuffer.substr(pos + 2);
-				debug(INFO, "Remaining data: " + std::to_string(remaining_data));
+				// debug(INFO, "Remaining data: " + std::to_string(remaining_data));
 
 				if (remaining_data == 0) {
 					state = TAIL; // Last chunk, switch to reading trailers
