@@ -16,6 +16,7 @@ class ClientConnection
 
 		std::string		buffer;
 		std::string		body_buffer;
+		
 		HttpRequest		request;
 		HttpResponse	response;
 		bool			is_line_request_received;

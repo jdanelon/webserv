@@ -56,12 +56,10 @@ bool	read_client_request_body( WebServ &webserv, unsigned int i ) {
 	}
 	buf[nbytes] = '\0';
 	if (webserv.client_connections[client_fd].tail_appended_body) {
-		webserv.client_connections[client_fd].body_buffer = buf;
-		// std::cout << "\tBODY_BUFFER LENGTH: " << webserv.client_connections[client_fd].body_buffer.length() << std::endl;
+		webserv.client_connections[client_fd].body_buffer = std::string(buf, nbytes);
 	}
 	else {
-		webserv.client_connections[client_fd].body_buffer.append(buf);
-		// std::cout << "\tBODY_BUFFER LENGTH: " << webserv.client_connections[client_fd].body_buffer.length() << std::endl;
+		webserv.client_connections[client_fd].body_buffer.append(std::string(buf, nbytes));
 		webserv.client_connections[client_fd].tail_appended_body = true;
 	}
 
@@ -137,9 +135,9 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 
 void	poll_events( WebServ &webserv ) {
 	while (g_signal_code == 0) {
-		std::cout << "poll_events" << std::endl;
+		// std::cout << "poll_events" << std::endl;
 		int	num_revents = poll(&webserv.pollfds[0], webserv.pollfds.size(), -1);
-		std::cout << "num_revents: " << num_revents << std::endl;
+		// std::cout << "num_revents: " << num_revents << std::endl;
 		if (num_revents < 0) {
 			std::cout << "poll error" << std::endl;
 			break;

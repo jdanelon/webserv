@@ -220,4 +220,4 @@ test_upload 21 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store
 
 ### 22 - Test Upload zip file
 
-# test_upload 22 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/10MB.zip"  "test/upload/10MB.zip"
+test_upload 22 "POST" "http://localhost:3490/upload/" 201 "test/www/upload/store-folder/1MB.zip"  "test/upload/1MB.zip"
