@@ -203,7 +203,6 @@ void	HttpRequest::parse_body( std::string partial_body) {
 			set_error_code(400);
 		}
 		// If the body is a file upload, we need to parse the multipart body
-		debug(INFO, "SRC Full path: " + this->full_upload_path);
 		this->body_parser.setUploadStore(this->full_upload_path);
 		this->body_parser.parseMultipartBody(partial_body);
 	}

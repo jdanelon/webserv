@@ -14,7 +14,9 @@ ClientConnection::ClientConnection( void ) : host_server(NULL),
 												is_request_body_parsed(false),
 												request_has_body(false),
 												tail_appended_body(false),
-												continue_reading_body(false)
+												continue_reading_body(false),
+												is_100_continue(false),
+												is_100_continue_sent(false)
 												{}
 
 ClientConnection::ClientConnection( Server *server, long long timestamp ) : host_server(server),
@@ -31,7 +33,9 @@ ClientConnection::ClientConnection( Server *server, long long timestamp ) : host
 																			is_request_body_parsed(false),
 																			request_has_body(false),
 																			tail_appended_body(false),
-																			continue_reading_body(false) {
+																			continue_reading_body(false),
+																			is_100_continue(false),
+																			is_100_continue_sent(false) {
 }
 
 ClientConnection::ClientConnection( ClientConnection const &obj )

@@ -8,3 +8,5 @@ curl -v -X POST -F "file=@test/upload/test1.txt" localhost:3490
 curl -v -H "Transfer-Encoding: chunked" -H "Content-Type: application/json" \
   -X POST --data '{"key1":"value1", "key2":"value2"}' \
   localhost:3490
+
+curl -X POST http://localhost:3490/upload/ -F "file=@test/upload/10MB.zip"

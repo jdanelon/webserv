@@ -33,6 +33,7 @@ public:
 	Code InternalServerError;
 	Code NotImplemented;
 	Code HTTPVersionNotSupported;
+	Code Continue;
 
 	std::string getDescription(int code);
 

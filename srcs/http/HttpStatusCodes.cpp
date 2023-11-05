@@ -21,7 +21,8 @@ HttpStatusCodes::HttpStatusCodes() :
 	TooManyRequests(429, "Too Many Requests"),
 	InternalServerError(500, "Internal Server Error"),
 	NotImplemented(501, "Not Implemented"),
-	HTTPVersionNotSupported(505, "HTTP Version Not Supported") 
+	HTTPVersionNotSupported(505, "HTTP Version Not Supported"),
+	Continue(100, "Continue")
 {
 	statusCodeMap[OK.code] = OK.description;
 	statusCodeMap[BadRequest.code] = BadRequest.description;
@@ -44,6 +45,7 @@ HttpStatusCodes::HttpStatusCodes() :
 	statusCodeMap[InternalServerError.code] = InternalServerError.description;
 	statusCodeMap[NotImplemented.code] = NotImplemented.description;
 	statusCodeMap[HTTPVersionNotSupported.code] = HTTPVersionNotSupported.description;
+	statusCodeMap[Continue.code] = Continue.description;
 }
 
 std::string HttpStatusCodes::getDescription(int code) {

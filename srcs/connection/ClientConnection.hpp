@@ -28,6 +28,8 @@ class ClientConnection
 		bool			tail_appended_body;
 		bool			request_validation_error;
 		bool			continue_reading_body;
+		bool			is_100_continue;
+		bool			is_100_continue_sent;
 
 		ClientConnection( void );
 		ClientConnection( Server *server, long long timestamp );
