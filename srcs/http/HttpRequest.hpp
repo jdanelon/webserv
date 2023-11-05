@@ -40,6 +40,7 @@ class HttpRequest {
 		std::string											raw;
 		bool												autoindex;
 		std::string											full_resource_path;
+		std::string											full_upload_path;
 		std::string											path_info;
 		std::string											query_string;
 		bool												is_valid;
@@ -56,11 +57,12 @@ class HttpRequest {
 		void	parse( std::string raw );
 		void	parse_request_line( std::string line );
 		void	parse_header_line( std::string line );
-		void	parse_body( std::string partial_body, Server *srv );
+		void	parse_body( std::string partial_body);
 		void	validate_headers( Server *srv );
 		void	validate_body( Server *srv );
 		int		get_error_code( void ) const;
 		void	set_error_code( int const &code );
+		std::string find_full_path( std::string method, std::string new_uri, Server *srv );
 
 		//Debug
 		void	print( int client_fd );

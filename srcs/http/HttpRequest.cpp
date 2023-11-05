@@ -1,6 +1,6 @@
 #include "HttpRequest.hpp"
 
-bool HttpRequest::debugEnabled = false;
+bool HttpRequest::debugEnabled = true;
 const std::string HttpRequest::className = "HttpRequest";
 
 HttpRequest::HttpRequest( void ) : autoindex(false), path_info(""), query_string(""), is_valid(true), _error_code(0) {
@@ -10,6 +10,7 @@ HttpRequest::HttpRequest( void ) : autoindex(false), path_info(""), query_string
 	this->has_body = false;
 	this->is_body_parsed = false;
 	this->body_parser = HttpRequestBody();
+	this->full_upload_path = "";
 }
 
 HttpRequest::HttpRequest( HttpRequest const &obj ) {
@@ -34,6 +35,7 @@ HttpRequest &HttpRequest::operator = ( HttpRequest const &obj ) {
 		this->has_body = obj.has_body;
 		this->is_body_parsed = obj.is_body_parsed;
 		this->body_parser = obj.body_parser;
+		this->full_upload_path = obj.full_upload_path;
 	}
 	return (*this);
 }
@@ -179,8 +181,7 @@ static std::string	get_matched_location( std::string request_uri, std::map<std::
 	return (path);
 }
 
-void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
-	debug(INFO, "Partial body: " + partial_body);
+void	HttpRequest::parse_body( std::string partial_body) {
 	// We parse differently depending on whether the body is chunked or not
 	if (this->headers.find("Transfer-Encoding") != this->headers.end() &&
 		this->headers["Transfer-Encoding"] == "chunked")
@@ -198,21 +199,12 @@ void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
 	else if (this->headers.find("Content-Type") != this->headers.end() &&
 			this->headers["Content-Type"].find("multipart/form-data") != std::string::npos)
 	{
-		int			upload = srv->upload;
-		std::string	upload_store = srv->upload_store;
-		// Check if the request uri is found in the locations map
-		std::map<std::string, Location>::iterator loc = srv->location.find(get_matched_location(this->uri, srv->location));
-		if (loc != srv->location.end())
-		{
-			upload = loc->second.upload;
-			upload_store = loc->second.upload_store;
+		if (this->full_upload_path.empty()) {
+			set_error_code(400);
 		}
-		// Check if the location has an upload or upload_store directive
-		if (upload == 0 || upload_store.empty())
-			set_error_code(httpStatusCodes.BadRequest.code);
-
 		// If the body is a file upload, we need to parse the multipart body
-		this->body_parser.setUploadStore(upload_store);
+		debug(INFO, "SRC Full path: " + this->full_upload_path);
+		this->body_parser.setUploadStore(this->full_upload_path);
 		this->body_parser.parseMultipartBody(partial_body);
 	}
 	else {
@@ -244,6 +236,10 @@ void	HttpRequest::parse_body( std::string partial_body, Server *srv ) {
 
 	if (this->body_parser.getState() == COMPLETE) {
 		this->is_body_parsed = true;
+		
+		if (this->body_parser.getIsError()) {
+			set_error_code(500);
+		}
 	}
 }
 
@@ -273,17 +269,41 @@ static bool	is_server_name_forbidden( std::string hostname, std::string ip, std:
 	return (true);
 }
 
-static std::string	find_final_root( std::string uri, std::string alias, std::string match )
+std::string	HttpRequest::find_full_path( std::string method, std::string new_uri, Server *srv )
 {
-	std::string	tmp, final_root;
+	int			upload(srv->upload);
+	std::string	alias(""), upload_store(srv->upload_store), full_path;
+	std::map<std::string, Location> locations = srv->location;
+	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(new_uri, locations));
 
-	tmp = uri;
-	if (match.length() == 1)
-		tmp = alias + uri;
-	else
-		tmp.replace(0, match.length(), alias);
-	final_root = tmp.substr(tmp.find_first_not_of("/"));
-	return (final_root);
+	full_path = std::getenv("PWD") + std::string("/") + srv->root;
+	// std::cout << "\tNEW_URI: '" << new_uri << "'" << std::endl;
+	if (loc != locations.end())
+	{
+		alias = loc->second.alias;
+		upload = loc->second.upload;
+		upload_store = loc->second.upload_store;
+		if (!alias.empty())
+			new_uri = new_uri.substr(new_uri.find(loc->first) + loc->first.length());
+	}
+	std::string	remaining_folders = new_uri.substr(0, new_uri.find_last_of('/') + 1);
+	std::string	resource = new_uri.substr(new_uri.find_last_of('/') + 1);
+
+	// if (new_uri != matched_location)
+
+	full_path += alias;
+	full_path += remaining_folders;
+	if (method == "POST" && upload) {
+		full_upload_path = full_path + upload_store;
+		full_path += upload_store;
+	}
+	// std::cout << "\tFULL_PATH: '" << full_path << "'" << std::endl;
+	struct stat buf;
+	if (stat(full_path.c_str(), &buf) != 0 || !S_ISDIR(buf.st_mode))
+		return ("");
+	full_path += resource;
+	// std::cout << "\tFULL_PATH: '" << full_path << "'" << std::endl;
+	return (full_path);
 }
 
 void	HttpRequest::validate_headers( Server *srv ) {
@@ -364,12 +384,10 @@ void	HttpRequest::validate_headers( Server *srv ) {
 			this->headers.insert(std::make_pair("Location", loc->second.redirect.second));
 			return ;
 		}
-		if (loc != locations.end() && !loc->second.alias.empty())
-			final_root = find_final_root(new_uri, loc->second.alias, loc->first);
-		else
-			final_root = srv->root + new_uri;
-		full_path = std::getenv("PWD") + std::string("/") + final_root;
-		if ((stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode))
+		full_path = find_full_path(this->method, new_uri, srv);
+		if (full_path.empty())
+			set_error_code(404);
+		if (this->method != "POST" && ((stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode)))
 			set_error_code(404);
 	}
 	// If request is for folder: search for index files with possible multiple redirections
@@ -389,14 +407,11 @@ void	HttpRequest::validate_headers( Server *srv ) {
 				this->headers.insert(std::make_pair("Location", loc->second.redirect.second));
 				return ;
 			}
-			if (loc != locations.end() && !loc->second.alias.empty())
-				final_root = find_final_root(new_uri, loc->second.alias, loc->first);
-			else
-				final_root = srv->root + new_uri;
-			resource = new_uri.substr(new_uri.find_last_of("/") + 1);
-			full_path = std::getenv("PWD") + std::string("/") + final_root;
+			full_path = find_full_path(this->method, new_uri, srv);
+			if (full_path.empty())
+				set_error_code(404);
 			// Check if index file is found
-			if ((stat(full_path.c_str(), &buf) != -1) && S_ISREG(buf.st_mode))
+			if (this->method == "POST" || ((stat(full_path.c_str(), &buf) != -1) && S_ISREG(buf.st_mode)))
 				break ;
 		}
 		// No index files are found
@@ -438,6 +453,7 @@ void	HttpRequest::validate_headers( Server *srv ) {
 }
 
 void	HttpRequest::validate_body( Server *srv ) {
+	debug(INFO, "Validating body");
 	int	max_body_size = srv->client_max_body_size;
 
 	std::map<std::string, Location> locations = srv->location;
@@ -446,6 +462,8 @@ void	HttpRequest::validate_body( Server *srv ) {
 		max_body_size = loc->second.client_max_body_size;
 	if (max_body_size != -1 && (int)this->body.length() > max_body_size)
 		set_error_code(413);
+	debug(INFO, "Body validation: " + ft_itoa(this->get_error_code()));
+	// TO-DO: SET FULL_PATH FOR FILE_UPLOAD
 }
 
 int	HttpRequest::get_error_code( void ) const
