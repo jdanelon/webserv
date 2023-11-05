@@ -286,11 +286,17 @@ void HttpResponse::handlePost(HttpRequest &request)
 		}
 		new_file.write(request_body.c_str(), request_body.length());
 		new_file.close();
-	}
 
-	size_t		location_idx = this->resourceFullPath.find(this->host->root) + this->host->root.length();
-	std::string	location = this->resourceFullPath.substr(location_idx);
-	this->headers["Location"] = location;
+		size_t		location_idx = this->resourceFullPath.find(this->host->root) + this->host->root.length();
+		std::string	location = this->resourceFullPath.substr(location_idx);
+		this->headers["Location"] = location;
+	}
+	// Set correct location when is not multipart/form-data
+	else {
+		size_t		location_idx = request.full_upload_path.find(this->host->root) + this->host->root.length();
+		std::string	location = request.full_upload_path.substr(location_idx);
+		this->headers["Location"] = location + std::string("/") + request.body_parser.getFileName();
+	}
 
 	std::string tmp_file_path = this->resourceFullPath.substr(0, this->resourceFullPath.find_last_of("/") + 1);
 	this->resourceFullPath = tmp_file_path + generateUniqueFilename();

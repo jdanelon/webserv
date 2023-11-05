@@ -313,6 +313,11 @@ bool HttpRequestBody::getIsError()
 	return isError;
 }
 
+std::string HttpRequestBody::getFileName()
+{
+	return this->fileName;
+}
+
 void HttpRequestBody::debug(LogLevel level, const std::string &message)
 {
 	if (!debugEnabled)

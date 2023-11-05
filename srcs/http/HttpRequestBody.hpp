@@ -78,6 +78,8 @@ public:
 
 	bool getIsError();
 
+	std::string getFileName();
+
 	std::string getFullChunkedBody();
 
 	// debug
