@@ -79,6 +79,8 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 	}
 	else if (is_input_ready) {
 		int client_fd = webserv.pollfds[i].fd;
+		std::cout << "Client fd: " << client_fd << std::endl;
+		std::cout << "Index: " << i << std::endl;
 		// If header was not received yet, read it
 		if (!webserv.client_connections[client_fd].is_header_received) {
 			read_client_request_headers(webserv, i);
@@ -125,7 +127,12 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 
 void	poll_events( WebServ &webserv ) {
 	while (g_signal_code == 0) {
+		// std::cout << "Polling..." << std::endl;
+		// check pollfds size
+		// std::cout << "Pollfds size: " << webserv.pollfds.size() << std::endl;
+
 		int	num_revents = poll(&webserv.pollfds[0], webserv.pollfds.size(), -1);
+		// std::cout << "Polling finished" << std::endl;
 		if (num_revents < 0) {
 			std::cout << "poll error" << std::endl;
 			break;

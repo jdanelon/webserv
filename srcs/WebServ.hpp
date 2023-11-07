@@ -57,8 +57,6 @@ class WebServ
 		void		_init_servers( void );
 		void		_clear_connection( int const client_fd );
 		void		_clear_100_continue( int const client_fd );
-
-		std::map<int, std::string>	_error_codes_map;
 };
 
 #endif
