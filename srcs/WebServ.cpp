@@ -255,28 +255,52 @@ void	WebServ::_clear_connection(int const client_fd) {
 	this->client_connections[client_fd].is_100_continue_sent = false;
 }
 
+void	WebServ::_send( int idx, std::string const &response )
+{
+	size_t	total_bytes = 0, nbytes;
+	int		client_fd = this->pollfds[idx].fd;
+
+	while (total_bytes < response.length())
+	{
+		nbytes = send(client_fd, response.c_str(), response.length(), 0);
+		if (nbytes <= 0)
+		{
+			if (nbytes == 0) 
+				std::cout << "socket: '" << client_fd << "' hung up" << std::endl;
+			else {
+				std::cout << "Send error: " << nbytes << std::endl;
+			}
+			this->end_client_connection(idx);
+			this->client_connections.erase(client_fd);
+			break ;
+		}
+		total_bytes += nbytes;
+	}
+}
+
 void	WebServ::send_response( int idx )
 {
-	int	client_fd = this->pollfds[idx].fd;
+	int				client_fd = this->pollfds[idx].fd;
+	HttpResponse	http_response = this->client_connections[client_fd].response;
 
 	// 1) If request is not valid, send error response
 	if (!this->client_connections[client_fd].response.is_request_valid) {
 		debug(INFO, "Sending error response...");
 		HttpResponse http_response = this->client_connections[client_fd].response;
 		http_response.prepareErrorResponse(this->client_connections[client_fd].request);
-		send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+		this->_send(idx, http_response.getResponse());
 	}
 	// 2) If the response is not too big, send the full response
 	else if (this->client_connections[client_fd].response.fileSize < RESPONSE_CHUNK_SIZE) {
 		HttpResponse http_response = this->client_connections[client_fd].response;
 		try {
 			http_response.prepareFullResponse();
-			send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+			this->_send(idx, http_response.getResponse());
 		}
 		catch(const std::exception& e) {
 			std::cerr << e.what() << '\n';
 			http_response.prepareErrorResponse(this->client_connections[client_fd].request);
-			send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+			this->_send(idx, http_response.getResponse());
 		}
 		this->pollfds[idx].events = POLLIN;
 	}
@@ -288,25 +312,25 @@ void	WebServ::send_response( int idx )
 			// Check if we send the first chunk with the headers or we just send the other chunks (no headers)
 			if (this->client_connections[client_fd].response.fileOffset <= RESPONSE_CHUNK_SIZE) {
 				std::string fullResponse = this->client_connections[client_fd].response.getResponse() + chunkData;
-				send(client_fd, fullResponse.c_str(), fullResponse.length(), 0);
+				this->_send(idx, fullResponse);
 				debug(INFO, "Sending first chunk response...");
 			} else {
 				// Otherwise, just send the chunk
 				debug(INFO, "Sending chunk...");
-				send(client_fd, chunkData.c_str(), chunkData.length(), 0);
+				this->_send(idx, chunkData);
 			}
 		}
 		catch (const std::exception& e) {
 			std::cerr << e.what() << '\n';
 			HttpResponse http_response = this->client_connections[client_fd].response;
 			http_response.prepareErrorResponse(this->client_connections[client_fd].request);
-			send(client_fd, http_response.getResponse().c_str(), http_response.getResponse().length(), 0);
+			this->_send(idx, http_response.getResponse());
 			this->client_connections[client_fd].response.fileOffset = this->client_connections[client_fd].response.fileSize;
 		}
 
 		// Check if we have sent the full file, If not we go back to the poll loop
 		unsigned int file_offset = this->client_connections[client_fd].response.fileOffset;
-		if (file_offset != 0 && file_offset < this->client_connections[client_fd].response.fileSize) {
+		if (client_fd != -1 && file_offset != 0 && file_offset < this->client_connections[client_fd].response.fileSize) {
 			this->client_connections[client_fd].timestamp = timestamp();
 			this->pollfds[idx].events = POLLOUT;  // Set to send more data
 			return ;
@@ -323,9 +347,13 @@ void	WebServ::send_response( int idx )
 	if (last_bar != std::string::npos && extension == ".tmp")
 		std::remove(this->client_connections[client_fd].response.resourceFullPath.c_str());
 
-	this->client_connections[client_fd].timestamp = timestamp();
-	this->pollfds[idx].events = POLLIN;
-	this->_clear_connection(client_fd);
+	// Reset connection if it has not been closed
+	if (this->pollfds[idx].fd != -1)
+	{
+		this->client_connections[client_fd].timestamp = timestamp();
+		this->pollfds[idx].events = POLLIN;
+		this->_clear_connection(client_fd);
+	}
 }
 
 void	WebServ::purge_connections( void )
