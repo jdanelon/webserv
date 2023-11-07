@@ -57,6 +57,7 @@ class WebServ
 		void		_init_servers( void );
 		void		_clear_connection( int const client_fd );
 		void		_clear_100_continue( int const client_fd );
+		void		_send( int client_fd, std::string const &response );
 };
 
 #endif

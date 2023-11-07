@@ -79,8 +79,6 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 	}
 	else if (is_input_ready) {
 		int client_fd = webserv.pollfds[i].fd;
-		std::cout << "Client fd: " << client_fd << std::endl;
-		std::cout << "Index: " << i << std::endl;
 		// If header was not received yet, read it
 		if (!webserv.client_connections[client_fd].is_header_received) {
 			read_client_request_headers(webserv, i);

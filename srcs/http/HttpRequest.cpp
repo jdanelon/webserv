@@ -331,11 +331,11 @@ void	HttpRequest::validate_headers( Server *srv ) {
 	if (loc != locations.end() && is_method_forbidden(this->method, loc->second.limit_except))
 		set_error_code(httpStatusCodes.MethodNotAllowed.code);
 
-	if (this->method == "PUT" || this->method == "CONNECT" || this->method == "OPTIONS" ||
-			this->method == "TRACE" || this->method == "PATCH")
+	if (this->method == "HEAD" || this->method == "PUT" || this->method == "CONNECT" ||
+			this->method == "OPTIONS" || this->method == "TRACE" || this->method == "PATCH")
 		set_error_code(httpStatusCodes.MethodNotAllowed.code);
 
-	if (this->method != "HEAD" && this->method != "GET" && this->method != "POST" && this->method != "DELETE")
+	if (this->method != "GET" && this->method != "POST" && this->method != "DELETE")
 		set_error_code(httpStatusCodes.NotImplemented.code);
 
 	if (this->uri.length() > 8000)
