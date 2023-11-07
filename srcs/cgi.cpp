@@ -81,7 +81,7 @@ static std::string	get_cgi_output( int fd )
 static std::string	handle_parent( pid_t pid, int const parent_fd )
 {
 	long long		old_timestamp, new_timestamp;
-	unsigned int	timeout = 30000;
+	unsigned int	timeout = 10000;
 	std::string		output;
 
 	old_timestamp = timestamp();
