@@ -24,5 +24,3 @@ output
 
 # download test folder
 test/www/download/*
-
-test/www/upload/store-folder/*

@@ -1,6 +1,6 @@
 #include "HttpRequest.hpp"
 
-bool HttpRequest::debugEnabled = false;
+bool HttpRequest::debugEnabled = true;
 const std::string HttpRequest::className = "HttpRequest";
 
 HttpRequest::HttpRequest( void ) : autoindex(false), path_info(""), query_string(""), is_valid(true), _error_code(0) {
@@ -98,7 +98,7 @@ void	HttpRequest::parse_request_line( std::string line ) {
 	if (first_space == std::string::npos || second_space == std::string::npos ||
 		second_space != line.find_last_of(" "))
 	{
-		set_error_code(400);
+		set_error_code(httpStatusCodes.BadRequest.code);
 		return ;
 	}
 	this->method = line.substr(0, first_space);
@@ -109,7 +109,7 @@ void	HttpRequest::parse_request_line( std::string line ) {
 	if (this->version.length() != 8 || this->version.compare(0, 5, "HTTP/") ||
 		!isdigit(this->version[5]) || this->version[6] != '.' || !isdigit(this->version[7]))
 	{
-		set_error_code(400);
+		set_error_code(httpStatusCodes.BadRequest.code);
 		return ;
 	}
 }
@@ -127,21 +127,21 @@ void	HttpRequest::parse_header_line( std::string line ) {
 
 	if (value[value.length() - 1] != '\r')
 	{
-		set_error_code(400);
+		set_error_code(httpStatusCodes.BadRequest.code);
 		return ;
 	}
 	// Remove '\r' at the end of value
 	value = value.substr(0, value.length() - 1);
 
 	if (key.empty() || value.empty()) {
-		set_error_code(400);
+		set_error_code(httpStatusCodes.BadRequest.code);
 		return ;
 	}
 
 	std::pair<std::map<std::string, std::string, CaseInsensitive>::iterator, bool>	ret;
 	ret = this->headers.insert(std::make_pair(key, value));
 	if (!ret.second) {
-		set_error_code(400);
+		set_error_code(httpStatusCodes.BadRequest.code);
 		return ;
 	}
 
@@ -151,7 +151,7 @@ void	HttpRequest::parse_header_line( std::string line ) {
 		size_t pos = value.find("boundary=");
 		if (pos == std::string::npos)
 		{
-			set_error_code(400);
+			set_error_code(httpStatusCodes.BadRequest.code);
 			return ;
 		}
 		// set boundary string as value of a new header 'boundary'
@@ -202,7 +202,7 @@ void	HttpRequest::parse_body( std::string partial_body ) {
 	{
 		if (this->full_upload_path.empty()) {
 			debug(ERROR, "Full upload path is empty");
-			set_error_code(400);
+			set_error_code(httpStatusCodes.BadRequest.code);
 		}
 		// If the body is a file upload, we need to parse the multipart body
 		this->body_parser.setUploadStore(this->full_upload_path);
@@ -215,14 +215,14 @@ void	HttpRequest::parse_body( std::string partial_body ) {
 		std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
 		if (content_length_header == this->headers.end())
 		{
-			set_error_code(400);
+			set_error_code(httpStatusCodes.BadRequest.code);
 			this->is_body_parsed = true;
 			return ;
 		}
 		int content_length = atoi(content_length_header->second.c_str());
 		if ((int)this->body.length() + (int)partial_body.length() > content_length)
 		{
-			set_error_code(400);
+			set_error_code(httpStatusCodes.BadRequest.code);
 			this->is_body_parsed = true;
 			return ;
 		}
@@ -239,7 +239,7 @@ void	HttpRequest::parse_body( std::string partial_body ) {
 		this->is_body_parsed = true;
 		
 		if (this->body_parser.getIsError()) {
-			set_error_code(500);
+			set_error_code(httpStatusCodes.InternalServerError.code);
 		}
 	}
 }
@@ -324,31 +324,31 @@ void	HttpRequest::validate_headers( Server *srv ) {
 	std::cout << "Validating request:" << std::endl;
 
 	if (this->method.empty() || this->uri.empty() || this->version.empty())
-		set_error_code(400);
+		set_error_code(httpStatusCodes.BadRequest.code);
 
 	std::map<std::string, Location> locations = srv->location;
 	std::map<std::string, Location>::iterator loc = locations.find(get_matched_location(this->uri, locations));
 	if (loc != locations.end() && is_method_forbidden(this->method, loc->second.limit_except))
-		set_error_code(405);
+		set_error_code(httpStatusCodes.MethodNotAllowed.code);
 
 	if (this->method == "HEAD" || this->method == "PUT" || this->method == "CONNECT" ||
 			this->method == "OPTIONS" || this->method == "TRACE" || this->method == "PATCH")
-		set_error_code(405);
+		set_error_code(httpStatusCodes.MethodNotAllowed.code);
 
 	if (this->method != "GET" && this->method != "POST" && this->method != "DELETE")
-		set_error_code(501);
+		set_error_code(httpStatusCodes.NotImplemented.code);
 
 	if (this->uri.length() > 8000)
-		set_error_code(414);
+		set_error_code(httpStatusCodes.URITooLong.code);
 
 	if (this->version != "HTTP/1.1")
-		set_error_code(505);
+		set_error_code(httpStatusCodes.HTTPVersionNotSupported.code);
 
 	std::map<std::string, std::string>::iterator content_length_header = this->headers.find("Content-Length");
 	if (content_length_header != this->headers.end() && ft_atoi(content_length_header->second.c_str()) == -1)
-		set_error_code(411);
+		set_error_code(httpStatusCodes.LengthRequired.code);
 	else if (this->method == "POST" && !this->has_body)
-		set_error_code(411);
+		set_error_code(httpStatusCodes.LengthRequired.code);
 
 	// Return directive on server block
 	if (srv->redirect.first != 0 && !srv->redirect.second.empty())
@@ -400,9 +400,9 @@ void	HttpRequest::validate_headers( Server *srv ) {
 		}
 		full_path = this->_find_full_path(this->method, new_uri, srv);
 		if (full_path.empty())
-			set_error_code(404);
+			set_error_code(httpStatusCodes.NotFound.code);
 		if (this->method != "POST" && ((stat(full_path.c_str(), &buf) == -1) || !S_ISREG(buf.st_mode)))
-			set_error_code(404);
+			set_error_code(httpStatusCodes.NotFound.code);
 	}
 	// If request is for folder: search for index files with possible multiple redirections
 	else
@@ -424,7 +424,7 @@ void	HttpRequest::validate_headers( Server *srv ) {
 			full_path = this->_find_full_path(this->method, new_uri, srv);
 
 			if (full_path.empty())
-				set_error_code(404);
+				set_error_code(httpStatusCodes.NotFound.code);
 			// Check if index file is found
 			if (this->method == "POST" || ((stat(full_path.c_str(), &buf) != -1) && S_ISREG(buf.st_mode)))
 				break ;
@@ -439,17 +439,17 @@ void	HttpRequest::validate_headers( Server *srv ) {
 				full_path = full_path.substr(0, full_path.find_last_of("/") + 1);
 				struct stat buf;
 				if (stat(full_path.c_str(), &buf) != 0 || !S_ISDIR(buf.st_mode))
-					set_error_code(404);
+					set_error_code(httpStatusCodes.NotFound.code);
 				this->autoindex = true;
 			}
 			else
-				set_error_code(403);
+				set_error_code(httpStatusCodes.Forbidden.code);
 		}
 	}
 
 	// ATTENTION: NEED TO CHANGE /ETC/HOSTS FILE TO INCLUDE OTHER SERVER_NAMES
 	if (is_server_name_forbidden(this->host, srv->ip, srv->server_name))
-		set_error_code(404);
+		set_error_code(httpStatusCodes.NotFound.code);
 	
 	int	upload(srv->upload);
 	if (loc != locations.end())
@@ -457,7 +457,7 @@ void	HttpRequest::validate_headers( Server *srv ) {
 	if (!upload && this->method == "POST" && this->headers.find("Content-Type") != this->headers.end() &&
 			this->headers["Content-Type"].find("multipart/form-data") != std::string::npos) {
 		debug(WARNING, "NO UPLOAD");
-		set_error_code(400);
+		set_error_code(httpStatusCodes.BadRequest.code);
 	}
 
 	int	code = this->get_error_code();
@@ -485,7 +485,7 @@ void	HttpRequest::validate_body( Server *srv ) {
 	if (loc != locations.end())
 		max_body_size = loc->second.client_max_body_size;
 	if (max_body_size != -1 && (int)this->body.length() > max_body_size)
-		set_error_code(413);
+		set_error_code(httpStatusCodes.PayloadTooLarge.code);
 	debug(INFO, "Body validation: " + ft_itoa(this->get_error_code()));
 }
 

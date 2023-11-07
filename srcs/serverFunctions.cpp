@@ -125,7 +125,12 @@ void	process_client_event( WebServ &webserv, unsigned int i ) {
 
 void	poll_events( WebServ &webserv ) {
 	while (g_signal_code == 0) {
+		// std::cout << "Polling..." << std::endl;
+		// check pollfds size
+		// std::cout << "Pollfds size: " << webserv.pollfds.size() << std::endl;
+
 		int	num_revents = poll(&webserv.pollfds[0], webserv.pollfds.size(), -1);
+		// std::cout << "Polling finished" << std::endl;
 		if (num_revents < 0) {
 			std::cout << "poll error" << std::endl;
 			break;
